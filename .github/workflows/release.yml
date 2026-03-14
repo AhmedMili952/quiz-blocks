@@ -1,0 +1,74 @@
+name: Release Quiz Blocks
+
+on:
+  push:
+    tags:
+      - '*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Get version from tag
+        id: version
+        run: echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+      - name: Update manifest version
+        run: |
+          node -e "
+            const fs = require('fs');
+            const m = JSON.parse(fs.readFileSync('src/assets/manifest.json', 'utf8'));
+            m.version = '${{ steps.version.outputs.tag }}'.replace(/^v/, '');
+            fs.writeFileSync('src/assets/manifest.json', JSON.stringify(m, null, 2));
+          "
+
+      - name: Collect release files
+        run: |
+          mkdir release
+          cp src/assets/manifest.json release/manifest.json
+          cp src/assets/styles.css release/styles.css
+
+      - name: Find built main.js
+        id: find_main
+        run: |
+          # esbuild outputs to the vault path in config, but in CI there's no vault
+          # So we modify the build to output locally
+          echo "Rebuilding for CI output..."
+          node -e "
+            const esbuild = require('esbuild');
+            esbuild.buildSync({
+              entryPoints: ['src/main.js'],
+              outfile: 'release/main.js',
+              bundle: true,
+              format: 'cjs',
+              platform: 'node',
+              target: 'es2020',
+              sourcemap: false,
+              external: ['obsidian', 'electron'],
+            });
+          "
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "Quiz Blocks ${{ steps.version.outputs.tag }}"
+          body: "Release ${{ steps.version.outputs.tag }}"
+          files: |
+            release/main.js
+            release/manifest.json
+            release/styles.css

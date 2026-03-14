@@ -1,0 +1,10 @@
+{
+  "id": "quiz-blocks",
+  "name": "Quiz Blocks",
+  "version": "1.0.0",
+  "minAppVersion": "1.5.0",
+  "description": "Create fully interactive quizzes in Obsidian from code blocks, including blocks generated with any AI. Supports multiple question types, hints, scoring, navigation, and smooth transitions.",
+  "author": "Ahmed",
+  "isDesktopOnly": false,
+  "main": "main.js"
+}
