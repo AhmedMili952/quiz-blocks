@@ -66,7 +66,7 @@ jobs:
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          name: "Quiz Blocks ${{ steps.version.outputs.tag }}"
+          name: "${{ steps.version.outputs.tag }}"
           body: "Release ${{ steps.version.outputs.tag }}"
           files: |
             release/main.js
