@@ -28,7 +28,7 @@ function renderParagraph(container, text) {
 }
 
 async function renderInteractiveQuiz(context) {
-
+ 
 	const {
 		app,
 		container,

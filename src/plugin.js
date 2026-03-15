@@ -247,5 +247,5 @@ module.exports = class InteractiveQuizPlugin extends obsidian.Plugin {
 		} catch (error) {
 			this.log.error("impossible de retirer la coloration", error);
 		}
-	}
+	} 
 };

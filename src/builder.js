@@ -742,4 +742,4 @@ class TypePickerModal extends obsidian.Modal {
 	onClose() { this.contentEl.empty(); }
 }
 
-module.exports = { QuizBuilderView, VIEW_TYPE };
+module.exports = { QuizBuilderView, VIEW_TYPE }; 

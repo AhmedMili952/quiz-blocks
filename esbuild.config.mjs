@@ -1,6 +1,6 @@
 import esbuild from "esbuild";
 import fs from "fs";
-import path from "path";
+import path from "path"; 
 
 const production = process.argv.includes("production");
 const watch = !production;
