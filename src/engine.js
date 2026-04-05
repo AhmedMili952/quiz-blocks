@@ -604,7 +604,7 @@ const getSlidingWindow = () => ({ from: Math.min(quizState.prevCurrent, quizStat
 function primeTrackAndViewportForSlideStart(startX, lockedHeight) {
 	const { track, viewport } = getTrackElements();
 	if (!track || !viewport) return;
-	applyTrackGeometry({ refreshWidth: true });
+	viewport.applyTrackGeometry({ refreshWidth: true });
 	const safeHeight = Math.max(1, Math.ceil(lockedHeight));
 	track.style.transition = "none";
 	track.style.willChange = "transform";
@@ -648,7 +648,7 @@ function destroyAllSlidesResizeObserver() {
 function bindActiveSlideResizeObserver() {
 	destroyActiveSlideResizeObserver();
 	if (typeof ResizeObserver === "undefined") return;
-	const item = getTrackItem(quizState.current);
+	const item = viewport.getTrackItem(quizState.current);
 	if (!item) return;
 	__quizActiveSlideResizeObserver = new ResizeObserver(() => {
 		__quizSlideHeightCache.delete(quizState.current);
@@ -769,14 +769,14 @@ function getElementStableHeight(el) {
 function getSlideStableHeight(index = quizState.current, { refresh = false } = {}) {
 	const cached = __quizSlideHeightCache.get(index);
 	if (!refresh && Number.isFinite(cached) && cached > 0) return cached;
-	const item = getTrackItem(index);
+	const item = viewport.getTrackItem(index);
 	const h = getElementStableHeight(item);
 	if (h > 0) __quizSlideHeightCache.set(index, h);
 	return h;
 }
 
 function getMaxRenderedSlideHeight({ refresh = false, padding = 24 } = {}) {
-	const items = getTrackItems();
+	const items = viewport.getTrackItems();
 	if (!items.length) return Math.max(1, padding);
 	let max = 0;
 	items.forEach((item, index) => {
@@ -863,7 +863,7 @@ function scheduleViewportHeightSync({ delay = 0, index = quizState.current, anim
 }
 
 function primeAllSlideHeights({ retries = 8, syncCurrent = true } = {}) {
-	const items = getTrackItems();
+	const items = viewport.getTrackItems();
 	if (items.length === 0) return;
 	let zeroCount = 0;
 	items.forEach((item, index) => {
@@ -905,7 +905,7 @@ async function warmSlideForAccurateHeight(index, { timeoutMs = 1200, stableFrame
 
 	const p = (async () => {
 		if (!isQuizInstanceAlive(epoch) || !isSlideGenerationCurrent(index, generation)) return;
-		const item = getTrackItem(index);
+		const item = viewport.getTrackItem(index);
 		if (!item) return;
 		const imgs = Array.from(item.querySelectorAll("img"));
 		for (const img of imgs) {
@@ -1022,7 +1022,7 @@ function bindAllTrackImages() {
 
 function bindCurrentSlideMediaHeightSync() {
 	const index = quizState.current;
-	const item = getTrackItem(index);
+	const item = viewport.getTrackItem(index);
 	if (!item) return;
 	const token = ++__quizMediaSyncToken;
 	const generation = getSlideGeneration(index);
@@ -1044,7 +1044,7 @@ function bindCurrentSlideMediaHeightSync() {
 }
 
 function resyncCommandTextareasOnSlide(index) {
-	const item = getTrackItem(index);
+	const item = viewport.getTrackItem(index);
 	if (!item) return;
 	item.querySelectorAll('.quiz-textarea-command').forEach(ta => {
 		try { ta.dispatchEvent(new Event('scroll')); } catch (_) {}
@@ -1055,7 +1055,7 @@ function applyTrackPositionAndHeightInstant() {
 	const { track } = getTrackElements();
 	if (!track) return false;
 	syncTrackViewportIsolation();
-	applyTrackGeometry({ refreshWidth: true });
+	viewport.applyTrackGeometry({ refreshWidth: true });
 	track.style.transition = "none";
 	track.style.willChange = "";
 	setTrackTransformPx(getSlideTranslateX(quizState.current));
@@ -1072,7 +1072,7 @@ function ensureTrackVisibleAfterLayout(retries = 24, epoch = currentAsyncEpoch()
 	const { track } = getTrackElements();
 	if (!track) return;
 	syncTrackViewportIsolation();
-	applyTrackGeometry({ refreshWidth: true });
+	viewport.applyTrackGeometry({ refreshWidth: true });
 	track.style.transition = "none";
 	track.style.willChange = "";
 	setTrackTransformPx(getSlideTranslateX(quizState.current));
@@ -1209,7 +1209,7 @@ function animateTrackToIndex(targetIndex, { fromX = null, fromHeight = null, ref
 	quizState.isSliding = true;
 	setSlidingClass(true);
 	syncTrackViewportIsolation();
-	applyTrackGeometry({ refreshWidth: true });
+	viewport.applyTrackGeometry({ refreshWidth: true });
 	const token = quizState.slideToken;
 	const targetX = getSlideTranslateX(targetIndex);
 	const startX = Number.isFinite(fromX) ? alignToDevicePixel(fromX) : readCurrentTrackTranslateX();
@@ -2442,7 +2442,7 @@ function refreshMetaSlides({ force = false } = {}) {
 		__quizResultsSlideSignature = nextResultsSignature;
 	}
 
-	applyTrackGeometry({ refreshWidth: false });
+	viewport.applyTrackGeometry({ refreshWidth: false });
 	syncTrackViewportIsolation();
 	const { track } = getTrackElements();
 	if (track && (quizState.current === SLIDE_SUBMIT_INDEX || quizState.current === SLIDE_RESULTS_INDEX)) {
@@ -3317,7 +3317,7 @@ function bindViewportResizeObserver() {
 	const realignViewportAndTrack = ({ settle = false } = {}) => {
 		const { track, viewport: vp } = getTrackElements();
 		if (!track || !vp) return;
-		applyTrackGeometry({ refreshWidth: true });
+		viewport.applyTrackGeometry({ refreshWidth: true });
 		if (quizState.isSliding) {
 			const snapshot = cancelRunningTrackAnimation();
 			animateTrackToIndex(quizState.current, { fromX: snapshot.x, fromHeight: snapshot.height, refreshTargetHeight: true });
@@ -3368,7 +3368,7 @@ function syncTrackViewportIsolation() {
 	const { viewport, track } = getTrackElements();
 	if (!viewport || !track) return;
 
-	applyTrackGeometry({ refreshWidth: false });
+	viewport.applyTrackGeometry({ refreshWidth: false });
 
 	if (viewport.dataset.quizIsoInit !== "1") {
 		viewport.dataset.quizIsoInit = "1";
@@ -3512,7 +3512,7 @@ function refreshQuestionSlide(qi, { syncHeight = true } = {}) {
 	if (!newItem) return null;
 
 	oldItem.replaceWith(newItem);
-	applyTrackGeometry({ refreshWidth: false });
+	viewport.applyTrackGeometry({ refreshWidth: false });
 	bindQuizResourceButtons(newItem);
 	bindTrackItemImages(newItem, qi);
 	bindQuestionTrackItem(newItem);
@@ -3924,7 +3924,7 @@ function bindZoomFixHandlers() {
 			__quizSlideHeightCache.delete(quizState.current);
 
 			// Recalage géométrie + position
-			applyTrackGeometry({ refreshWidth: true });
+			viewport.applyTrackGeometry({ refreshWidth: true });
 			syncTrackViewportIsolation();
 
 			// Si on est en slide, on repart proprement depuis l’état courant
@@ -4008,7 +4008,7 @@ function render() {
 	track.style.backfaceVisibility = "hidden";
 	track.style.transformStyle = "preserve-3d";
 
-	applyTrackGeometry({ refreshWidth: true });
+	viewport.applyTrackGeometry({ refreshWidth: true });
 	setTrackTransformPx(getSlideTranslateX(quizState.current));
 
 	viewport.style.willChange = "";
