@@ -533,29 +533,6 @@ function getViewportStableWidth({ refresh = false } = {}) {
 	return width;
 }
 
-function applyTrackGeometry({ refreshWidth = false } = {}) {
-	const { track } = viewport.getTrackElements();
-	const width = getViewportStableWidth({ refresh: refreshWidth });
-	if (!track || !width) return width;
-	const items = Array.from(track.children || []);
-	const childCount = items.length;
-	let needsWrite = refreshWidth || __quizTrackAppliedWidth !== width || __quizTrackAppliedSlideCount !== childCount || track.style.width !== `${width * childCount}px`;
-	if (!needsWrite) needsWrite = items.some(item => Number(item.__quizAppliedWidth || 0) !== width);
-	if (!needsWrite) return width;
-	track.style.width = `${width * childCount}px`;
-	items.forEach(item => {
-		item.style.flex = `0 0 ${width}px`;
-		item.style.width = `${width}px`;
-		item.style.minWidth = `${width}px`;
-		item.style.maxWidth = `${width}px`;
-		item.style.boxSizing = "border-box";
-		item.__quizAppliedWidth = width;
-	});
-	__quizTrackAppliedWidth = width;
-	__quizTrackAppliedSlideCount = childCount;
-	return width;
-}
-
 const alignToDevicePixel = value => {
 	const dpr = window.devicePixelRatio || 1;
 	return Math.round((Number(value) || 0) * dpr) / dpr;
@@ -727,7 +704,7 @@ function cancelRunningTrackAnimation() {
 }
 
 function getSlideStableHeight(index = quizState.current, { refresh = false } = {}) {
-	const cached = __quizSlideHeightCache.get(index);
+	const cached = viewport.__quizSlideHeightCache.get(index);
 	if (!refresh && Number.isFinite(cached) && cached > 0) return cached;
 	const item = viewport.getTrackItem(index);
 	const h = viewport.getElementStableHeight(item);
