@@ -740,37 +740,11 @@ function cancelRunningTrackAnimation() {
 	return { x: currentX, height: currentHeight };
 }
 
-function getElementStableHeight(el) {
-	if (!el) return 0;
-	const rootRect = el.getBoundingClientRect ? el.getBoundingClientRect() : null;
-	const rootTop = rootRect ? rootRect.top : 0;
-	let maxBottom = 0;
-	const ownHeight = Math.max(
-		Math.ceil(rootRect ? rootRect.height : 0),
-		Math.ceil(el.scrollHeight || 0),
-		Math.ceil(el.offsetHeight || 0),
-		Math.ceil(el.clientHeight || 0),
-		0
-	);
-	const nodes = [el, ...Array.from(el.querySelectorAll("*"))];
-	for (const node of nodes) {
-		if (!(node instanceof HTMLElement)) continue;
-		const cs = getComputedStyle(node);
-		if (cs.display === "none" || cs.position === "fixed") continue;
-		const rect = node.getBoundingClientRect ? node.getBoundingClientRect() : null;
-		if (!rect) continue;
-		const marginBottom = parseFloat(cs.marginBottom) || 0;
-		const bottom = (rect.bottom - rootTop) + marginBottom;
-		if (bottom > maxBottom) maxBottom = bottom;
-	}
-	return Math.max(1, Math.ceil(Math.max(ownHeight, maxBottom)));
-}
-
 function getSlideStableHeight(index = quizState.current, { refresh = false } = {}) {
 	const cached = __quizSlideHeightCache.get(index);
 	if (!refresh && Number.isFinite(cached) && cached > 0) return cached;
 	const item = viewport.getTrackItem(index);
-	const h = getElementStableHeight(item);
+	const h = viewport.getElementStableHeight(item);
 	if (h > 0) __quizSlideHeightCache.set(index, h);
 	return h;
 }
@@ -783,12 +757,12 @@ function getMaxRenderedSlideHeight({ refresh = false, padding = 24 } = {}) {
 		if (!item) return;
 		let h = 0;
 		if (refresh) {
-			h = getElementStableHeight(item);
+			h = viewport.getElementStableHeight(item);
 			if (h > 0) __quizSlideHeightCache.set(index, h);
 		} else {
 			h = getSlideStableHeight(index, { refresh: false });
 			if (!h || h <= 0) {
-				h = getElementStableHeight(item);
+				h = viewport.getElementStableHeight(item);
 				if (h > 0) __quizSlideHeightCache.set(index, h);
 			}
 		}
@@ -867,7 +841,7 @@ function primeAllSlideHeights({ retries = 8, syncCurrent = true } = {}) {
 	if (items.length === 0) return;
 	let zeroCount = 0;
 	items.forEach((item, index) => {
-		const h = getElementStableHeight(item);
+		const h = viewport.getElementStableHeight(item);
 		if (h > 0) __quizSlideHeightCache.set(index, h);
 		else zeroCount++;
 	});
@@ -925,7 +899,7 @@ async function warmSlideForAccurateHeight(index, { timeoutMs = 1200, stableFrame
 		for (let frame = 0; frame < maxFrames; frame++) {
 			const alive = await waitFrames(1, epoch);
 			if (!alive || !isQuizInstanceAlive(epoch) || !isSlideGenerationCurrent(index, generation)) return;
-			const h = getElementStableHeight(item);
+			const h = viewport.getElementStableHeight(item);
 			if (h > 0 && isSlideGenerationCurrent(index, generation)) __quizSlideHeightCache.set(index, h);
 			if (h > 0 && Math.abs(h - last) <= 1) stableCount++;
 			else stableCount = 0;
@@ -1150,7 +1124,7 @@ function finishTrackSlideAnimation(token, targetIndex) {
 		1,
 		Number(viewport?.__quizTargetHeight) || 0,
 		getSlideStableHeight(targetIndex, { refresh: true }) || 0,
-		getElementStableHeight(getTrackItem(targetIndex)) || 0
+		viewport.getElementStableHeight(viewport.getTrackItem(targetIndex)) || 0
 	);
 	const finalHeight = Math.max(1, Math.ceil(refreshedTargetHeight + 4));
 
@@ -1217,14 +1191,14 @@ function animateTrackToIndex(targetIndex, { fromX = null, fromHeight = null, ref
 		1,
 		Number(fromHeight) || 0,
 		getSlideStableHeight(quizState.prevCurrent, { refresh: true }) || 0,
-		getElementStableHeight(getTrackItem(quizState.prevCurrent)) || 0,
+		viewport.getElementStableHeight(viewport.getTrackItem(quizState.prevCurrent)) || 0,
 		Math.ceil(viewport.getBoundingClientRect().height || 0),
 		Math.ceil(viewport.clientHeight || 0)
 	);
 	const targetHeight = Math.max(
 		1,
 		getSlideStableHeight(targetIndex, { refresh: refreshTargetHeight }) || 0,
-		getElementStableHeight(getTrackItem(targetIndex)) || 0,
+		viewport.getElementStableHeight(viewport.getTrackItem(targetIndex)) || 0,
 		startHeight
 	);
 	const lockedHeight = Math.max(1, Math.ceil(startHeight), Math.ceil(targetHeight), Math.ceil(getMaxRenderedSlideHeight({ refresh: true, padding: 24 })));
