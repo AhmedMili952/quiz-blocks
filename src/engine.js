@@ -1,6 +1,18 @@
 'use strict';
 
 const { parseQuizSource, extractExamOptions, renderParagraph } = require("./quiz-utils");
+const createTerminalHandlers = require("./engine-terminal");
+const createSanitizer = require("./engine-sanitizer");
+const createResourceHandlers = require("./engine-resources");
+const createExamHandlers = require("./engine-exam");
+const createCardRenderers = require("./engine-cards");
+const createViewportHandlers = require("./engine-viewport");
+const createTrackHandlers = require("./engine-track");
+const createZoomHandlers = require("./engine-zoom");
+const createInteractionHandlers = require("./engine-interactions");
+const createStateHandlers = require("./engine-state");
+const createHintHandlers = require("./engine-hint");
+const createQuestionHandlers = require("./engine-questions");
 
 async function renderInteractiveQuiz(context) {
 
@@ -57,6 +69,96 @@ async function renderInteractiveQuiz(context) {
 	const isOrderingQuestion = q => !!(q && (q.ordering === true || typeof q.ordering === "object"));
 	const isMatchingQuestion = q => !!(q && (q.matching === true || typeof q.matching === "object"));
 	const isTextQuestion = q => !!(q && (q.type === "text" || q.text === true));
+
+	// Créer le contexte partagé (ctx) pour injection de dépendances
+	const ctx = {
+		app,
+		container,
+		sourcePath,
+		Notice,
+		quiz,
+		isExamMode,
+		examOptions,
+		examDurationMs,
+		get examTimeRemaining() { return examTimeRemaining; },
+		set examTimeRemaining(v) { examTimeRemaining = v; },
+		get examStarted() { return examStarted; },
+		set examStarted(v) { examStarted = v; },
+		get examEnded() { return examEnded; },
+		set examEnded(v) { examEnded = v; },
+		get examStartTime() { return examStartTime; },
+		set examStartTime(v) { examStartTime = v; },
+		QUIZ_INSTANCE_ID,
+		HINT_OVERLAY_ID,
+		HINT_TITLE_ID,
+		__quizGlobalCleanups,
+		shuffleArray,
+		clamp,
+		isOrderingQuestion,
+		isMatchingQuestion,
+		isTextQuestion
+	};
+
+	// Instancier tous les modules avec ctx injecté
+	const sanitizer = createSanitizer(ctx);
+	const resources = createResourceHandlers(ctx);
+	const exam = createExamHandlers(ctx);
+	const cards = createCardRenderers(ctx);
+	const viewport = createViewportHandlers(ctx);
+	const track = createTrackHandlers(ctx);
+	const zoom = createZoomHandlers(ctx);
+	const interactions = createInteractionHandlers(ctx);
+	const terminal = createTerminalHandlers(ctx);
+	const state = createStateHandlers(ctx);
+	const hint = createHintHandlers(ctx);
+	const questions = createQuestionHandlers(ctx);
+
+	// Attacher les modules à ctx pour référence croisée
+	Object.assign(ctx, {
+		sanitize: sanitizer,
+		resources,
+		exam,
+		cards,
+		viewport,
+		track,
+		zoom,
+		interactions,
+		terminal,
+		state,
+		hint,
+		questions,
+		// Fonctions exposées directement
+		openHintModal: hint.openHintModal,
+		closeHintModal: hint.closeHintModal,
+		getOrderingItems: questions.getOrderingItems,
+		getOrderingCorrectOrder: questions.getOrderingCorrectOrder,
+		getOrderingSlotLabels: questions.getOrderingSlotLabels,
+		getMatchRows: questions.getMatchRows,
+		getMatchChoices: questions.getMatchChoices,
+		getMatchCorrectMap: questions.getMatchCorrectMap,
+		orderingSelectionIncludes: questions.orderingSelectionIncludes,
+		removeOrderingItemFromSlot: questions.removeOrderingItemFromSlot,
+		placeOrderingItemInSlot: questions.placeOrderingItemInSlot,
+		matchingSelectionIncludes: questions.matchingSelectionIncludes,
+		hasAnyAnswer: state.hasAnyAnswer,
+		isComplete: state.isComplete,
+		getMissingIndices: state.getMissingIndices,
+		isCorrect: state.isCorrect,
+		computeScorePercent: state.computeScorePercent,
+		getSubmitSlideSignature: state.getSubmitSlideSignature,
+		getResultsSlideSignature: state.getResultsSlideSignature,
+		goToQuestion: state.goToQuestion,
+		goToSubmit: state.goToSubmit,
+		goToResults: state.goToResults,
+		resetQuiz: state.resetQuiz,
+		goToSlide: state.goToSlide,
+		redirectSlide: state.redirectSlide,
+		updateNavHighlight: state.updateNavHighlight,
+		playNavTabPressAndNavigate: state.playNavTabPressAndNavigate,
+		clearAllNavTabPressStates: state.clearAllNavTabPressStates,
+		setNavTabPressState: state.setNavTabPressState,
+		buildNavTabClass: state.buildNavTabClass
+	});
 
 function normalizeTerminalVariantName(value) {
 	const raw = String(value ?? "").trim().toLowerCase();
@@ -398,6 +500,44 @@ function resolveAllPendingAsync(value = false) {
 		try { waiter.resolve(value); } catch (_) {}
 	}
 }
+
+// Étendre ctx avec les variables et fonctions partagées
+Object.assign(ctx, {
+	SLIDE_SUBMIT_INDEX,
+	SLIDE_RESULTS_INDEX,
+	TOTAL_SLIDES,
+	quizState,
+	__quizSlideHeightCache,
+	__quizWarmSlidePromises,
+	__quizSlideGeneration,
+	__quizDestroyed,
+	__quizAsyncEpoch,
+	__quizBackgroundWarmStarted,
+	__quizSubmitSlideSignature,
+	__quizResultsSlideSignature,
+	__quizBootstrapRaf1,
+	__quizBootstrapRaf2,
+	setBootstrapRaf1: v => __quizBootstrapRaf1 = v,
+	setBootstrapRaf2: v => __quizBootstrapRaf2 = v,
+	currentAsyncEpoch,
+	isQuizInstanceAlive,
+	getSlideGeneration,
+	isSlideGenerationCurrent,
+	createPendingAsyncWaiter,
+	resolveAllPendingAsync,
+	restartAsyncLifecycle,
+	isDestroyed: () => __quizDestroyed,
+	getMaxRenderedSlideHeight: ({ refresh = false, padding = 0 } = {}) => {
+		let max = 0;
+		const { track } = viewport.getTrackElements();
+		if (!track) return 0;
+		Array.from(track.children || []).forEach((slide, idx) => {
+			const h = viewport.getSlideStableHeight(idx, { refresh });
+			max = Math.max(max, h);
+		});
+		return Math.max(1, Math.ceil(max + padding));
+	}
+});
 
 function restartAsyncLifecycle() {
 	__quizAsyncEpoch++;

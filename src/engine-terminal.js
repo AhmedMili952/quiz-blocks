@@ -1,0 +1,693 @@
+'use strict';
+
+module.exports = function createTerminalHandlers(ctx) {
+	// Variables locales au module
+	let __quizTextQuestionCleanup = null;
+
+	// ═══════════════════════════════════════════════════════
+	// FONCTIONS PURES (sans dépendances externes)
+	// ═══════════════════════════════════════════════════════
+
+	function normalizeTerminalVariantName(value) {
+		const raw = String(value ?? "").trim().toLowerCase();
+		if (!raw) return null;
+
+		if ([
+			"command",
+			"cmd",
+			"windows-cmd",
+			"windows cmd",
+			"invite-de-commandes",
+			"invite de commandes"
+		].includes(raw)) return "cmd";
+
+		if ([
+			"powershell",
+			"ps",
+			"pwsh",
+			"windows-powershell",
+			"windows powershell",
+			"power-shell",
+			"power shell"
+		].includes(raw)) return "powershell";
+
+		if ([
+			"bash",
+			"shell",
+			"sh",
+			"zsh",
+			"terminal",
+			"linux"
+		].includes(raw)) {
+			return (raw === "terminal" || raw === "linux") ? "bash" : raw;
+		}
+
+		return raw.replace(/\s+/g, "-");
+	}
+
+	function getTerminalTextVariant(q) {
+		if (!ctx.isTextQuestion(q)) return null;
+
+		const candidates = [
+			q?.terminalVariant,
+			q?.textVariant,
+			q?.text?.variant,
+			q?.terminal?.variant
+		];
+
+		for (const candidate of candidates) {
+			const normalized = normalizeTerminalVariantName(candidate);
+			if (normalized) return normalized;
+		}
+
+		if (q?.command === true) return "cmd";
+
+		return null;
+	}
+
+	const isTerminalTextQuestion = q => !!getTerminalTextVariant(q);
+
+	const isCommandTextQuestion = q => isTerminalTextQuestion(q);
+
+	function getTerminalPromptPrefix(q) {
+		const explicitPrefix = [
+			q?.commandPrefix,
+			q?.terminalPrefix,
+			q?.promptPrefix,
+			q?.terminal?.prefix
+		].find(value => typeof value === "string" && value.length > 0);
+
+		if (explicitPrefix) return explicitPrefix;
+
+		const variant = getTerminalTextVariant(q);
+
+		switch (variant) {
+			case "cmd":
+				return "C:\\>";
+
+			case "powershell":
+				return "PS>";
+
+			case "bash":
+				return "user@hostname:~$ ";
+
+			case "zsh":
+				return "user@hostname %";
+
+			case "sh":
+				return "$";
+		}
+		return "C:\\>";
+	}
+
+	function renderTerminalPromptPrefixHtml(q) {
+		const promptPrefix = String(getTerminalPromptPrefix(q) ?? "");
+		const variant = getTerminalTextVariant(q);
+
+		if (variant === "bash") {
+			const match = promptPrefix.match(/^([^:]+)(:)([^$]*)(\$ ?)$/);
+
+			if (match) {
+				const [, userHost, colon, pathPart, dollarPart] = match;
+
+				return '<span class="quiz-command-prefix quiz-command-prefix-bash">' +
+					`<span class="quiz-bash-prefix-userhost">${ctx.escapeHtmlText(userHost)}</span>` +
+					`<span class="quiz-bash-prefix-colon">${ctx.escapeHtmlText(colon)}</span>` +
+					`<span class="quiz-bash-prefix-path">${ctx.escapeHtmlText(pathPart)}</span>` +
+					`<span class="quiz-bash-prefix-dollar">${ctx.escapeHtmlText(dollarPart)}</span>` +
+				'</span>';
+			}
+		}
+
+		return `<span class="quiz-command-prefix">${ctx.escapeHtmlText(promptPrefix)}</span>`;
+	}
+
+	function getTextMaxLength(q) {
+		const candidates = [
+			q?.maxLength,
+			q?.textMaxLength,
+			q?.text?.maxLength,
+			q?.commandMaxLength,
+			q?.terminalMaxLength,
+			q?.terminal?.maxLength
+		];
+
+		for (const value of candidates) {
+			const n = Number(value);
+			if (Number.isFinite(n) && n > 0) return Math.floor(n);
+		}
+
+		return null;
+	}
+
+	function sliceToMaxChars(value, maxLength) {
+		if (!Number.isFinite(maxLength) || maxLength <= 0) return String(value ?? "");
+		return Array.from(String(value ?? "")).slice(0, maxLength).join("");
+	}
+
+	function sanitizeTextAnswerValue(q, value) {
+		let out = String(value ?? "");
+
+		if (isTerminalTextQuestion(q)) {
+			out = out.replace(/[\r\n]+/g, "");
+		}
+
+		const maxLength = getTextMaxLength(q);
+		if (Number.isFinite(maxLength) && maxLength > 0) {
+			out = sliceToMaxChars(out, maxLength);
+		}
+
+		return out;
+	}
+
+	function getTextAcceptedAnswers(q) {
+		const values = [];
+
+		if (Array.isArray(q?.acceptedAnswers)) values.push(...q.acceptedAnswers);
+		if (Array.isArray(q?.acceptableAnswers)) values.push(...q.acceptableAnswers);
+		if (Array.isArray(q?.correctAnswers)) values.push(...q.correctAnswers);
+		if (typeof q?.correctText === "string") values.push(q.correctText);
+		if (typeof q?.answer === "string") values.push(q.answer);
+
+		return values
+			.filter(v => v !== null && v !== undefined)
+			.map(v => String(v));
+	}
+
+	function normalizeTextAnswer(value, { caseSensitive = false } = {}) {
+		let out = String(value ?? "")
+			.normalize("NFD")
+			.replace(/[\u0300-\u036f]/g, "")
+			.replace(/\s+/g, " ")
+			.trim();
+
+		if (!caseSensitive) out = out.toLowerCase();
+		return out;
+	}
+
+	function isTextAnswerCorrect(q, value) {
+		const accepted = getTextAcceptedAnswers(q);
+		if (!accepted.length) return false;
+
+		return accepted.some(expected =>
+			normalizeTextAnswer(expected, { caseSensitive: !!q.caseSensitive }) ===
+			normalizeTextAnswer(value, { caseSensitive: !!q.caseSensitive })
+		);
+	}
+
+	function syncTextAreaHeight(textarea) {
+		if (!textarea) return;
+		textarea.style.height = "auto";
+		textarea.style.height = `${Math.max(220, textarea.scrollHeight)}px`;
+	}
+
+	function splitTerminalVisualTokens(value, variant) {
+		const raw = String(value ?? "");
+
+		if (variant !== "powershell") {
+			return {
+				leading: "",
+				command: raw,
+				rest: ""
+			};
+		}
+
+		const match = raw.match(/^([ \t]*)(\S+)?([\s\S]*)$/);
+
+		return {
+			leading: match?.[1] ?? "",
+			command: match?.[2] ?? "",
+			rest: match?.[3] ?? ""
+		};
+	}
+
+	// ═══════════════════════════════════════════════════════
+	// FONCTIONS AVEC DÉPENDANCES (utilisent ctx)
+	// ═══════════════════════════════════════════════════════
+
+	function textQuestionCardHtml(q, qi) {
+		const value = typeof ctx.quizState.selections[qi] === "string" ? ctx.quizState.selections[qi] : "";
+		const terminalVariant = getTerminalTextVariant(q);
+		const isTerminal = !!terminalVariant;
+		const isPowerShell = terminalVariant === "powershell";
+		const maxLength = getTextMaxLength(q);
+
+		const statusClass = ctx.quizState.locked
+			? (ctx.isCorrect(qi) ? "correct" : "wrong")
+			: (value.trim() ? "filled" : "");
+
+		const readOnlyAttr = ctx.quizState.locked ? `readonly aria-readonly="true"` : "";
+		const maxLengthAttr = Number.isFinite(maxLength) ? `maxlength="${maxLength}"` : "";
+
+		const placeholder = ctx.escapeHtmlAttr(
+			isTerminal ? (q?.placeholder || "") : (q?.placeholder || "Votre réponse...")
+		);
+		const textareaName = ctx.escapeHtmlAttr(q?.id || `q${qi + 1}`);
+
+		if (isTerminal) {
+			const promptPrefixHtml = renderTerminalPromptPrefixHtml(q);
+			const variantClass = `quiz-terminal-variant-${ctx.escapeHtmlAttr(terminalVariant)}`;
+			const variantAttr = ctx.escapeHtmlAttr(terminalVariant);
+
+			const renderLayerHtml = isPowerShell
+				? `<span class="quiz-command-render" aria-hidden="true"><span class="quiz-command-render-leading"></span><span class="quiz-command-render-command"></span><span class="quiz-command-render-rest"></span></span>`
+				: "";
+
+			return `
+				<div class="qcm-options quiz-text-wrap quiz-text-wrap-command">
+					<div class="quiz-command-shell ${variantClass} ${statusClass}" data-terminal-variant="${variantAttr}">
+						${promptPrefixHtml}
+						<div class="quiz-command-input-wrap">
+							${renderLayerHtml}
+							<span class="quiz-command-measure" aria-hidden="true"></span>
+							<textarea
+								class="quiz-textarea quiz-textarea-command"
+								data-text-answer="1"
+								data-command-answer="1"
+								data-terminal-answer="1"
+								data-terminal-variant="${variantAttr}"
+								name="${textareaName}"
+								placeholder="${placeholder}"
+								spellcheck="false"
+								autocapitalize="off"
+								autocomplete="off"
+								autocorrect="off"
+								rows="1"
+								wrap="off"
+								${maxLengthAttr}
+								${readOnlyAttr}
+							>${ctx.escapeHtmlText(value)}</textarea>
+							<span class="quiz-command-selection" aria-hidden="true"></span>
+							<span class="quiz-command-inline-char" aria-hidden="true"></span>
+							<span class="quiz-command-caret" aria-hidden="true"></span>
+						</div>
+					</div>
+				</div>`;
+		}
+
+		return `
+			<div class="qcm-options quiz-text-wrap">
+				<textarea
+					class="quiz-textarea ${statusClass}"
+					data-text-answer="1"
+					name="${textareaName}"
+					placeholder="${placeholder}"
+					spellcheck="${q?.spellcheck === true ? "true" : "false"}"
+					autocapitalize="off"
+					autocomplete="off"
+					autocorrect="off"
+					${maxLengthAttr}
+					${readOnlyAttr}
+				>${ctx.escapeHtmlText(value)}</textarea>
+			</div>`;
+	}
+
+	function bindTextQuestion(trackItem, qi) {
+		if (!trackItem) return;
+
+		if (typeof trackItem.__quizTextQuestionCleanup === "function") {
+			try { trackItem.__quizTextQuestionCleanup(); } catch (_) {}
+			trackItem.__quizTextQuestionCleanup = null;
+		}
+
+		const textarea = trackItem.querySelector(".quiz-textarea[data-text-answer]");
+		if (!textarea) return;
+
+		const q = ctx.quiz[qi];
+		const terminalVariant = getTerminalTextVariant(q);
+		const isCommand = isCommandTextQuestion(q);
+		const isPowerShell = terminalVariant === "powershell";
+
+		const shell = trackItem.querySelector(".quiz-command-shell");
+		const inputWrap = trackItem.querySelector(".quiz-command-input-wrap");
+		const measure = trackItem.querySelector(".quiz-command-measure");
+		const inlineChar = trackItem.querySelector(".quiz-command-inline-char");
+		const selectionOverlay = trackItem.querySelector(".quiz-command-selection");
+
+		const renderLayer = trackItem.querySelector(".quiz-command-render");
+		const renderLeading = trackItem.querySelector(".quiz-command-render-leading");
+		const renderCommand = trackItem.querySelector(".quiz-command-render-command");
+		const renderRest = trackItem.querySelector(".quiz-command-render-rest");
+
+		const measureWidth = text => {
+			if (!isCommand || !measure) return 0;
+			measure.textContent = text || "";
+			return measure.getBoundingClientRect().width || 0;
+		};
+
+		const normalizeTextareaValue = ({ preserveSelection = true } = {}) => {
+			const rawValue = textarea.value ?? "";
+			const rawStart = typeof textarea.selectionStart === "number" ? textarea.selectionStart : rawValue.length;
+			const rawEnd = typeof textarea.selectionEnd === "number" ? textarea.selectionEnd : rawStart;
+
+			const sanitized = sanitizeTextAnswerValue(q, rawValue);
+
+			if (sanitized !== rawValue) {
+				textarea.value = sanitized;
+
+				if (preserveSelection) {
+					const maxPos = sanitized.length;
+					const nextStart = Math.max(0, Math.min(rawStart, maxPos));
+					const nextEnd = Math.max(0, Math.min(rawEnd, maxPos));
+
+					try {
+						textarea.setSelectionRange(nextStart, nextEnd);
+					} catch (_) {}
+				}
+			}
+
+			return textarea.value ?? "";
+		};
+
+		const getLiveTextStatus = () => {
+			const currentValue = String(textarea.value ?? "");
+
+			if (ctx.quizState.locked) {
+				return isTextAnswerCorrect(q, currentValue) ? "correct" : "wrong";
+			}
+
+			return currentValue.trim().length > 0 ? "filled" : "";
+		};
+
+		const applyLiveTextStatusClasses = () => {
+			const status = getLiveTextStatus();
+
+			[textarea, shell].filter(Boolean).forEach(el => {
+				el.classList.remove("filled", "correct", "wrong");
+				if (status) el.classList.add(status);
+			});
+		};
+
+		const updateTerminalRenderLayer = () => {
+			if (!isPowerShell || !shell || !renderLayer) return;
+
+			const value = String(textarea.value ?? "");
+			const parts = splitTerminalVisualTokens(value, terminalVariant);
+
+			if (renderLeading) renderLeading.textContent = parts.leading || "";
+			if (renderCommand) renderCommand.textContent = parts.command || "";
+			if (renderRest) renderRest.textContent = parts.rest || "";
+
+			renderLayer.style.transform = `translate3d(${-Math.max(0, textarea.scrollLeft || 0)}px, 0, 0)`;
+
+			const hasCommandToken = !!(parts.command && parts.command.length > 0);
+
+			shell.setAttribute("data-ps-render", hasCommandToken ? "1" : "0");
+			shell.setAttribute("data-render-ready", hasCommandToken ? "1" : "0");
+
+			renderLayer.style.opacity = hasCommandToken ? "1" : "0";
+			renderLayer.style.visibility = hasCommandToken ? "visible" : "hidden";
+		};
+
+		const ensureCommandVisualRangeVisible = () => {
+			if (!isCommand || !textarea || !measure) return;
+
+			const value = textarea.value ?? "";
+			const rawStart = typeof textarea.selectionStart === "number" ? textarea.selectionStart : value.length;
+			const rawEnd = typeof textarea.selectionEnd === "number" ? textarea.selectionEnd : rawStart;
+
+			const start = Math.max(0, Math.min(rawStart, value.length));
+			const end = Math.max(0, Math.min(rawEnd, value.length));
+
+			const rangeStart = Math.min(start, end);
+			const rangeEnd = Math.max(start, end);
+
+			const startPx = measureWidth(value.slice(0, rangeStart));
+			const endPx = measureWidth(value.slice(0, rangeEnd));
+
+			const visibleWidth = Math.max(0, textarea.clientWidth || 0);
+			const leftVisible = textarea.scrollLeft || 0;
+			const rightVisible = leftVisible + visibleWidth;
+
+			const fontSize = parseFloat(getComputedStyle(textarea).fontSize) || 16;
+			const rightSafety = Math.max(12, fontSize);
+			const leftSafety = 2;
+
+			if (rangeEnd > rangeStart) {
+				if (endPx + rightSafety > rightVisible) {
+					textarea.scrollLeft = Math.max(0, endPx - visibleWidth + rightSafety);
+				}
+				else if (startPx - leftSafety < leftVisible) {
+					textarea.scrollLeft = Math.max(0, startPx - leftSafety);
+				}
+				return;
+			}
+
+			if (startPx + rightSafety > rightVisible) {
+				textarea.scrollLeft = Math.max(0, startPx - visibleWidth + rightSafety);
+			}
+			else if (startPx - leftSafety < leftVisible) {
+				textarea.scrollLeft = Math.max(0, startPx - leftSafety);
+			}
+		};
+
+		const updateCommandVisuals = () => {
+			if (!isCommand || !shell || !inputWrap || !measure) return;
+
+			const value = textarea.value ?? "";
+			const rawStart = typeof textarea.selectionStart === "number" ? textarea.selectionStart : value.length;
+			const rawEnd = typeof textarea.selectionEnd === "number" ? textarea.selectionEnd : rawStart;
+
+			const start = Math.max(0, Math.min(rawStart, value.length));
+			const end = Math.max(0, Math.min(rawEnd, value.length));
+			const rangeStart = Math.min(start, end);
+			const rangeEnd = Math.max(start, end);
+			const isSelectionRange = rangeEnd > rangeStart;
+
+			const beforeRange = value.slice(0, rangeStart);
+			const selectedText = value.slice(rangeStart, rangeEnd);
+			const scrollLeft = textarea.scrollLeft || 0;
+			const visibleWidth = Math.max(0, textarea.clientWidth || inputWrap.clientWidth || 0);
+
+			const computedShell = getComputedStyle(shell);
+			const computedTextarea = getComputedStyle(textarea);
+			const fontSize = parseFloat(computedTextarea.fontSize) || 16;
+			const fallbackCharWidth = Math.max(8, fontSize * 0.62);
+
+			const caretWidthEndRaw = parseFloat(computedShell.getPropertyValue("--cmd-caret-width-end"));
+			const caretWidthInlineRaw = parseFloat(computedShell.getPropertyValue("--cmd-caret-width-inline"));
+
+			const caretWidthEnd = Number.isFinite(caretWidthEndRaw) && caretWidthEndRaw > 0
+				? caretWidthEndRaw
+				: fallbackCharWidth;
+
+			const caretWidthInline = Number.isFinite(caretWidthInlineRaw) && caretWidthInlineRaw > 0
+				? caretWidthInlineRaw
+				: fallbackCharWidth;
+
+			const beforeRangeWidth = measureWidth(beforeRange);
+			const selectedWidth = isSelectionRange ? Math.max(1, measureWidth(selectedText)) : 0;
+
+			const isFocused = document.activeElement === textarea && !ctx.quizState.locked;
+			const isCollapsed = rangeStart === rangeEnd;
+			const hasInlineChar = rangeStart < value.length;
+
+			let visualWidth = caretWidthEnd;
+			if (isSelectionRange) visualWidth = selectedWidth;
+			else if (hasInlineChar) visualWidth = caretWidthInline;
+
+			const rawVisualX = beforeRangeWidth - scrollLeft;
+			const maxX = Math.max(0, visibleWidth - Math.max(1, visualWidth));
+			const visualX = Math.max(0, Math.min(rawVisualX, maxX));
+
+			inputWrap.style.setProperty("--cmd-caret-x", `${visualX}px`);
+			inputWrap.style.setProperty("--cmd-inline-char-x", `${visualX}px`);
+			inputWrap.style.setProperty("--cmd-selection-x", `${visualX}px`);
+
+			shell.classList.remove("is-focused", "is-caret-end", "is-caret-inline", "is-selection-range");
+
+			if (selectionOverlay) {
+				selectionOverlay.textContent = isSelectionRange ? selectedText : "";
+			}
+
+			if (inlineChar) {
+				inlineChar.textContent = (!isSelectionRange && rangeStart < value.length)
+					? value.charAt(rangeStart)
+					: "";
+			}
+
+			updateTerminalRenderLayer();
+
+			if (!isFocused) return;
+
+			shell.classList.add("is-focused");
+
+			if (!isCollapsed) {
+				shell.classList.add("is-selection-range");
+				return;
+			}
+
+			if (hasInlineChar) shell.classList.add("is-caret-inline");
+			else shell.classList.add("is-caret-end");
+		};
+
+		let commandSelectionSyncRaf = 0;
+		let commandSelectionTracking = false;
+
+		const sync = () => {
+			normalizeTextareaValue({ preserveSelection: true });
+			applyLiveTextStatusClasses();
+
+			if (isCommand) {
+				const style = getComputedStyle(textarea);
+				const fontSize = parseFloat(style.fontSize) || 16;
+				const lineHeight = parseFloat(style.lineHeight) || fontSize;
+				const pxHeight = Math.max(1, Math.ceil(lineHeight));
+
+				textarea.style.height = `${pxHeight}px`;
+				textarea.style.minHeight = `${pxHeight}px`;
+				textarea.style.maxHeight = `${pxHeight}px`;
+
+				ensureCommandVisualRangeVisible();
+				updateCommandVisuals();
+			}
+			else {
+				syncTextAreaHeight(textarea);
+			}
+
+			ctx.viewport.__quizSlideHeightCache?.delete(qi);
+			if (qi === ctx.quizState.current) {
+				ctx.viewport.scheduleViewportHeightSync({ index: qi, animate: false, refresh: true });
+			}
+		};
+
+		const queueSync = () => {
+			if (commandSelectionSyncRaf) return;
+			commandSelectionSyncRaf = requestAnimationFrame(() => {
+				commandSelectionSyncRaf = 0;
+				if (ctx.isDestroyed()) return;
+				sync();
+			});
+		};
+
+		const onDocumentSelectionMove = () => {
+			if (!commandSelectionTracking) return;
+			queueSync();
+		};
+
+		const stopCommandSelectionTracking = () => {
+			if (!commandSelectionTracking) return;
+
+			commandSelectionTracking = false;
+
+			document.removeEventListener("pointermove", onDocumentSelectionMove, true);
+			document.removeEventListener("mousemove", onDocumentSelectionMove, true);
+			document.removeEventListener("selectionchange", onDocumentSelectionMove, true);
+			document.removeEventListener("pointerup", stopCommandSelectionTracking, true);
+			document.removeEventListener("mouseup", stopCommandSelectionTracking, true);
+			window.removeEventListener("blur", stopCommandSelectionTracking, true);
+
+			queueSync();
+		};
+
+		const startCommandSelectionTracking = e => {
+			if (!isCommand || ctx.quizState.locked) return;
+			if (e && typeof e.button === "number" && e.button !== 0) return;
+			if (commandSelectionTracking) return;
+
+			commandSelectionTracking = true;
+
+			document.addEventListener("pointermove", onDocumentSelectionMove, true);
+			document.addEventListener("mousemove", onDocumentSelectionMove, true);
+			document.addEventListener("selectionchange", onDocumentSelectionMove, true);
+			document.addEventListener("pointerup", stopCommandSelectionTracking, true);
+			document.addEventListener("mouseup", stopCommandSelectionTracking, true);
+			window.addEventListener("blur", stopCommandSelectionTracking, true);
+
+			queueSync();
+		};
+
+		const cleanupTextQuestionBinding = () => {
+			stopCommandSelectionTracking();
+
+			if (commandSelectionSyncRaf) {
+				cancelAnimationFrame(commandSelectionSyncRaf);
+				commandSelectionSyncRaf = 0;
+			}
+		};
+
+		trackItem.__quizTextQuestionCleanup = cleanupTextQuestionBinding;
+
+		const commitValue = () => {
+			const finalValue = normalizeTextareaValue({ preserveSelection: true });
+			ctx.quizState.selections[qi] = finalValue;
+			applyLiveTextStatusClasses();
+			ctx.updateNavHighlight();
+			ctx.cards.refreshMetaSlides();
+			sync();
+		};
+
+		textarea.addEventListener("input", () => {
+			queueSync();
+
+			if (ctx.quizState.isSliding || ctx.quizState.locked) return;
+			commitValue();
+		});
+
+		textarea.addEventListener("paste", () => {
+			requestAnimationFrame(() => {
+				queueSync();
+
+				if (ctx.quizState.isSliding || ctx.quizState.locked) return;
+				commitValue();
+			});
+		});
+
+		textarea.addEventListener("focus", () => queueSync());
+		textarea.addEventListener("blur", () => {
+			stopCommandSelectionTracking();
+			queueSync();
+		});
+		textarea.addEventListener("click", () => queueSync());
+		textarea.addEventListener("mouseup", () => queueSync());
+		textarea.addEventListener("keyup", () => queueSync());
+		textarea.addEventListener("select", () => queueSync());
+		textarea.addEventListener("scroll", () => queueSync());
+
+		textarea.addEventListener("pointerdown", startCommandSelectionTracking);
+		textarea.addEventListener("mousedown", startCommandSelectionTracking);
+
+		textarea.addEventListener("keydown", e => {
+			if (isCommand && e.key === "Enter" && !e.shiftKey) {
+				e.preventDefault();
+
+				if (ctx.quizState.isSliding || ctx.quizState.locked) return;
+
+				commitValue();
+
+				if (qi < ctx.quiz.length - 1) {
+					ctx.goToQuestion(qi + 1);
+				}
+				return;
+			}
+
+			if ((e.ctrlKey || e.metaKey) && e.key === "Enter" && qi < ctx.quiz.length - 1) {
+				e.preventDefault();
+				ctx.goToQuestion(qi + 1);
+			}
+
+			queueSync();
+		});
+
+		sync();
+	}
+
+	return {
+		normalizeTerminalVariantName,
+		getTerminalTextVariant,
+		isTerminalTextQuestion,
+		isCommandTextQuestion,
+		getTerminalPromptPrefix,
+		renderTerminalPromptPrefixHtml,
+		getTextMaxLength,
+		sliceToMaxChars,
+		sanitizeTextAnswerValue,
+		getTextAcceptedAnswers,
+		normalizeTextAnswer,
+		isTextAnswerCorrect,
+		syncTextAreaHeight,
+		splitTerminalVisualTokens,
+		textQuestionCardHtml,
+		bindTextQuestion
+	};
+};

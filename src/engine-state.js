@@ -1,0 +1,273 @@
+'use strict';
+
+module.exports = function createStateHandlers(ctx) {
+	// Constantes
+	const NAV_TAB_PRESS_MS = 130;
+	const NAV_TAB_FALLBACK_CLEAR_MS = 320;
+
+	function hasAnyAnswer(i) {
+		const q = ctx.quiz[i], sel = ctx.quizState.selections[i];
+
+		if (ctx.isTextQuestion(q)) {
+			return typeof sel === "string" && sel.trim().length > 0;
+		}
+
+		if (ctx.isOrderingQuestion(q) || ctx.isMatchingQuestion(q)) {
+			return Array.isArray(sel) && sel.some(v => v !== null);
+		}
+
+		if (q.multiSelect) return sel instanceof Set && sel.size > 0;
+		return sel !== null;
+	}
+
+	function isComplete(i) {
+		const q = ctx.quiz[i], sel = ctx.quizState.selections[i];
+
+		if (ctx.isTextQuestion(q)) {
+			return typeof sel === "string" && sel.trim().length > 0;
+		}
+
+		if (ctx.isOrderingQuestion(q) || ctx.isMatchingQuestion(q)) {
+			return Array.isArray(sel) && sel.length > 0 && sel.every(v => v !== null);
+		}
+
+		if (q.multiSelect) return sel instanceof Set && sel.size > 0;
+		return sel !== null;
+	}
+
+	function getMissingIndices() {
+		const missing = [];
+		for (let i = 0; i < ctx.quiz.length; i++) if (!isComplete(i)) missing.push(i);
+		return missing;
+	}
+
+	function isCorrect(i) {
+		const q = ctx.quiz[i], sel = ctx.quizState.selections[i];
+
+		if (ctx.isTextQuestion(q)) {
+			return ctx.terminal.isTextAnswerCorrect(q, sel);
+		}
+
+		if (ctx.isOrderingQuestion(q)) {
+			const co = ctx.getOrderingCorrectOrder(q);
+			if (!Array.isArray(sel) || sel.length !== co.length) return false;
+			return co.every((v, k) => sel[k] === v);
+		}
+
+		if (ctx.isMatchingQuestion(q)) {
+			const rows = ctx.getMatchRows(q), cm = ctx.getMatchCorrectMap(q);
+			if (!Array.isArray(sel) || sel.length !== rows.length || !Array.isArray(cm) || cm.length !== rows.length) return false;
+			return cm.every((v, k) => sel[k] === v);
+		}
+
+		if (q.multiSelect) {
+			if (!(sel instanceof Set) || !Array.isArray(q.correctIndices) || sel.size !== q.correctIndices.length) return false;
+			return q.correctIndices.every(ci => sel.has(ci));
+		}
+
+		return sel !== null && sel === q.correctIndex;
+	}
+
+	function computeScorePercent() {
+		let correct = 0;
+		for (let i = 0; i < ctx.quiz.length; i++) if (isCorrect(i)) correct++;
+		return { pct: Math.round((correct / ctx.quiz.length) * 100), correct, total: ctx.quiz.length };
+	}
+
+	const getSubmitSlideSignature = () => JSON.stringify({ missing: getMissingIndices(), lastQuestionIndex: ctx.quizState.lastQuestionIndex });
+	const getResultsSlideSignature = () => {
+		const { pct, correct, total } = computeScorePercent();
+		return JSON.stringify({ locked: ctx.quizState.locked, pct, correct, total });
+	};
+
+	function clearNavTabPressState(tab) {
+		if (!tab) return;
+		if (tab.__quizPressClearTimer) {
+			clearTimeout(tab.__quizPressClearTimer);
+			tab.__quizPressClearTimer = 0;
+		}
+		delete tab.dataset.quizPressing;
+		tab.classList.remove("is-pressing");
+	}
+
+	function setNavTabPressState(tab, on) {
+		if (!tab) return;
+		if (on) {
+			if (tab.__quizPressClearTimer) {
+				clearTimeout(tab.__quizPressClearTimer);
+				tab.__quizPressClearTimer = 0;
+			}
+			tab.dataset.quizPressing = "1";
+			tab.classList.add("is-pressing");
+			tab.__quizPressClearTimer = window.setTimeout(() => clearNavTabPressState(tab), NAV_TAB_FALLBACK_CLEAR_MS);
+			return;
+		}
+		clearNavTabPressState(tab);
+	}
+
+	const clearAllNavTabPressStates = () => {
+		ctx.container.querySelectorAll(".quiz-tab").forEach(tab => clearNavTabPressState(tab));
+	};
+	const buildNavTabClass = (baseClass, tab) => `${baseClass}${tab?.dataset?.quizPressing === "1" ? " is-pressing" : ""}`.trim();
+
+	async function playNavTabPressAndNavigate(tab, navigateFn, { fromKeyboard = false } = {}) {
+		if (!tab || typeof navigateFn !== "function") return;
+
+		if (fromKeyboard || tab.dataset.quizPressing !== "1") {
+			clearAllNavTabPressStates();
+			setNavTabPressState(tab, true);
+		}
+
+		navigateFn();
+
+		requestAnimationFrame(() => {
+			requestAnimationFrame(() => {
+				clearNavTabPressState(tab);
+			});
+		});
+	}
+
+	async function goToSlide(index, { forceRender = false } = {}) {
+		ctx.closeHintModal();
+		const next = ctx.clampSlideIndex(index);
+		if (next === ctx.quizState.current && !ctx.quizState.isSliding) return;
+		if (ctx.quizState.isSliding) return ctx.redirectSlide(next, { forceRender });
+		++ctx.quizState.slideToken;
+		const token = ctx.quizState.slideToken;
+		ctx.quizState.prevCurrent = ctx.quizState.current;
+		ctx.quizState.current = next;
+		if (ctx.isQuestionSlideIndex(next)) ctx.quizState.lastQuestionIndex = next;
+		updateNavHighlight();
+		ctx.quizState.isSliding = true;
+		ctx.setSlidingClass(true);
+		if (forceRender) ctx.render();
+		await Promise.allSettled([
+			ctx.warmSlideForAccurateHeight(ctx.quizState.prevCurrent),
+			ctx.warmSlideForAccurateHeight(ctx.quizState.current)
+		]);
+		if (token !== ctx.quizState.slideToken) return;
+		ctx.track.animateTrackToIndex(ctx.quizState.current, {
+			fromX: ctx.track.getSlideTranslateX(ctx.quizState.prevCurrent),
+			fromHeight: Math.max(
+				ctx.viewport.getSlideStableHeight(ctx.quizState.prevCurrent, { refresh: true }) || 0,
+				Math.ceil(ctx.viewport.getTrackElements().viewport?.getBoundingClientRect?.().height || 0),
+				Math.ceil(ctx.viewport.getTrackElements().viewport?.clientHeight || 0)
+			),
+			refreshTargetHeight: true
+		});
+	}
+
+	async function redirectSlide(next, { forceRender = false } = {}) {
+		const targetIndex = ctx.clampSlideIndex(next);
+		if (targetIndex === ctx.quizState.current) return;
+		const snapshot = ctx.track.cancelRunningTrackAnimation();
+		++ctx.quizState.slideToken;
+		const token = ctx.quizState.slideToken;
+		ctx.quizState.prevCurrent = ctx.quizState.current;
+		ctx.quizState.current = targetIndex;
+		if (ctx.isQuestionSlideIndex(targetIndex)) ctx.quizState.lastQuestionIndex = targetIndex;
+		updateNavHighlight();
+		ctx.quizState.isSliding = true;
+		ctx.setSlidingClass(true);
+		if (forceRender) ctx.render();
+		await ctx.warmSlideForAccurateHeight(ctx.quizState.current).catch(() => {});
+		if (token !== ctx.quizState.slideToken) return;
+		ctx.track.animateTrackToIndex(ctx.quizState.current, { fromX: snapshot.x, fromHeight: snapshot.height, refreshTargetHeight: true });
+	}
+
+	function updateNavHighlight() {
+		ctx.container.querySelectorAll("[data-nav]").forEach(tab => {
+			const i = Number(tab.dataset.nav);
+			tab.className = buildNavTabClass(`quiz-tab ${ctx.cards.tabClass(i)}`.trim(), tab);
+		});
+		const resultsTab = ctx.container.querySelector("[data-nav-results]");
+		if (resultsTab) {
+			const active = (ctx.isSubmitSlideIndex(ctx.quizState.current) || ctx.isResultsSlideIndex(ctx.quizState.current)) ? "active" : "";
+			resultsTab.className = buildNavTabClass(`quiz-tab is-result ${active}`.trim(), resultsTab);
+		}
+	}
+
+	const goToQuestion = index => {
+		ctx.quizState.pendingResultsLock = false;
+		goToSlide(ctx.clamp(index, 0, ctx.quiz.length - 1), { forceRender: false });
+	};
+
+	function goToSubmit() {
+		if (ctx.isQuestionSlideIndex(ctx.quizState.current)) ctx.quizState.lastQuestionIndex = ctx.quizState.current;
+		ctx.quizState.pendingResultsLock = false;
+		goToSlide(ctx.SLIDE_SUBMIT_INDEX, { forceRender: false });
+	}
+
+	function goToResults() {
+		if (ctx.isQuestionSlideIndex(ctx.quizState.current)) ctx.quizState.lastQuestionIndex = ctx.quizState.current;
+		ctx.quizState.pendingResultsLock = true;
+
+		if (ctx.isExamMode && ctx.examStarted && !ctx.examEnded) {
+			ctx.examEnded = true;
+			ctx.exam.stopExamTimer();
+			ctx.exam.updateExamTimerDisplay();
+		}
+
+		updateNavHighlight();
+		goToSlide(ctx.SLIDE_RESULTS_INDEX, { forceRender: false });
+	}
+
+	function resetQuiz({ preserveSliding = false } = {}) {
+		ctx.closeHintModal();
+		ctx.track.clearTrackTransitionFallback();
+		ctx.viewport.destroyActiveSlideResizeObserver();
+		ctx.viewport.destroyAllSlidesResizeObserver();
+		ctx.viewport.destroyViewportResizeObserver();
+		ctx.clearBackgroundWarmIdleHandle();
+		ctx.cancelEnsureTrackVisibleRaf();
+
+		ctx.__quizBackgroundWarmStarted = false;
+
+		ctx.quizState.selections = ctx.initSelections();
+		ctx.quizState.current = 0;
+		ctx.quizState.prevCurrent = 0;
+		ctx.quizState.lastQuestionIndex = 0;
+		ctx.quizState.locked = false;
+		ctx.quizState.pendingResultsLock = false;
+		ctx.quizState.shuffleMap = ctx.buildShuffleMap();
+		ctx.quizState.orderingPick = ctx.initOrderingPicks();
+		ctx.quizState.matchPick = ctx.initMatchPicks();
+		ctx.quizState.slideToken++;
+
+		if (!preserveSliding) ctx.quizState.isSliding = false;
+		ctx.setSlidingClass(false);
+
+		ctx.__quizSlideHeightCache?.clear();
+		ctx.__quizWarmSlidePromises?.clear();
+
+		ctx.examStarted = false;
+		ctx.examEnded = false;
+		ctx.examStartTime = 0;
+		ctx.examTimeRemaining = ctx.examDurationMs;
+		ctx.exam.stopExamTimer();
+
+		ctx.render();
+	}
+
+	return {
+		hasAnyAnswer,
+		isComplete,
+		getMissingIndices,
+		isCorrect,
+		computeScorePercent,
+		getSubmitSlideSignature,
+		getResultsSlideSignature,
+		clearNavTabPressState,
+		setNavTabPressState,
+		clearAllNavTabPressStates,
+		buildNavTabClass,
+		playNavTabPressAndNavigate,
+		goToSlide,
+		redirectSlide,
+		updateNavHighlight,
+		goToQuestion,
+		goToSubmit,
+		goToResults,
+		resetQuiz
+	};
+};
