@@ -289,6 +289,8 @@ function resolveAllPendingAsync(value = false) {
 	}
 }
 
+const setSlidingClass = on => container.classList.toggle("quiz-is-sliding", !!on);
+
 // Étendre ctx avec les variables et fonctions partagées
 Object.assign(ctx, {
 	SLIDE_SUBMIT_INDEX,
@@ -565,7 +567,6 @@ function readCurrentTrackTranslateX() {
 	}
 }
 
-const setSlidingClass = on => container.classList.toggle("quiz-is-sliding", !!on);
 const getSlidingWindow = () => ({ from: Math.min(quizState.prevCurrent, quizState.current), to: Math.max(quizState.prevCurrent, quizState.current) });
 
 function primeTrackAndViewportForSlideStart(startX, lockedHeight) {
