@@ -113,6 +113,12 @@ async function renderInteractiveQuiz(context) {
 	const hint = createHintHandlers(ctx);
 	const questions = createQuestionHandlers(ctx);
 
+	// Fonctions utilitaires définies avant leur utilisation dans Object.assign
+	const isQuestionSlideIndex = i => i >= 0 && i < quiz.length;
+	const isSubmitSlideIndex = i => i === SLIDE_SUBMIT_INDEX;
+	const isResultsSlideIndex = i => i === SLIDE_RESULTS_INDEX;
+	const clampSlideIndex = i => Math.max(0, Math.min(TOTAL_SLIDES - 1, i));
+
 	// Attacher les modules à ctx pour référence croisée
 	Object.assign(ctx, {
 		sanitize: sanitizer,
@@ -164,11 +170,7 @@ async function renderInteractiveQuiz(context) {
 		isQuestionSlideIndex,
 		isSubmitSlideIndex,
 		isResultsSlideIndex,
-		clampSlideIndex,
-		// Fonctions utilitaires lifecycle
-		clearBackgroundWarmIdleHandle,
-		cancelEnsureTrackVisibleRaf,
-		waitFrames
+		clampSlideIndex
 	});
 
 function firstArray(...candidates) {
@@ -210,10 +212,6 @@ const initMatchPicks = () => quiz.map(() => null);
 const SLIDE_SUBMIT_INDEX = quiz.length;
 const SLIDE_RESULTS_INDEX = quiz.length + 1;
 const TOTAL_SLIDES = quiz.length + 2;
-const isQuestionSlideIndex = i => i >= 0 && i < quiz.length;
-const isSubmitSlideIndex = i => i === SLIDE_SUBMIT_INDEX;
-const isResultsSlideIndex = i => i === SLIDE_RESULTS_INDEX;
-const clampSlideIndex = i => Math.max(0, Math.min(TOTAL_SLIDES - 1, i));
 
 const quizState = {
 	selections: initSelections(),
@@ -375,7 +373,10 @@ Object.assign(ctx, {
 		return Math.max(1, Math.ceil(max + padding));
 	},
 	setSlidingClass,
-	warmSlideForAccurateHeight
+	warmSlideForAccurateHeight,
+	clearBackgroundWarmIdleHandle,
+	cancelEnsureTrackVisibleRaf,
+	waitFrames
 });
 
 function restartAsyncLifecycle() {
