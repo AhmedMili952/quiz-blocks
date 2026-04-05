@@ -1,10 +1,10 @@
 'use strict';
 
 const obsidian = require("obsidian");
-const { parseQuizSource } = require("./quiz-utils");
-const { Q_TYPES, loadReact, _setIcon, _iconSpan, makeDefault, md2html, escHtml, esc5 } = require("./builder-utils");
-const { exportQuestion, exportAll, exportAllWithFence } = require("./builder-export");
-const { ConfirmModal, TypePickerModal, ImportQuizModal, QuizFileSuggestModal, ImportFromNoteModal } = require("./builder-modals");
+const { parseQuizSource } = require("../quiz-utils");
+const { Q_TYPES, loadReact, _setIcon, _iconSpan, makeDefault, md2html, escHtml, esc5 } = require("./utils");
+const { exportQuestion, exportAll, exportAllWithFence } = require("./export");
+const { ConfirmModal, TypePickerModal, ImportQuizModal, QuizFileSuggestModal, ImportFromNoteModal } = require("./modals");
 
 const VIEW_TYPE = "quiz-blocks-builder";
 

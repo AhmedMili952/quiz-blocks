@@ -1,8 +1,8 @@
 'use strict';
 
 const obsidian = require("obsidian");
-const { parseQuizSource } = require("./quiz-utils");
-const { Q_TYPES, _setIcon, makeDefault } = require("./builder-utils");
+const { parseQuizSource } = require("../quiz-utils");
+const { Q_TYPES, _setIcon, makeDefault } = require("./utils");
 
 /* ════════════════════════════════════════════════════════
    CONFIRM MODAL

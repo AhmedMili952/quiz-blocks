@@ -2,7 +2,7 @@
 
 const obsidian = require("obsidian");
 const { parseQuizSource, renderInteractiveQuiz } = require("./engine");
-const { QuizBuilderView, VIEW_TYPE } = require("./builder");
+const { QuizBuilderView, VIEW_TYPE } = require("./editor");
 
 const PLUGIN_ID = "quiz-blocks";
 const PLUGIN_NAME = "Quiz Blocks";

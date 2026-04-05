@@ -1,18 +1,18 @@
 'use strict';
 
 const { parseQuizSource, extractExamOptions, renderParagraph } = require("./quiz-utils");
-const createTerminalHandlers = require("./engine-terminal");
-const createSanitizer = require("./engine-sanitizer");
-const createResourceHandlers = require("./engine-resources");
-const createExamHandlers = require("./engine-exam");
-const createCardRenderers = require("./engine-cards");
-const createViewportHandlers = require("./engine-viewport");
-const createTrackHandlers = require("./engine-track");
-const createZoomHandlers = require("./engine-zoom");
-const createInteractionHandlers = require("./engine-interactions");
-const createStateHandlers = require("./engine-state");
-const createHintHandlers = require("./engine-hint");
-const createQuestionHandlers = require("./engine-questions");
+const createTerminalHandlers = require("./engine/terminal");
+const createSanitizer = require("./engine/sanitizer");
+const createResourceHandlers = require("./engine/resources");
+const createExamHandlers = require("./engine/exam");
+const createCardRenderers = require("./engine/cards");
+const createViewportHandlers = require("./engine/viewport");
+const createTrackHandlers = require("./engine/track");
+const createZoomHandlers = require("./engine/zoom");
+const createInteractionHandlers = require("./engine/interactions");
+const createStateHandlers = require("./engine/state");
+const createHintHandlers = require("./engine/hint");
+const createQuestionHandlers = require("./engine/questions");
 
 async function renderInteractiveQuiz(context) {
 
@@ -2179,7 +2179,7 @@ function renderQuizPromptHtml(q) {
 }
 
 function orderingCardHtml(q, qi) {
-	const items = getOrderingItems(q);
+	const items = questions.getOrderingItems(q);
 	const sel = quizState.selections[qi];
 	const slotLabels = questions.getOrderingSlotLabels(q);
 	const correctOrder = questions.getOrderingCorrectOrder(q);
@@ -2221,8 +2221,8 @@ function orderingCardHtml(q, qi) {
 }
 
 function matchingCardHtml(q, qi) {
-	const rows = getMatchRows(q);
-	const choices = getMatchChoices(q);
+	const rows = questions.getMatchRows(q);
+	const choices = questions.getMatchChoices(q);
 	const correctMap = questions.getMatchCorrectMap(q);
 	const sel = quizState.selections[qi];
 	const shuffleData = quizState.shuffleMap[qi] || {};
@@ -3462,7 +3462,7 @@ function bindBinaryQuestion(trackItem, qi, isMulti) {
 }
 
 function bindOrderingQuestion(trackItem, qi, q) {
-	const qItems = getOrderingItems(q);
+	const qItems = questions.getOrderingItems(q);
 	if (!Array.isArray(quizState.selections[qi]) || quizState.selections[qi].length !== qItems.length) quizState.selections[qi] = Array(qItems.length).fill(null);
 
 	trackItem.querySelectorAll("[data-order-item]").forEach(el => {
@@ -3577,7 +3577,7 @@ function bindOrderingQuestion(trackItem, qi, q) {
 }
 
 function bindMatchingQuestion(trackItem, qi, q) {
-	const rows = getMatchRows(q);
+	const rows = questions.getMatchRows(q);
 	if (!Array.isArray(quizState.selections[qi]) || quizState.selections[qi].length !== rows.length) quizState.selections[qi] = Array(rows.length).fill(null);
 
 	trackItem.querySelectorAll("[data-match-choice]").forEach(el => {

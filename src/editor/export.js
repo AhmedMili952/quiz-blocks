@@ -1,6 +1,6 @@
 'use strict';
 
-const { escHtml, esc5, md2html } = require("./builder-utils");
+const { escHtml, esc5, md2html } = require("./utils");
 
 function exportQuestion(q, idx) {
 	const id = q.title ? q.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 20) : `q${idx + 1}`;
