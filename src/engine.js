@@ -644,7 +644,7 @@ function bindAllSlidesResizeObserver() {
 		if (!touched) return;
 
 		if (quizState.isSliding && slidingTouched) {
-			const liveMaxHeight = getMaxRenderedSlideHeight({ refresh: true, padding: 24 });
+			const liveMaxHeight = viewport.getMaxRenderedSlideHeight({ refresh: true, padding: 24 });
 			const currentViewportHeight = Math.max(
 				1,
 				Math.ceil(parseFloat(viewport.style.height || "0") || 0),
@@ -703,56 +703,10 @@ function cancelRunningTrackAnimation() {
 	return { x: currentX, height: currentHeight };
 }
 
-function getSlideStableHeight(index = quizState.current, { refresh = false } = {}) {
-	const cached = viewport.__quizSlideHeightCache.get(index);
-	if (!refresh && Number.isFinite(cached) && cached > 0) return cached;
-	const item = viewport.getTrackItem(index);
-	const h = viewport.getElementStableHeight(item);
-	if (h > 0) __quizSlideHeightCache.set(index, h);
-	return h;
-}
-
-function getMaxRenderedSlideHeight({ refresh = false, padding = 24 } = {}) {
-	const items = viewport.getTrackItems();
-	if (!items.length) return Math.max(1, padding);
-	let max = 0;
-	items.forEach((item, index) => {
-		if (!item) return;
-		let h = 0;
-		if (refresh) {
-			h = viewport.getElementStableHeight(item);
-			if (h > 0) __quizSlideHeightCache.set(index, h);
-		} else {
-			h = getSlideStableHeight(index, { refresh: false });
-			if (!h || h <= 0) {
-				h = viewport.getElementStableHeight(item);
-				if (h > 0) __quizSlideHeightCache.set(index, h);
-			}
-		}
-		if (h > max) max = h;
-	});
-	return Math.max(1, Math.ceil(max + Math.max(0, Number(padding) || 0)));
-}
-
-function setViewportHeight(height, { animate = false } = {}) {
-	const { viewport } = viewport.getTrackElements();
-	if (!viewport) return false;
-	const h = Math.max(1, Math.ceil(Number(height) || 0));
-	viewport.style.transition = animate ? "height 220ms cubic-bezier(0.16, 1, 0.3, 1)" : "none";
-	viewport.style.height = `${h}px`;
-	viewport.dataset.quizHeightReady = "1";
-	return true;
-}
-
-function syncViewportHeight({ index = quizState.current, animate = false, refresh = false } = {}) {
-	const h = getSlideStableHeight(index, { refresh });
-	return h > 0 ? setViewportHeight(h, { animate }) : false;
-}
-
 function settleViewportHeightToIndex(index, { animate = true, refresh = true } = {}) {
 	const { viewport } = viewport.getTrackElements();
 	if (!viewport) return;
-	const targetHeight = Math.max(1, getSlideStableHeight(index, { refresh }) || 0);
+	const targetHeight = Math.max(1, viewport.getSlideStableHeight(index, { refresh }) || 0);
 	if (!targetHeight) return;
 	const currentHeight = Math.max(
 		1,
@@ -760,7 +714,7 @@ function settleViewportHeightToIndex(index, { animate = true, refresh = true } =
 		Math.ceil(viewport.getBoundingClientRect().height || 0),
 		Math.ceil(viewport.clientHeight || 0)
 	);
-	if (Math.abs(currentHeight - targetHeight) <= 1) return void setViewportHeight(targetHeight, { animate: false });
+	if (Math.abs(currentHeight - targetHeight) <= 1) return void viewport.viewport.setViewportHeight(targetHeight, { animate: false });
 	viewport.style.transition = animate ? "height 240ms cubic-bezier(0.16, 1, 0.3, 1)" : "none";
 	viewport.style.height = `${targetHeight}px`;
 	viewport.dataset.quizHeightReady = "1";
@@ -784,7 +738,7 @@ function scheduleViewportHeightSync({ delay = 0, index = quizState.current, anim
 	const run = () => {
 		__quizHeightRaf = requestAnimationFrame(() => {
 			__quizHeightRaf = 0;
-			syncViewportHeight({ index, animate, refresh });
+			viewport.syncViewportHeight({ index, animate, refresh });
 			if (index === quizState.current) {
 				bindCurrentSlideMediaHeightSync();
 				bindActiveSlideResizeObserver();
@@ -808,7 +762,7 @@ function primeAllSlideHeights({ retries = 8, syncCurrent = true } = {}) {
 		if (h > 0) __quizSlideHeightCache.set(index, h);
 		else zeroCount++;
 	});
-	if (syncCurrent) syncViewportHeight({ index: quizState.current, animate: false, refresh: true });
+	if (syncCurrent) viewport.syncViewportHeight({ index: quizState.current, animate: false, refresh: true });
 	if (zeroCount > 0 && retries > 0) {
 		__quizPrimeHeightsRaf = requestAnimationFrame(() => {
 			__quizPrimeHeightsRaf = 0;
@@ -996,7 +950,7 @@ function applyTrackPositionAndHeightInstant() {
 	track.style.transition = "none";
 	track.style.willChange = "";
 	setTrackTransformPx(getSlideTranslateX(quizState.current));
-	const ok = syncViewportHeight({ index: quizState.current, animate: false, refresh: true });
+	const ok = viewport.syncViewportHeight({ index: quizState.current, animate: false, refresh: true });
 	bindCurrentSlideMediaHeightSync();
 	bindActiveSlideResizeObserver();
 	syncTrackViewportIsolation();
@@ -1013,9 +967,9 @@ function ensureTrackVisibleAfterLayout(retries = 24, epoch = currentAsyncEpoch()
 	track.style.transition = "none";
 	track.style.willChange = "";
 	setTrackTransformPx(getSlideTranslateX(quizState.current));
-	const h = getSlideStableHeight(quizState.current, { refresh: true });
+	const h = viewport.getSlideStableHeight(quizState.current, { refresh: true });
 	if (h > 0) {
-		setViewportHeight(h, { animate: false });
+		viewport.setViewportHeight(h, { animate: false });
 		bindCurrentSlideMediaHeightSync();
 		bindActiveSlideResizeObserver();
 		syncTrackViewportIsolation();
@@ -1086,7 +1040,7 @@ function finishTrackSlideAnimation(token, targetIndex) {
 	const refreshedTargetHeight = Math.max(
 		1,
 		Number(viewport?.__quizTargetHeight) || 0,
-		getSlideStableHeight(targetIndex, { refresh: true }) || 0,
+		viewport.getSlideStableHeight(targetIndex, { refresh: true }) || 0,
 		viewport.getElementStableHeight(viewport.getTrackItem(targetIndex)) || 0
 	);
 	const finalHeight = Math.max(1, Math.ceil(refreshedTargetHeight + 4));
@@ -1153,18 +1107,18 @@ function animateTrackToIndex(targetIndex, { fromX = null, fromHeight = null, ref
 	const startHeight = Math.max(
 		1,
 		Number(fromHeight) || 0,
-		getSlideStableHeight(quizState.prevCurrent, { refresh: true }) || 0,
+		viewport.getSlideStableHeight(quizState.prevCurrent, { refresh: true }) || 0,
 		viewport.getElementStableHeight(viewport.getTrackItem(quizState.prevCurrent)) || 0,
 		Math.ceil(viewport.getBoundingClientRect().height || 0),
 		Math.ceil(viewport.clientHeight || 0)
 	);
 	const targetHeight = Math.max(
 		1,
-		getSlideStableHeight(targetIndex, { refresh: refreshTargetHeight }) || 0,
+		viewport.getSlideStableHeight(targetIndex, { refresh: refreshTargetHeight }) || 0,
 		viewport.getElementStableHeight(viewport.getTrackItem(targetIndex)) || 0,
 		startHeight
 	);
-	const lockedHeight = Math.max(1, Math.ceil(startHeight), Math.ceil(targetHeight), Math.ceil(getMaxRenderedSlideHeight({ refresh: true, padding: 24 })));
+	const lockedHeight = Math.max(1, Math.ceil(startHeight), Math.ceil(targetHeight), Math.ceil(viewport.getMaxRenderedSlideHeight({ refresh: true, padding: 24 })));
 	const deltaPx = Math.abs(targetX - startX);
 	const viewportWidth = Math.max(1, viewport.clientWidth || Math.ceil(viewport.getBoundingClientRect().width) || 1);
 	const dist = Math.max(1, deltaPx / viewportWidth);
@@ -1179,7 +1133,7 @@ function animateTrackToIndex(targetIndex, { fromX = null, fromHeight = null, ref
 
 	if (dur <= 0) {
 		setTrackTransformPx(targetX);
-		setViewportHeight(targetHeight, { animate: false });
+		viewport.setViewportHeight(targetHeight, { animate: false });
 		viewport.style.minHeight = "";
 		finishTrackSlideAnimation(token, targetIndex);
 		return;
@@ -1526,7 +1480,7 @@ async function goToSlide(index, { forceRender = false } = {}) {
 	animateTrackToIndex(quizState.current, {
 		fromX: getSlideTranslateX(quizState.prevCurrent),
 		fromHeight: Math.max(
-			getSlideStableHeight(quizState.prevCurrent, { refresh: true }) || 0,
+			viewport.getSlideStableHeight(quizState.prevCurrent, { refresh: true }) || 0,
 			Math.ceil(viewport.getTrackElements().viewport?.getBoundingClientRect?.().height || 0),
 			Math.ceil(viewport.getTrackElements().viewport?.clientHeight || 0)
 		),
@@ -3266,7 +3220,7 @@ function bindViewportResizeObserver() {
 		track.style.transformStyle = "preserve-3d";
 		setTrackTransformPx(getSlideTranslateX(quizState.current));
 		__quizSlideHeightCache.delete(quizState.current);
-		syncViewportHeight({ index: quizState.current, animate: false, refresh: true });
+		viewport.syncViewportHeight({ index: quizState.current, animate: false, refresh: true });
 		primeAllSlideHeights({ retries: settle ? 4 : 2, syncCurrent: true });
 		bindCurrentSlideMediaHeightSync();
 		bindActiveSlideResizeObserver();
