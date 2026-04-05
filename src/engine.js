@@ -128,6 +128,8 @@ async function renderInteractiveQuiz(context) {
 		hint,
 		questions,
 		// Fonctions exposées directement
+		escapeHtmlText: sanitizer.escapeHtmlText,
+		escapeHtmlAttr: sanitizer.escapeHtmlAttr,
 		openHintModal: hint.openHintModal,
 		closeHintModal: hint.closeHintModal,
 		getOrderingItems: questions.getOrderingItems,
@@ -322,7 +324,9 @@ Object.assign(ctx, {
 			max = Math.max(max, h);
 		});
 		return Math.max(1, Math.ceil(max + padding));
-	}
+	},
+	setSlidingClass,
+	warmSlideForAccurateHeight
 });
 
 function restartAsyncLifecycle() {
