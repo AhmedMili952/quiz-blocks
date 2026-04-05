@@ -159,7 +159,16 @@ async function renderInteractiveQuiz(context) {
 		playNavTabPressAndNavigate: state.playNavTabPressAndNavigate,
 		clearAllNavTabPressStates: state.clearAllNavTabPressStates,
 		setNavTabPressState: state.setNavTabPressState,
-		buildNavTabClass: state.buildNavTabClass
+		buildNavTabClass: state.buildNavTabClass,
+		// Fonctions utilitaires slides
+		isQuestionSlideIndex,
+		isSubmitSlideIndex,
+		isResultsSlideIndex,
+		clampSlideIndex,
+		// Fonctions utilitaires lifecycle
+		clearBackgroundWarmIdleHandle,
+		cancelEnsureTrackVisibleRaf,
+		waitFrames
 	});
 
 function firstArray(...candidates) {
@@ -291,6 +300,44 @@ function resolveAllPendingAsync(value = false) {
 
 const setSlidingClass = on => container.classList.toggle("quiz-is-sliding", !!on);
 
+function sleep(ms, epoch = currentAsyncEpoch()) {
+	let timer = 0;
+	const waiter = createPendingAsyncWaiter(() => timer && clearTimeout(timer));
+	timer = window.setTimeout(() => waiter.resolve(isQuizInstanceAlive(epoch)), Math.max(0, Number(ms) || 0));
+	return waiter.promise;
+}
+
+function nextFrame(epoch = currentAsyncEpoch()) {
+	let raf = 0;
+	const waiter = createPendingAsyncWaiter(() => raf && cancelAnimationFrame(raf));
+	raf = requestAnimationFrame(() => waiter.resolve(isQuizInstanceAlive(epoch)));
+	return waiter.promise;
+}
+
+async function waitFrames(count = 1, epoch = currentAsyncEpoch()) {
+	for (let i = 0; i < count; i++) {
+		const alive = await nextFrame(epoch);
+		if (!alive) return false;
+	}
+	return isQuizInstanceAlive(epoch);
+}
+
+function cancelEnsureTrackVisibleRaf() {
+	if (__quizEnsureVisibleRaf) {
+		cancelAnimationFrame(__quizEnsureVisibleRaf);
+		__quizEnsureVisibleRaf = 0;
+	}
+}
+
+function clearBackgroundWarmIdleHandle() {
+	if (!__quizBackgroundWarmIdleHandle) return;
+	if (__quizBackgroundWarmIdleType === "idle" && "cancelIdleCallback" in window) {
+		try { window.cancelIdleCallback(__quizBackgroundWarmIdleHandle); } catch (_) {}
+	} else clearTimeout(__quizBackgroundWarmIdleHandle);
+	__quizBackgroundWarmIdleHandle = 0;
+	__quizBackgroundWarmIdleType = "";
+}
+
 // Étendre ctx avec les variables et fonctions partagées
 Object.assign(ctx, {
 	SLIDE_SUBMIT_INDEX,
@@ -350,28 +397,6 @@ function restartAsyncLifecycle() {
 	__quizWarmSlidePromises.clear();
 }
 
-function sleep(ms, epoch = currentAsyncEpoch()) {
-	let timer = 0;
-	const waiter = createPendingAsyncWaiter(() => timer && clearTimeout(timer));
-	timer = window.setTimeout(() => waiter.resolve(isQuizInstanceAlive(epoch)), Math.max(0, Number(ms) || 0));
-	return waiter.promise;
-}
-
-function nextFrame(epoch = currentAsyncEpoch()) {
-	let raf = 0;
-	const waiter = createPendingAsyncWaiter(() => raf && cancelAnimationFrame(raf));
-	raf = requestAnimationFrame(() => waiter.resolve(isQuizInstanceAlive(epoch)));
-	return waiter.promise;
-}
-
-async function waitFrames(count = 1, epoch = currentAsyncEpoch()) {
-	for (let i = 0; i < count; i++) {
-		const alive = await nextFrame(epoch);
-		if (!alive) return false;
-	}
-	return isQuizInstanceAlive(epoch);
-}
-
 function bumpSlideGeneration(index) {
 	if (index < 0 || index >= TOTAL_SLIDES) return 0;
 	__quizSlideGeneration[index] = getSlideGeneration(index) + 1;
@@ -379,12 +404,6 @@ function bumpSlideGeneration(index) {
 }
 function bumpAllSlideGenerations() {
 	for (let i = 0; i < TOTAL_SLIDES; i++) bumpSlideGeneration(i);
-}
-function cancelEnsureTrackVisibleRaf() {
-	if (__quizEnsureVisibleRaf) {
-		cancelAnimationFrame(__quizEnsureVisibleRaf);
-		__quizEnsureVisibleRaf = 0;
-	}
 }
 
 const observeTrackItemInAllSlidesResizeObserver = item => {
@@ -500,15 +519,6 @@ function waitForManagedTransitions(entries, fallbackMs, epoch = currentAsyncEpoc
 	if (remaining <= 0) return waiter.promise;
 	timer = window.setTimeout(() => waiter.resolve(isQuizInstanceAlive(epoch)), Math.max(0, Number(fallbackMs) || 0));
 	return waiter.promise;
-}
-
-function clearBackgroundWarmIdleHandle() {
-	if (!__quizBackgroundWarmIdleHandle) return;
-	if (__quizBackgroundWarmIdleType === "idle" && "cancelIdleCallback" in window) {
-		try { window.cancelIdleCallback(__quizBackgroundWarmIdleHandle); } catch (_) {}
-	} else clearTimeout(__quizBackgroundWarmIdleHandle);
-	__quizBackgroundWarmIdleHandle = 0;
-	__quizBackgroundWarmIdleType = "";
 }
 
 function requestQuizIdle(timeout = 500, epoch = currentAsyncEpoch()) {
