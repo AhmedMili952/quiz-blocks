@@ -121,6 +121,43 @@ class QuizBlocksSettingTab extends obsidian.PluginSettingTab {
 		notesEl.createEl("li", { text: "The code block content must be a valid JSON5 array." });
 		notesEl.createEl("li", { text: "Hints, explanations, scoring, navigation, and transitions are supported." });
 		notesEl.createEl("li", { text: "Interactive rendering happens directly inside the note preview." });
+
+		// ─── Available Commands Section ───
+		containerEl.createEl("h3", { text: "Commandes disponibles" });
+
+		const commands = [
+			{ id: "open-quiz-builder", name: "Ouvrir le Quiz Editor" },
+			{ id: "import-quiz-from-active-note", name: "Importer le quiz de la note active" }
+		];
+
+		for (const cmd of commands) {
+			new obsidian.Setting(containerEl)
+				.setName(cmd.name)
+				.setDesc(`(${cmd.id})`)
+				.addButton(button => {
+					button
+						.setButtonText("Configurer le raccourci")
+						.onClick(() => {
+							this.app.setting.open();
+							this.app.setting.openTabById('hotkeys');
+							const tab = this.app.setting.activeTab;
+							if (tab && tab.searchComponent) {
+								tab.searchComponent.setValue('quiz blocks');
+								if (tab.updateHotkeyVisibility) {
+									tab.updateHotkeyVisibility();
+								}
+							}
+						});
+				});
+		}
+
+		// ─── Keyboard Shortcuts Section ───
+		containerEl.createEl("h3", { text: "Raccourcis par défaut" });
+
+		containerEl.createEl("p", {
+			text: "Vous pouvez configurer les raccourcis clavier dans Paramètres → Raccourcis clavier puis chercher Quiz Blocks.",
+			cls: "setting-item-description"
+		});
 	}
 }
 
@@ -143,7 +180,7 @@ module.exports = class InteractiveQuizPlugin extends obsidian.Plugin {
 
 		this.addCommand({
 			id: "open-quiz-builder",
-			name: "Créer un quiz",
+			name: "Ouvrir le Quiz Editor",
 			callback: async () => {
 				const existing = this.app.workspace.getLeavesOfType(VIEW_TYPE);
 				if (existing.length > 0) {
@@ -155,6 +192,53 @@ module.exports = class InteractiveQuizPlugin extends obsidian.Plugin {
 				this.app.workspace.revealLeaf(leaf);
 			},
 		});
+
+		this.addCommand({
+			id: "import-quiz-from-active-note",
+			name: "Importer le quiz de la note active",
+			callback: async () => {
+				// Check if there's an active file
+				const activeFile = this.app.workspace.getActiveFile();
+				if (!activeFile || !activeFile.path.endsWith('.md')) {
+					new obsidian.Notice("Aucune note active");
+					return;
+				}
+
+				try {
+					// Read file content
+					const content = await this.app.vault.read(activeFile);
+					// Find first quiz-blocks fence
+					const match = content.match(/```quiz-blocks\n([\s\S]*?)\n```/);
+					if (!match) {
+						new obsidian.Notice("Aucun bloc quiz-blocks trouvé dans cette note");
+						return;
+					}
+
+					// Open or get the Quiz Editor
+					const existing = this.app.workspace.getLeavesOfType(VIEW_TYPE);
+					let leaf;
+					if (existing.length > 0) {
+						leaf = existing[0];
+						this.app.workspace.revealLeaf(leaf);
+					} else {
+						leaf = this.app.workspace.getLeaf("tab");
+						await leaf.setViewState({ type: VIEW_TYPE, active: true });
+						this.app.workspace.revealLeaf(leaf);
+					}
+
+					// Import the quiz
+					const view = leaf.view;
+					if (view && view.importQuizSource) {
+						await view.importQuizSource(match[1]);
+						new obsidian.Notice(`Quiz importé depuis ${activeFile.basename}`);
+					}
+				} catch (err) {
+					console.error("Import error:", err);
+					new obsidian.Notice("Erreur lors de l'import");
+				}
+			},
+		});
+
 
 		/* ─── Code Block Processor ─── */
 		this.registerMarkdownCodeBlockProcessor(

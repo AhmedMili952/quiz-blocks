@@ -19,6 +19,18 @@ const Q_TYPES = [
 	{ key: "bash", label: "Terminal Bash", lucide: "terminal", desc: "Terminal Linux/Bash" },
 ];
 
+// Fonction pour charger React dans Obsidian
+function loadReact() {
+  // Vérifier si React est déjà chargé
+  if (typeof window.React !== 'undefined' && typeof window.ReactDOM !== 'undefined') {
+    return { React: window.React, ReactDOM: window.ReactDOM };
+  }
+
+  // Dans l'environnement Obsidian, React est généralement disponible via window
+  // Si ce n'est pas le cas, retourner null pour éviter les erreurs
+  return { React: null, ReactDOM: null };
+}
+
 function _setIcon(el, name) { try { obsidian.setIcon(el, name); } catch (_) {} }
 function _iconSpan(parent, name, cls) { const s = parent.createSpan({ cls: cls || "qb-icon" }); _setIcon(s, name); return s; }
 
@@ -55,6 +67,7 @@ function md2html(src) {
 		.replace(/^> (.+)$/gm, "<blockquote>$1</blockquote>")
 		.replace(/(<blockquote>.*<\/blockquote>\n?)+/g, m => m.replace(/<\/blockquote>\n?<blockquote>/g, "\n"))
 		.replace(/```(\w*)\n([\s\S]*?)```/g, (_, l, c) => "<pre><code>" + c.trim() + "</code></pre>")
+		.replace(/!\[\[([^\]]+)\]\]/g, "<img src=\"$1\" class=\"qb-md-img\" />")
 		.replace(/\n{2,}/g, "</p><p>")
 		.replace(/\n/g, "<br>");
 }
@@ -73,15 +86,26 @@ function exportQuestion(q, idx) {
 	L.push("\t{");
 	L.push(`\t\tid: '${e(id)}',`);
 	L.push(`\t\ttitle: '${e(q.title || `Question ${idx + 1}`)}',`);
-	if (q.resourceButton) L.push(`\t\tresourceButton: {\n\t\t\tlabel: '${e(q.resourceButton.label)}',\n\t\t\tfileName: '${e(q.resourceButton.fileName)}',\n\t\t},`);
-	const hasMd = q.prompt && (/[*#`>\-]/.test(q.prompt) || q.prompt.includes("\n"));
-	if (hasMd) L.push(`\t\tpromptHtml: '${e(md2html(q.prompt))}',`);
-	else L.push(`\t\tprompt: '${e(q.prompt)}',`);
+	if (q.resourceButton) L.push(`\t\tresourceButton: {\n\t\t\tlabel: '${e(q.resourceButton.label)}',\n\t\t\tfileName: '${e(q.resourceButton.fileName)}'\n\t\t},`);
+	if (q._promptHtml) {
+		L.push(`\t\tpromptHtml: '${e(q._promptHtml)}',`);
+	} else if (q.prompt) {
+		const hasMd = q.prompt && (/[*#`>\-]/.test(q.prompt) || q.prompt.includes("\n"));
+		if (hasMd) L.push(`\t\tpromptHtml: '${e(md2html(q.prompt))}',`);
+		else L.push(`\t\tprompt: '${e(q.prompt)}',`);
+	}
 	const t = q._type;
-	if (t === "single") { L.push(`\t\toptions: [\n${q.options.map(o => `\t\t\t'${e(o)}',`).join("\n")}\n\t\t],`); L.push(`\t\tcorrectIndex: ${q.correctIndex ?? 0},`); }
-	if (t === "multi") { L.push(`\t\toptions: [\n${q.options.map(o => `\t\t\t'${e(o)}',`).join("\n")}\n\t\t],`); L.push("\t\tmultiSelect: true,"); L.push(`\t\tcorrectIndices: [${(q.correctIndices || []).join(", ")}],`); }
-	if (t === "ordering") { L.push("\t\tordering: true,"); L.push(`\t\tslots: [${(q.slots || []).map(s => `'${e(s)}'`).join(", ")}],`); L.push(`\t\tpossibilities: [\n${(q.possibilities || []).map(p => `\t\t\t'${e(p)}',`).join("\n")}\n\t\t],`); L.push(`\t\tcorrectOrder: [${(q.correctOrder || []).join(", ")}],`); }
-	if (t === "matching") { L.push("\t\tmatching: true,"); L.push(`\t\trows: [\n${(q.rows || []).map(r => `\t\t\t'${e(r)}',`).join("\n")}\n\t\t],`); L.push(`\t\tchoices: [\n${(q.choices || []).map(c => `\t\t\t'${e(c)}',`).join("\n")}\n\t\t],`); L.push(`\t\tcorrectMap: [${(q.correctMap || []).join(", ")}],`); }
+	if (t === "single") {
+		L.push(`\t\toptions: [\n${q.options.map(o => `\t\t\t'${e(o)}',`).join("\n")}\n\t\t],`);
+		L.push(`\t\tcorrectIndex: ${q.correctIndex ?? 0},`);
+	}
+	if (t === "multi") {
+		L.push(`\t\toptions: [\n${q.options.map(o => `\t\t\t'${e(o)}',`).join("\n")}\n\t\t],`);
+		L.push("\t\tmultiSelect: true,");
+		L.push(`\t\tcorrectIndices: [${(q.correctIndices || []).join(", ")}],`);
+	}
+	if (t === "ordering") { L.push("\t\tordering: true,"); L.push(`\t\tslots: [${(q.slots || []).map(s => `'${e(s)}'`).join(", ")}],`); L.push(`\t\tpossibilities: [\n${(q.possibilities || []).map(p => `\t\t\t'${e(p)}',`).join("\n")}\n\t\t],`); L.push(`\t\tcorrectOrder: [${(q.correctOrder || []).join(", ")}]`); }
+	if (t === "matching") { L.push("\t\tmatching: true,"); L.push(`\t\trows: [\n${(q.rows || []).map(r => `\t\t\t'${e(r)}',`).join("\n")}\n\t\t],`); L.push(`\t\tchoices: [\n${(q.choices || []).map(c => `\t\t\t'${e(c)}',`).join("\n")}\n\t\t],`); L.push(`\t\tcorrectMap: [${(q.correctMap || []).join(", ")}]`); }
 	if (["text", "cmd", "powershell", "bash"].includes(t)) {
 		L.push("\t\ttype: 'text',");
 		if (t === "cmd") L.push("\t\tterminalVariant: 'cmd',");
@@ -90,16 +114,45 @@ function exportQuestion(q, idx) {
 		if (q.commandPrefix && (t === "cmd" || t === "powershell")) L.push(`\t\tcommandPrefix: '${e(q.commandPrefix)}',`);
 		if (q.placeholder) L.push(`\t\tplaceholder: '${e(q.placeholder)}',`);
 		if (q.caseSensitive) L.push("\t\tcaseSensitive: true,");
-		L.push(`\t\tacceptedAnswers: [\n${(q.acceptedAnswers || []).filter(Boolean).map(a => `\t\t\t'${e(a)}',`).join("\n")}\n\t\t],`);
+		L.push(`\t\tacceptedAnswers: [\n${(q.acceptedAnswers || []).filter(Boolean).map(a => `\t\t\t'${e(a)}',`).join("\n")}\n\t\t]`);
 	}
-	if (q.hint) L.push(`\t\thint: '${e(q.hint)}',`);
-	if (q.explain) L.push(`\t\texplainHtml: '${e(md2html(q.explain))}',`);
+	if (q.hint) {
+		const hasExplain = q.explain || q._explainHtml;
+		L.push(`\t\thint: '${e(q.hint)}'${hasExplain ? ',' : ''}`);
+	}
+	if (q._explainHtml) {
+		L.push(`\t\texplainHtml: '${e(q._explainHtml)}'`);
+	} else if (q.explain) {
+		L.push(`\t\texplainHtml: '${e(md2html(q.explain))}'`);
+	}
+
+	if (q._extraFields && Object.keys(q._extraFields).length > 0) {
+		for (const [key, val] of Object.entries(q._extraFields)) {
+			if (typeof val === 'string') {
+				L.push(`\t\t${key}: '${e(val)}',`);
+			} else if (typeof val === 'number') {
+				L.push(`\t\t${key}: ${val},`);
+			} else if (typeof val === 'boolean') {
+				L.push(`\t\t${key}: ${val},`);
+			} else if (Array.isArray(val)) {
+				const items = val.map(v => typeof v === 'string' ? `'${e(v)}'` : v).join(", ");
+				L.push(`\t\t${key}: [${items}],`);
+			}
+		}
+	}
+
 	L.push("\t}");
 	return L.join("\n");
 }
 
-function exportAll(questions) { return "[\n" + questions.map((q, i) => exportQuestion(q, i)).join(",\n\n") + "\n]"; }
-function exportAllWithFence(questions) { return "```quiz-blocks\n" + exportAll(questions) + "\n```"; }
+function exportAll(questions, examOptions = null) {
+	let result = "[\n" + questions.map((q, i) => exportQuestion(q, i)).join(",\n\n") + "\n]";
+	if (examOptions && examOptions.enabled) {
+		result += `,\n\n\t// Options mode examen\n\t{\n\t\texamMode: true,\n\t\texamDurationMinutes: ${examOptions.durationMinutes},\n\t\texamAutoSubmit: ${examOptions.autoSubmit},\n\t\texamShowTimer: ${examOptions.showTimer}\n\t}`;
+	}
+	return result;
+}
+function exportAllWithFence(questions, examOptions = null) { return "```quiz-blocks\n" + exportAll(questions, examOptions) + "\n```"; }
 
 /* ════════════════════════════════════════════════════════
    QUIZ BUILDER VIEW
@@ -112,11 +165,30 @@ class QuizBuilderView extends obsidian.ItemView {
 		this.activeIdx = 0;
 		this.panels = { sidebar: true, editor: true, preview: true, code: false };
 		this._previewDebounce = 0;
+		this.examOptions = {
+			enabled: false,
+			durationMinutes: 10,
+			autoSubmit: true,
+			showTimer: true
+		};
+		this.activeEditorTab = 'content';
+
+		// Saved widths for restoring panels
+		this._savedWidths = {
+			sidebar: 224,
+			editor: 352,
+			preview: 400,
+			code: 288
+		};
+		// Minimum width for any panel
+		this._minPanelWidth = 50;
+		// Threshold to hide panel
+		this._hideThreshold = 10;
 	}
 
 	getViewType() { return VIEW_TYPE; }
-	getDisplayText() { return "Quiz Builder"; }
-	getIcon() { return "file-question"; }
+	getDisplayText() { return "Quiz Editor"; }
+	getIcon() { return "graduation-cap"; }
 
 	async onOpen() {
 		this.contentEl.empty();
@@ -143,9 +215,9 @@ class QuizBuilderView extends obsidian.ItemView {
 
 		const brand = header.createDiv({ cls: "qb-brand" });
 		const logo = brand.createDiv({ cls: "qb-logo" });
-		_setIcon(logo, "file-question");
-		const brandText = brand.createDiv();
-		brandText.createDiv({ cls: "qb-title", text: "Quiz Builder" });
+		_setIcon(logo, "graduation-cap");
+		const brandText = brand.createDiv({ cls: "qb-title-group" });
+		brandText.createDiv({ cls: "qb-title", text: "Quiz Editor" });
 		brandText.createDiv({ cls: "qb-sub", text: "quiz-blocks" });
 
 		const toggles = header.createDiv({ cls: "qb-toggles" });
@@ -155,25 +227,46 @@ class QuizBuilderView extends obsidian.ItemView {
 			_iconSpan(btn, lucide, "qb-toggle-icon");
 			btn.createSpan({ cls: "qb-toggle-label", text: label });
 			btn.addEventListener("click", () => {
+				const wasVisible = this.panels[key];
 				this.panels[key] = !this.panels[key];
 				if (!Object.values(this.panels).some(Boolean)) this.panels[key] = true;
+
+				// If showing a panel, reset ALL panel widths to default
+				if (!wasVisible && this.panels[key]) {
+					const mainEl = this.contentEl.querySelector('.qb-main');
+					if (mainEl) {
+						mainEl.style.setProperty('--qb-sidebar-w', '224px');
+						mainEl.style.setProperty('--qb-editor-w', '352px');
+						mainEl.style.setProperty('--qb-code-w', '288px');
+					}
+				}
+
 				this.syncPanels();
 			});
 		}
 
 		const actions = header.createDiv({ cls: "qb-actions" });
+
+		// Import button
+		const importBtn = actions.createEl("button", { cls: "qb-btn" });
+		_iconSpan(importBtn, "download", "qb-btn-leading-icon");
+		importBtn.createSpan({ text: "Importer" });
+		importBtn.addEventListener("click", () => {
+			new ImportQuizModal(this.app, this).open();
+		});
+
 		this._exportBtn = actions.createEl("button", { cls: "qb-btn qb-btn-accent" });
-		_iconSpan(this._exportBtn, "clipboard-copy", "qb-btn-leading-icon");
+		_iconSpan(this._exportBtn, "share", "qb-btn-leading-icon");
 		this._exportBtn.createSpan({ text: "Exporter" });
 		this._exportBtn.addEventListener("click", () => {
-			navigator.clipboard.writeText(exportAllWithFence(this.questions)).then(() => {
+			navigator.clipboard.writeText(exportAllWithFence(this.questions, this.examOptions)).then(() => {
 				this._exportBtn.empty();
 				_iconSpan(this._exportBtn, "check", "qb-btn-leading-icon");
 				this._exportBtn.createSpan({ text: "Copié !" });
 				this._exportBtn.classList.add("qb-btn-ok");
 				setTimeout(() => {
 					this._exportBtn.empty();
-					_iconSpan(this._exportBtn, "clipboard-copy", "qb-btn-leading-icon");
+					_iconSpan(this._exportBtn, "share", "qb-btn-leading-icon");
 					this._exportBtn.createSpan({ text: "Exporter" });
 					this._exportBtn.classList.remove("qb-btn-ok");
 				}, 2000);
@@ -181,10 +274,38 @@ class QuizBuilderView extends obsidian.ItemView {
 		});
 
 		const main = root.createDiv({ cls: "qb-main" });
+
+		// Initialize CSS custom properties for panel widths on this container
+		if (!main.style.getPropertyValue('--qb-sidebar-w')) {
+			main.style.setProperty('--qb-sidebar-w', '224px'); // 14em default
+			main.style.setProperty('--qb-editor-w', '352px'); // 22em default
+			main.style.setProperty('--qb-code-w', '288px'); // 18em default
+		}
+
 		this.sidebarEl = main.createDiv({ cls: "qb-panel qb-sidebar" });
+
+		// Resizer between sidebar and editor
+		this.resizerSidebarEditor = main.createDiv({ cls: "qb-resizer" });
+		this.resizerSidebarEditor.dataset.resizer = "sidebar-editor";
+
 		this.editorEl = main.createDiv({ cls: "qb-panel qb-editor" });
+
+		// Resizer between editor and preview
+		this.resizerEditorPreview = main.createDiv({ cls: "qb-resizer" });
+		this.resizerEditorPreview.dataset.resizer = "editor-preview";
+
 		this.previewEl = main.createDiv({ cls: "qb-panel qb-preview" });
+
+		// Resizer between preview and code
+		this.resizerPreviewCode = main.createDiv({ cls: "qb-resizer" });
+		this.resizerPreviewCode.dataset.resizer = "preview-code";
+
 		this.codeEl = main.createDiv({ cls: "qb-panel qb-code" });
+
+		// Setup drag-resize handlers
+		this._setupResizer(this.resizerSidebarEditor, this.sidebarEl, this.editorEl, 'sidebar-editor');
+		this._setupResizer(this.resizerEditorPreview, this.editorEl, this.previewEl, 'editor-preview');
+		this._setupResizer(this.resizerPreviewCode, this.previewEl, this.codeEl, 'preview-code');
 
 		const sHead = this.sidebarEl.createDiv({ cls: "qb-sidebar-head" });
 		this.qCountEl = sHead.createSpan({ text: "Questions (1)" });
@@ -192,6 +313,72 @@ class QuizBuilderView extends obsidian.ItemView {
 		_setIcon(addBtn, "plus");
 		addBtn.addEventListener("click", () => this.showTypeModal());
 		this.sidebarListEl = this.sidebarEl.createDiv({ cls: "qb-sidebar-list" });
+
+		// Section Mode Examen
+		const examSection = this.sidebarEl.createDiv({ cls: "qb-collapsible qb-exam-section" });
+		const examSummary = examSection.createEl("summary", { cls: "qb-exam-summary" });
+		_iconSpan(examSummary, "graduation-cap", "qb-exam-summary-icon");
+		examSummary.createSpan({ text: " Mode Examen" });
+		const examBody = examSection.createDiv({ cls: "qb-exam-body" });
+
+		// Options container - disabled when exam mode is off
+		const examOptionsContainer = examBody.createDiv({ cls: "qb-exam-options" });
+
+		// Toggle exam mode
+		const examToggleWrap = examOptionsContainer.createDiv({ cls: "qb-toggle-wrap" });
+		const examTrack = examToggleWrap.createDiv({ cls: `qb-toggle-track ${this.examOptions.enabled ? "on" : ""}` });
+		examTrack.createDiv({ cls: "qb-toggle-thumb" });
+		examToggleWrap.createSpan({ text: "Activer le mode examen" });
+		examToggleWrap.addEventListener("click", () => {
+			this.examOptions.enabled = !this.examOptions.enabled;
+			examTrack.classList.toggle("on", this.examOptions.enabled);
+			examOptionsContainer.classList.toggle("qb-exam-disabled", !this.examOptions.enabled);
+			this.renderCode();
+		});
+
+		// Durée
+		const durationWrap = examOptionsContainer.createDiv({ cls: "qb-field" });
+		durationWrap.createEl("label", { cls: "qb-field-label", text: "Durée (minutes)" });
+		const durationInput = durationWrap.createEl("input", {
+			cls: "qb-field-input",
+			type: "number",
+			min: "1",
+			max: "180",
+			value: String(this.examOptions.durationMinutes),
+			disabled: !this.examOptions.enabled
+		});
+		durationInput.addEventListener("input", () => {
+			this.examOptions.durationMinutes = Math.max(1, Math.min(180, parseInt(durationInput.value) || 10));
+			this.renderCode();
+		});
+
+		// Options
+		const autoSubmitWrap = examOptionsContainer.createDiv({ cls: "qb-checkbox-wrap" });
+		const autoSubmitCb = autoSubmitWrap.createEl("input", {
+			type: "checkbox",
+			checked: this.examOptions.autoSubmit,
+			disabled: !this.examOptions.enabled
+		});
+		autoSubmitWrap.createSpan({ text: " Soumettre auto à la fin" });
+		autoSubmitCb.addEventListener("change", () => {
+			this.examOptions.autoSubmit = autoSubmitCb.checked;
+			this.renderCode();
+		});
+
+		const showTimerWrap = examOptionsContainer.createDiv({ cls: "qb-checkbox-wrap" });
+		const showTimerCb = showTimerWrap.createEl("input", {
+			type: "checkbox",
+			checked: this.examOptions.showTimer,
+			disabled: !this.examOptions.enabled
+		});
+		showTimerWrap.createSpan({ text: " Afficher le timer" });
+		showTimerCb.addEventListener("change", () => {
+			this.examOptions.showTimer = showTimerCb.checked;
+			this.renderCode();
+		});
+
+		// Initial state
+		examOptionsContainer.classList.toggle("qb-exam-disabled", !this.examOptions.enabled);
 
 		const pHead = this.previewEl.createDiv({ cls: "qb-panel-head" });
 		_iconSpan(pHead, "eye", "qb-panel-head-icon");
@@ -204,16 +391,344 @@ class QuizBuilderView extends obsidian.ItemView {
 		const copyBtn = cHead.createEl("button", { cls: "qb-btn qb-btn-accent qb-btn-sm" });
 		_iconSpan(copyBtn, "clipboard-copy", "qb-btn-leading-icon");
 		copyBtn.createSpan({ text: "Copier" });
-		copyBtn.addEventListener("click", () => navigator.clipboard.writeText(exportAllWithFence(this.questions)));
+		copyBtn.addEventListener("click", () => navigator.clipboard.writeText(exportAllWithFence(this.questions, this.examOptions)));
 		this.codeOutputEl = this.codeEl.createDiv({ cls: "qb-code-output" });
 
 		this.editorInnerEl = this.editorEl.createDiv({ cls: "qb-editor-inner" });
 	}
 
+	/* ═══════════ RESIZE HANDLERS ═══════════ */
+	_setupResizer(resizerEl, leftPanel, rightPanel, type) {
+		let startX = 0;
+		let startWidthLeft = 0;
+		let startWidthRight = 0;
+		let isDragging = false;
+		let overlay = null;
+		let rafId = null;
+
+		// State for RAF - using a simple object to avoid closures in loop
+		const dragState = {
+			delta: 0,
+			mainEl: null,
+			needsUpdate: false
+		};
+
+		const updatePanels = () => {
+			if (!dragState.needsUpdate || !dragState.mainEl) return;
+
+			const delta = dragState.delta;
+			const mainEl = dragState.mainEl;
+
+			// Calculate new widths
+			const newLeftWidth = startWidthLeft + delta;
+			const newRightWidth = startWidthRight - delta;
+
+			// Get main container width to calculate preview available space
+			const mainRect = mainEl.getBoundingClientRect();
+			const minPreviewWidth = 100;
+
+			// Handle resizers involving preview (flex panel) differently
+			if (type === 'editor-preview') {
+				// Only editor has fixed width, preview flexes to fill
+				// Check close left (editor)
+				if (newLeftWidth <= this._hideThreshold && delta < 0) {
+					this._closeLeftPanel(type, mainEl);
+					this.syncPanels();
+					dragState.needsUpdate = false;
+					return;
+				}
+				// Check close right (preview) - preview closing means dragging right past threshold
+				if (newRightWidth <= this._hideThreshold && delta > 0) {
+					this._closeRightPanel(type, mainEl);
+					this.syncPanels();
+					dragState.needsUpdate = false;
+					return;
+				}
+				// Normal resize: editor must be >= min, and preview must have >= 100px remaining
+				const previewWidth = mainRect.width - newLeftWidth;
+				if (newLeftWidth >= this._minPanelWidth && previewWidth >= minPreviewWidth) {
+					this._resizePanels(type, mainEl, newLeftWidth, newRightWidth);
+				}
+			} else if (type === 'preview-code') {
+				// Only code has fixed width, preview flexes to fill
+				// Standard calculation: newRightWidth = startWidthRight - delta
+				const newCodeWidth = startWidthRight - delta;
+
+				// Check close right (code) - dragging right past threshold
+				if (newCodeWidth <= this._hideThreshold && delta > 0) {
+					this._closeRightPanel(type, mainEl);
+					this.syncPanels();
+					dragState.needsUpdate = false;
+					return;
+				}
+				// Check close left (preview) - dragging left past threshold
+				const previewWidth = mainRect.width - newCodeWidth;
+				if (previewWidth <= this._hideThreshold && delta < 0) {
+					this._closeLeftPanel(type, mainEl);
+					this.syncPanels();
+					dragState.needsUpdate = false;
+					return;
+				}
+				// Normal resize: code must be >= min, and preview must have >= 100px remaining
+				if (newCodeWidth >= this._minPanelWidth && previewWidth >= minPreviewWidth) {
+					this._resizePanels(type, mainEl, 0, newCodeWidth);
+				}
+			} else {
+				// Standard resizer (sidebar-editor): both panels have fixed widths
+				// Check close left
+				if (newLeftWidth <= this._hideThreshold && delta < 0) {
+					this._closeLeftPanel(type, mainEl);
+					this.syncPanels();
+					dragState.needsUpdate = false;
+					return;
+				}
+				// Check close right
+				if (newRightWidth <= this._hideThreshold && delta > 0) {
+					this._closeRightPanel(type, mainEl);
+					this.syncPanels();
+					dragState.needsUpdate = false;
+					return;
+				}
+				// Normal resize - ensure minimum width for both fixed panels
+				if (newLeftWidth >= this._minPanelWidth && newRightWidth >= this._minPanelWidth) {
+					this._resizePanels(type, mainEl, newLeftWidth, newRightWidth);
+				}
+			}
+
+			dragState.needsUpdate = false;
+		};
+
+		const scheduleUpdate = () => {
+			if (!dragState.needsUpdate) {
+				dragState.needsUpdate = true;
+				rafId = requestAnimationFrame(() => {
+					updatePanels();
+				});
+			}
+		};
+
+		const onMouseDown = (e) => {
+			if (e.button !== 0) return;
+			e.preventDefault();
+			e.stopPropagation();
+			isDragging = true;
+			startX = e.clientX;
+
+			// Get main element once
+			dragState.mainEl = this.contentEl.querySelector('.qb-main');
+			if (!dragState.mainEl) return;
+
+			// Store current widths for both panels
+			const leftRect = leftPanel.getBoundingClientRect();
+			const rightRect = rightPanel.getBoundingClientRect();
+			startWidthLeft = leftRect.width;
+			startWidthRight = rightRect.width;
+
+			// Save current widths before any changes
+			if (type === 'sidebar-editor') {
+				this._savedWidths.sidebar = startWidthLeft;
+				this._savedWidths.editor = startWidthRight;
+			} else if (type === 'editor-preview') {
+				this._savedWidths.editor = startWidthLeft;
+				this._savedWidths.preview = startWidthRight;
+			} else if (type === 'preview-code') {
+				this._savedWidths.preview = startWidthLeft;
+				this._savedWidths.code = startWidthRight;
+			}
+
+			// Create overlay to capture mouse events outside the resizer
+			overlay = document.createElement('div');
+			overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:9999;cursor:ew-resize;';
+			document.body.appendChild(overlay);
+
+			resizerEl.classList.add('resizing');
+			document.body.style.userSelect = 'none';
+
+			// Add is-resizing class to disable transitions during drag (performance optimization)
+			const mainEl = dragState.mainEl;
+			if (mainEl) mainEl.classList.add('is-resizing');
+
+			const onMouseMove = (e) => {
+				if (!isDragging) return;
+
+				// Schedule panel resize via RAF for performance
+				dragState.delta = e.clientX - startX;
+				scheduleUpdate();
+			};
+
+			const onMouseUp = (e) => {
+				if (!isDragging) return;
+				isDragging = false;
+
+				// Cancel any pending RAF
+				if (rafId) {
+					cancelAnimationFrame(rafId);
+					rafId = null;
+				}
+
+				// Apply final update if pending
+				if (dragState.needsUpdate) {
+					updatePanels();
+				}
+
+				resizerEl.classList.remove('resizing');
+				document.body.style.userSelect = '';
+
+				// Remove is-resizing class to re-enable transitions
+				if (mainEl) mainEl.classList.remove('is-resizing');
+
+				if (overlay) {
+					overlay.remove();
+					overlay = null;
+				}
+
+				dragState.needsUpdate = false;
+				dragState.mainEl = null;
+
+				document.removeEventListener('mousemove', onMouseMove);
+				document.removeEventListener('mouseup', onMouseUp);
+			};
+
+			document.addEventListener('mousemove', onMouseMove, { passive: true });
+			document.addEventListener('mouseup', onMouseUp);
+		};
+
+		resizerEl.addEventListener('mousedown', onMouseDown);
+	}
+
+	_closeLeftPanel(type, mainEl) {
+		const panelNames = {
+			'sidebar-editor': 'sidebar',
+			'editor-preview': 'editor',
+			'preview-code': 'preview'
+		};
+		const panel = panelNames[type];
+
+		if (!panel) return;
+
+		this.panels[panel] = false;
+		if (panel !== 'preview') {
+			mainEl.style.setProperty(`--qb-${panel}-w`, '0px');
+		}
+
+		// Prevent hiding all panels
+		if (!Object.values(this.panels).some(Boolean)) {
+			this.panels[panel] = true;
+			if (panel !== 'preview') {
+				mainEl.style.setProperty(`--qb-${panel}-w`, `${this._savedWidths[panel]}px`);
+			}
+		}
+	}
+
+	_closeRightPanel(type, mainEl) {
+		const panelNames = {
+			'sidebar-editor': 'editor',
+			'editor-preview': 'preview',
+			'preview-code': 'code'
+		};
+		const panel = panelNames[type];
+
+		if (!panel) return;
+
+		this.panels[panel] = false;
+		if (panel !== 'preview') {
+			mainEl.style.setProperty(`--qb-${panel}-w`, '0px');
+		}
+
+		// When closing code, preview should expand (preview is left of code)
+		if (type === 'preview-code') {
+			// Preview uses flex:1, it will naturally expand when code width goes to 0
+			// No special handling needed, but we track it
+		}
+
+		// Prevent hiding all panels
+		if (!Object.values(this.panels).some(Boolean)) {
+			this.panels[panel] = true;
+			if (panel !== 'preview') {
+				mainEl.style.setProperty(`--qb-${panel}-w`, `${this._savedWidths[panel]}px`);
+			}
+		}
+	}
+
+	_resizePanels(type, mainEl, leftWidth, rightWidth) {
+		// Activate both panels
+		const [leftPanel, rightPanel] = type.split('-');
+		this.panels[leftPanel] = true;
+		this.panels[rightPanel] = true;
+
+		// Update CSS variable for panels that have fixed widths
+		// preview uses flex:1, all others use fixed width
+		if (leftPanel !== 'preview') {
+			mainEl.style.setProperty(`--qb-${leftPanel}-w`, `${leftWidth}px`);
+		}
+		if (rightPanel !== 'preview') {
+			mainEl.style.setProperty(`--qb-${rightPanel}-w`, `${rightWidth}px`);
+		}
+	}
+
 	syncPanels() {
+		const mainEl = this.contentEl.querySelector('.qb-main');
 		const map = { sidebar: this.sidebarEl, editor: this.editorEl, preview: this.previewEl, code: this.codeEl };
-		for (const [k, el] of Object.entries(map)) if (el) el.toggleClass("qb-hidden", !this.panels[k]);
+
+		// Restore default width when showing a panel that was collapsed
+		const defaultWidths = { sidebar: '224px', editor: '352px', code: '288px' };
+
+		// Special case: if preview was hidden and is now shown, reset editor/code width from 'auto' to default
+		if (this.panels.preview && mainEl) {
+			const editorWidth = mainEl.style.getPropertyValue('--qb-editor-w');
+			if (editorWidth === 'auto') {
+				mainEl.style.setProperty('--qb-editor-w', defaultWidths.editor);
+			}
+			const codeWidth = mainEl.style.getPropertyValue('--qb-code-w');
+			if (codeWidth === 'auto') {
+				mainEl.style.setProperty('--qb-code-w', defaultWidths.code);
+			}
+		}
+
+		for (const [k, el] of Object.entries(map)) {
+			if (!el) continue;
+			// Toggle visibility class - width is managed by resize handlers or toggle button
+			el.toggleClass("qb-hidden", !this.panels[k]);
+		}
+
+		// Check if total fixed panel widths exceed 70% of container - if so, reset to defaults
+		if (mainEl) {
+			const mainRect = mainEl.getBoundingClientRect();
+			let fixedWidthSum = 0;
+			if (this.panels.sidebar) {
+				const sidebarWidth = parseFloat(mainEl.style.getPropertyValue('--qb-sidebar-w') || '224');
+				fixedWidthSum += sidebarWidth;
+			}
+			if (this.panels.editor) {
+				const editorWidth = parseFloat(mainEl.style.getPropertyValue('--qb-editor-w') || '352');
+				fixedWidthSum += editorWidth;
+			}
+			if (this.panels.code) {
+				const codeWidth = parseFloat(mainEl.style.getPropertyValue('--qb-code-w') || '288');
+				fixedWidthSum += codeWidth;
+			}
+			if (fixedWidthSum > mainRect.width * 0.7) {
+				mainEl.style.setProperty('--qb-sidebar-w', '224px');
+				mainEl.style.setProperty('--qb-editor-w', '352px');
+				mainEl.style.setProperty('--qb-code-w', '288px');
+			}
+		}
+
 		this.contentEl.querySelectorAll(".qb-toggle").forEach(btn => btn.toggleClass("active", !!this.panels[btn.dataset.panel]));
+
+		// Update resizer visibility based on adjacent panels
+		if (this.resizerSidebarEditor) {
+			const showSidebarEditor = this.panels.sidebar && this.panels.editor;
+			this.resizerSidebarEditor.toggleClass("qb-hidden", !showSidebarEditor);
+		}
+		if (this.resizerEditorPreview) {
+			const showEditorPreview = this.panels.editor && this.panels.preview;
+			this.resizerEditorPreview.toggleClass("qb-hidden", !showEditorPreview);
+		}
+		if (this.resizerPreviewCode) {
+			const showPreviewCode = this.panels.preview && this.panels.code;
+			this.resizerPreviewCode.toggleClass("qb-hidden", !showPreviewCode);
+		}
 	}
 
 	render() {
@@ -238,6 +753,24 @@ class QuizBuilderView extends obsidian.ItemView {
 			const text = item.createDiv({ cls: "qb-q-text" });
 			text.createDiv({ cls: "qb-q-title", text: q.title || `Question ${i + 1}` });
 			text.createDiv({ cls: "qb-q-type", text: ti.label });
+
+			// Aperçu de la réponse correcte (max 50 caractères)
+			let previewText = "";
+			if (q._type === "single" && q.options && q.options[q.correctIndex]) {
+				previewText = q.options[q.correctIndex];
+			} else if (q._type === "multi" && q.options && q.correctIndices && q.correctIndices.length > 0) {
+				previewText = q.options[q.correctIndices[0]];
+			} else if (["text", "cmd", "powershell", "bash"].includes(q._type) && q.acceptedAnswers && q.acceptedAnswers.length > 0) {
+				previewText = q.acceptedAnswers[0];
+			} else if (q._type === "ordering" && q.possibilities && q.possibilities.length > 0) {
+				previewText = q.possibilities[0];
+			} else if (q._type === "matching" && q.rows && q.rows.length > 0) {
+				previewText = typeof q.rows[0] === "string" ? q.rows[0] : (q.rows[0]?.left || "");
+			}
+			if (previewText) {
+				if (previewText.length > 50) previewText = previewText.substring(0, 50) + "...";
+				text.createDiv({ cls: "qb-q-preview", text: previewText });
+			}
 
 			const acts = item.createDiv({ cls: "qb-q-actions" });
 			const up = acts.createEl("button", { cls: "qb-btn-icon qb-btn-sm" }); _setIcon(up, "chevron-up");
@@ -266,11 +799,31 @@ class QuizBuilderView extends obsidian.ItemView {
 	}
 
 	deleteQuestion(i) {
-		if (this.questions.length <= 1) return;
-		this.questions.splice(i, 1);
-		this.activeIdx = Math.min(this.activeIdx, this.questions.length - 1);
-		this.questions.forEach((qq, idx) => { if (/^Question \d+$/.test(qq.title)) qq.title = `Question ${idx + 1}`; });
-		this.render();
+		if (this.questions.length <= 1) {
+			new obsidian.Notice("Impossible de supprimer la dernière question");
+			return;
+		}
+
+		const q = this.questions[i];
+		const title = q.title || `Question ${i + 1}`;
+
+		// Show confirmation modal
+		const modal = new obsidian.ConfirmModal(this.app,
+			`Supprimer "${title}" ?`,
+			`Cette action est irréversible. La question sera définitivement supprimée.`,
+			"Supprimer",
+			"Annuler",
+			(confirmed) => {
+				if (confirmed) {
+					this.questions.splice(i, 1);
+					this.activeIdx = Math.min(this.activeIdx, this.questions.length - 1);
+					this.questions.forEach((qq, idx) => { if (/^Question \d+$/.test(qq.title)) qq.title = `Question ${idx + 1}`; });
+					this.render();
+					new obsidian.Notice(`Question "${title}" supprimée`);
+				}
+			}
+		);
+		modal.open();
 	}
 
 	/* ═══════════ EDITOR ═══════════ */
@@ -287,27 +840,60 @@ class QuizBuilderView extends obsidian.ItemView {
 		badgeText.createDiv({ cls: "qb-type-label", text: ti.label });
 		badgeText.createDiv({ cls: "qb-type-desc", text: ti.desc });
 
-		this._field(wrap, "Titre", q.title, "Question 1", false, v => { q.title = v; this.renderSidebar(); this.renderCode(); this.schedulePreview(); });
-		this._field(wrap, "Énoncé (Markdown)", q.prompt, "Votre question...", true, v => { q.prompt = v; this.renderCode(); this.schedulePreview(); });
+		this._field(wrap, "Énoncé", q.prompt, "Votre question...", true, v => { q.prompt = v; this.renderCode(); this.schedulePreview(); }, { imagePaste: true });
 		this._resourceSection(wrap, q);
 
 		const box = wrap.createDiv({ cls: "qb-section-box" });
 		this._renderTypeFields(box, q);
 
-		this._field(wrap, "Indice", q.hint, "Un indice pour aider...", true, v => { q.hint = v; this.renderCode(); this.schedulePreview(); });
-		this._field(wrap, "Explication (Markdown)", q.explain, "### Rappels\n- **Terme** — Définition", true, v => { q.explain = v; this.renderCode(); this.schedulePreview(); });
+		this._field(wrap, "Indice", q.hint, "Un indice pour aider...", true, v => { q.hint = v; this.renderCode(); this.schedulePreview(); }, { imagePaste: true });
+		this._field(wrap, "Explication (Markdown)", q.explain, "### Rappels\n- **Terme** — Définition", true, v => { q.explain = v; this.renderCode(); this.schedulePreview(); }, { imagePaste: true });
 	}
 
-	_field(parent, label, value, placeholder, multiline, onChange) {
+	_field(parent, label, value, placeholder, multiline, onChange, opts = {}) {
 		const wrap = parent.createDiv();
 		wrap.createEl("label", { cls: "qb-field-label", text: label });
 		if (multiline) {
 			const ta = wrap.createEl("textarea", { cls: "qb-field-textarea", placeholder, text: value ?? "" });
 			ta.addEventListener("input", () => onChange(ta.value));
+			if (opts.imagePaste) {
+				ta.addEventListener("paste", async (e) => {
+					const items = e.clipboardData?.items;
+					if (!items) return;
+					for (const item of items) {
+						if (item.type.startsWith("image/")) {
+							e.preventDefault();
+							const file = item.getAsFile();
+							if (!file) continue;
+							const now = new Date();
+							const ts = now.getFullYear().toString() +
+								String(now.getMonth() + 1).padStart(2, "0") +
+								String(now.getDate()).padStart(2, "0") +
+								String(now.getHours()).padStart(2, "0") +
+								String(now.getMinutes()).padStart(2, "0") +
+								String(now.getSeconds()).padStart(2, "0");
+							const ext = item.type.split("/")[1] || "png";
+							const fileName = `Pasted image ${ts}.${ext}`;
+							const attachFolder = this.plugin.app.vault.getConfig("attachmentFolderPath") || "";
+							const filePath = attachFolder ? attachFolder + "/" + fileName : fileName;
+							const buffer = await file.arrayBuffer();
+							await this.plugin.app.vault.adapter.writeBinary(filePath, new Uint8Array(buffer));
+							const before = ta.value.slice(0, ta.selectionStart);
+							const after = ta.value.slice(ta.selectionEnd);
+							ta.value = before + `![[${fileName}]]` + after;
+							ta.selectionStart = ta.selectionEnd = before.length + `![[${fileName}]]`.length;
+							onChange(ta.value);
+							this.schedulePreview();
+							break;
+						}
+					}
+				});
+			}
 		} else {
 			const inp = wrap.createEl("input", { cls: "qb-field-input", placeholder, value: value ?? "" });
 			inp.addEventListener("input", () => onChange(inp.value));
 		}
+		return wrap;
 	}
 
 	_resourceSection(parent, q) {
@@ -337,25 +923,149 @@ class QuizBuilderView extends obsidian.ItemView {
 		const rerender = () => { this.renderCode(); this.schedulePreview(); };
 
 		if (t === "single" || t === "multi") {
-			this._arrayEditor(box, "Options", q.options, () => {
-				if (t === "single") q.correctIndex = Math.min(q.correctIndex ?? 0, q.options.length - 1);
-				if (t === "multi") q.correctIndices = (q.correctIndices || []).filter(i => i < q.options.length);
-				rerender();
-			}, "Option", "Ajouter une option");
+			const renderCards = () => {
+				// Remove existing cards container if any
+				const existingContainer = box.querySelector('.qb-answer-cards');
+				if (existingContainer) existingContainer.remove();
 
-			box.createDiv().createEl("label", { cls: "qb-field-label", text: t === "single" ? "Bonne réponse" : "Bonnes réponses" });
-			const picker = box.createDiv({ cls: "qb-chip-row" });
-			q.options.forEach((o, i) => {
-				const isSel = t === "single" ? i === q.correctIndex : (q.correctIndices || []).includes(i);
-				const chip = picker.createEl("button", { cls: `qb-chip ${isSel ? "correct" : ""}` });
-				if (isSel) _iconSpan(chip, "check", "qb-chip-icon");
-				chip.createSpan({ text: (o || "...").slice(0, 30) });
-				chip.addEventListener("click", () => {
-					if (t === "single") q.correctIndex = i;
-					else { const a = q.correctIndices || []; if (a.includes(i)) q.correctIndices = a.filter(x => x !== i); else q.correctIndices = [...a, i].sort((a, b) => a - b); }
+				const cardsContainer = box.createDiv({ cls: "qb-answer-cards" });
+
+				q.options.forEach((o, i) => {
+					const isCorrect = t === "single" ? i === q.correctIndex : (q.correctIndices || []).includes(i);
+					const card = cardsContainer.createDiv({ cls: `qb-answer-card ${isCorrect ? "qb-answer-correct" : "qb-answer-wrong"}` });
+
+					// StudySmarter-style toggle
+					const toggleRow = card.createDiv({ cls: "qb-answer-toggle-row" });
+					toggleRow.createSpan({ cls: "qb-answer-toggle-label", text: isCorrect ? "Bonne réponse" : "Mauvaise réponse" });
+
+					const toggle = toggleRow.createDiv({ cls: "qb-answer-toggle" });
+					const track = toggle.createDiv({ cls: "qb-answer-toggle-track" });
+					const thumb = track.createDiv({ cls: "qb-answer-toggle-thumb" });
+					_setIcon(thumb, isCorrect ? "check" : "x");
+
+					// Flash animation on state change
+					const triggerFlash = (toCorrect) => {
+						card.classList.remove("qb-answer-flash-green", "qb-answer-flash-red");
+						void card.offsetWidth; // Force reflow
+						card.classList.add(toCorrect ? "qb-answer-flash-green" : "qb-answer-flash-red");
+						setTimeout(() => {
+							card.classList.remove("qb-answer-flash-green", "qb-answer-flash-red");
+						}, 500);
+					};
+
+					toggle.addEventListener("click", () => {
+						if (t === "single") {
+							if (!isCorrect) {
+								triggerFlash(true);
+								q.correctIndex = i;
+								this.render();
+							}
+						} else {
+							const a = q.correctIndices || [];
+							if (a.includes(i)) {
+								if (a.length > 1) {
+									triggerFlash(false);
+									q.correctIndices = a.filter(x => x !== i);
+									this.render();
+								}
+							} else {
+								triggerFlash(true);
+								q.correctIndices = [...a, i].sort((a, b) => a - b);
+								this.render();
+							}
+						}
+					});
+
+					// Simple text input for option
+					const input = card.createEl("input", {
+						cls: "qb-answer-input",
+						type: "text",
+						value: o || "",
+						placeholder: "Saisir la réponse"
+					});
+
+					input.addEventListener("input", () => {
+						q.options[i] = input.value;
+						rerender();
+					});
+
+					// Paste handler for images - insert ![[filename.png]]
+					input.addEventListener("paste", async (e) => {
+						const items = e.clipboardData?.items;
+						if (!items) return;
+
+						for (const item of items) {
+							if (item.type.startsWith("image/")) {
+								e.preventDefault();
+								const file = item.getAsFile();
+								if (!file) continue;
+
+								try {
+									const now = new Date();
+									const ts = now.getFullYear().toString() +
+										String(now.getMonth() + 1).padStart(2, "0") +
+										String(now.getDate()).padStart(2, "0") +
+										String(now.getHours()).padStart(2, "0") +
+										String(now.getMinutes()).padStart(2, "0") +
+										String(now.getSeconds()).padStart(2, "0");
+									const ext = file.type?.split("/")[1] || "png";
+									const fileName = `Pasted image ${ts}.${ext}`;
+
+									const folder = this.plugin.app.vault.getConfig('attachmentFolderPath') || '';
+									const path = folder ? folder + '/' + fileName : fileName;
+
+									const buf = await file.arrayBuffer();
+									await this.plugin.app.vault.adapter.writeBinary(path, new Uint8Array(buf));
+
+									// Insert ![[filename]] at cursor position
+									const before = input.value.slice(0, input.selectionStart);
+									const after = input.value.slice(input.selectionEnd);
+									const wikiLink = `![[${fileName}]]`;
+									input.value = before + wikiLink + after;
+									input.selectionStart = input.selectionEnd = before.length + wikiLink.length;
+
+									q.options[i] = input.value;
+									this.schedulePreview();
+									this.renderCode();
+								} catch (err) {
+									console.error("Failed to paste image:", err);
+								}
+								break;
+							}
+						}
+					});
+
+					// Bouton supprimer (uniquement pour mauvaises réponses et si plus de 2 options)
+					if (!isCorrect && q.options.length > 2) {
+						const delBtn = card.createEl("button", { cls: "qb-answer-delete" });
+						_setIcon(delBtn, "x");
+						delBtn.addEventListener("click", () => {
+							q.options.splice(i, 1);
+							// Adjust correct indices
+							if (t === "single") {
+								if (q.correctIndex === i) q.correctIndex = 0;
+								else if (q.correctIndex > i) q.correctIndex--;
+							} else {
+								q.correctIndices = (q.correctIndices || []).filter(idx => idx !== i).map(idx => idx > i ? idx - 1 : idx);
+							}
+							this.render();
+						});
+					}
+				});
+
+				// Bouton Ajouter
+				const addBtn = box.createEl("button", { cls: "qb-answer-add" });
+				addBtn.createSpan({ text: "Ajouter une réponse" });
+				addBtn.addEventListener("click", () => {
+					q.options.push("");
+					if (t === "multi" && q.options.length === 1) {
+						q.correctIndices = [0];
+					}
 					this.render();
 				});
-			});
+			};
+
+			renderCards();
 		}
 
 		if (t === "ordering") {
@@ -480,9 +1190,22 @@ class QuizBuilderView extends obsidian.ItemView {
 		if (q.prompt) {
 			const promptEl = card.createDiv({ cls: "quiz-question" });
 			promptEl.innerHTML = md2html(q.prompt);
+			// Resolve image paths to resource URLs
+			promptEl.querySelectorAll("img.qb-md-img").forEach(img => {
+				const fileName = img.getAttribute("src");
+				if (fileName) {
+					const attachFolder = this.app.vault.getConfig("attachmentFolderPath") || "";
+					const folderPath = attachFolder.replace("${file}", "").replace(/\/$/, "") || ".";
+					const filePath = folderPath === "." ? fileName : `${folderPath}/${fileName}`;
+					const file = this.app.vault.getAbstractFileByPath(filePath);
+					if (file) {
+						img.src = this.app.vault.adapter.getResourcePath(filePath);
+					}
+				}
+			});
 		}
 
-		// ─── Type-specific body ─── 
+		// ─── Type-specific body ───
 		if (t === "single" || t === "multi") {
 			const isMulti = t === "multi";
 			if (isMulti) card.createDiv({ cls: "quiz-multi-indicator", text: "Sélectionnez une ou plusieurs réponses" });
@@ -491,7 +1214,8 @@ class QuizBuilderView extends obsidian.ItemView {
 				const isCorrect = isMulti ? (q.correctIndices || []).includes(i) : i === q.correctIndex;
 				const cls = `quiz-option ${isMulti ? "multi" : ""} ${isCorrect ? "correct" : ""}`.trim();
 				const opt = card.createDiv({ cls, attr: { role: "button", tabindex: "0" } });
-				opt.textContent = o || "...";
+				// Convert markdown to HTML and resolve images
+				opt.innerHTML = this._resolveImagesInHtml(md2html(o || "..."));
 			});
 		}
 
@@ -576,13 +1300,35 @@ class QuizBuilderView extends obsidian.ItemView {
 		// ─── Explanation (always visible in builder) ───
 		if (q.explain && q.explain.trim()) {
 			const explainEl = card.createDiv({ cls: "quiz-explain good" });
-			explainEl.innerHTML = md2html(q.explain);
+			explainEl.innerHTML = this._resolveImagesInHtml(md2html(q.explain));
 		}
+	}
+
+	/* Resolve image paths in HTML content */
+	_resolveImagesInHtml(html) {
+		if (!html) return html;
+		// Create a temporary element to parse HTML
+		const temp = document.createElement('div');
+		temp.innerHTML = html;
+		// Find all images with qb-md-img class
+		temp.querySelectorAll("img.qb-md-img").forEach(img => {
+			const fileName = img.getAttribute("src");
+			if (fileName) {
+				const attachFolder = this.app.vault.getConfig("attachmentFolderPath") || "";
+				const folderPath = attachFolder.replace("${file}", "").replace(/\/$/, "") || ".";
+				const filePath = folderPath === "." ? fileName : `${folderPath}/${fileName}`;
+				const file = this.app.vault.getAbstractFileByPath(filePath);
+				if (file) {
+					img.src = this.app.vault.adapter.getResourcePath(filePath);
+				}
+			}
+		});
+		return temp.innerHTML;
 	}
 
 	/* ─── Code ─── */
 	renderCode() {
-		this.codeOutputEl.textContent = exportAllWithFence(this.questions);
+		this.codeOutputEl.textContent = exportAllWithFence(this.questions, this.examOptions);
 	}
 
 	/* ═══════════ HINT (same DOM / CSS as engine) ═══════════ */
@@ -655,7 +1401,7 @@ class QuizBuilderView extends obsidian.ItemView {
 		const overlay = this._ensureHintOverlay();
 		const body = overlay.querySelector(".quiz-hint-modal-body");
 		const modal = overlay.querySelector(".quiz-hint-modal");
-		if (body) body.innerHTML = md2html(text);
+		if (body) body.innerHTML = this._resolveImagesInHtml(md2html(text));
 		this._applyHintTheme(overlay);
 
 		overlay.classList.add("is-open");
@@ -710,6 +1456,184 @@ class QuizBuilderView extends obsidian.ItemView {
 		});
 		modal.open();
 	}
+
+	openImportModal() {
+		new ImportQuizModal(this.app, this).open();
+	}
+
+	async importQuizSource(source) {
+		try {
+			const parsed = parseQuizSource(source);
+			if (!Array.isArray(parsed) || parsed.length === 0) {
+				new obsidian.Notice("Aucune question trouvée");
+				return;
+			}
+
+			const questions = [];
+			let examOptions = null;
+
+			for (const q of parsed) {
+				if (q.examMode) {
+					examOptions = {
+						enabled: true,
+						durationMinutes: q.examDurationMinutes || 10,
+						autoSubmit: q.examAutoSubmit ?? false,
+						showTimer: q.examShowTimer ?? true
+					};
+					continue;
+				}
+
+				const question = this.convertParsedToInternal(q);
+				if (question) questions.push(question);
+			}
+
+			if (questions.length === 0) {
+				new obsidian.Notice("Aucune question valide trouvée");
+				return;
+			}
+
+			this.questions = questions;
+			this.activeIdx = 0;
+			if (examOptions) {
+				this.examOptions = examOptions;
+			}
+
+			this.render();
+			new obsidian.Notice(`${questions.length} question(s) importée(s)`);
+		} catch (err) {
+			console.error("Import error:", err);
+			new obsidian.Notice("Erreur lors de l'import: " + err.message);
+		}
+	}
+
+	convertParsedToInternal(q) {
+		let type = "single";
+		if (q.ordering) type = "ordering";
+		else if (q.matching) type = "matching";
+		else if (q.multiSelect) type = "multi";
+		else if (q.type === "text") {
+			if (q.terminalVariant === "cmd") type = "cmd";
+			else if (q.textVariant === "powershell") type = "powershell";
+			else if (q.textVariant === "bash") type = "bash";
+			else type = "text";
+		}
+
+		const question = makeDefault(type);
+		question._id = q.id || Math.random().toString(36).slice(2, 10);
+		question.title = q.title || "";
+		question.hint = q.hint || "";
+
+		if (q.prompt) {
+			question.prompt = q.prompt;
+		} else if (q.promptHtml) {
+			question.prompt = q.promptHtml.replace(/<[^>]+>/g, "").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&");
+		}
+		if (q.promptHtml) {
+			question._promptHtml = q.promptHtml;
+		}
+
+		if (q.explain) question.explain = q.explain;
+		else if (q.explainHtml) {
+			question.explain = q.explainHtml.replace(/<[^>]+>/g, "").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&");
+		}
+		if (q.explainHtml) {
+			question._explainHtml = q.explainHtml;
+		}
+
+		if (q.resourceButton) {
+			question.resourceButton = { ...q.resourceButton };
+		}
+
+		if (type === "single" || type === "multi") {
+			question.options = q.options || ["", ""];
+			if (type === "single") {
+				question.correctIndex = q.correctIndex ?? 0;
+			} else {
+				question.correctIndices = q.correctIndices || [];
+			}
+		}
+
+		if (type === "ordering") {
+			question.slots = q.slots || ["Étape 1", "Étape 2"];
+			question.possibilities = q.possibilities || ["", ""];
+			question.correctOrder = q.correctOrder || [0, 1];
+		}
+
+		if (type === "matching") {
+			question.rows = q.rows || ["", ""];
+			question.choices = q.choices || ["", ""];
+			question.correctMap = q.correctMap || [0, 0];
+		}
+
+		if (["text", "cmd", "powershell", "bash"].includes(type)) {
+			question.acceptedAnswers = q.acceptedAnswers || q.acceptableAnswers || [""];
+			if (question.acceptedAnswers.length === 1 && question.acceptedAnswers[0] === "" && q.correctText) {
+				question.acceptedAnswers = [q.correctText];
+			}
+			question.caseSensitive = q.caseSensitive || false;
+			question.placeholder = q.placeholder || "";
+			if (type === "cmd" || type === "powershell") {
+				question.commandPrefix = q.commandPrefix || (type === "cmd" ? "C:\\>" : "PS>");
+			}
+		}
+
+		const knownKeys = new Set(['id','title','prompt','promptHtml','options','correctIndex','multiSelect','correctIndices','ordering','slots','possibilities','correctOrder','matching','rows','choices','correctMap','type','terminalVariant','textVariant','commandPrefix','placeholder','caseSensitive','acceptedAnswers','acceptableAnswers','correctText','hint','explain','explainHtml','resourceButton','examMode','examDurationMinutes','examAutoSubmit','examShowTimer']);
+		question._extraFields = {};
+		for (const key of Object.keys(q)) {
+			if (!knownKeys.has(key)) question._extraFields[key] = q[key];
+		}
+
+		return question;
+	}
+}
+
+/* ════════════════════════════════════════════════════════
+   CONFIRM MODAL
+   ════════════════════════════════════════════════════════ */
+class ConfirmModal extends obsidian.Modal {
+	constructor(app, title, message, confirmText, cancelText, callback) {
+		super(app);
+		this.modalTitle = title;
+		this.message = message;
+		this.confirmText = confirmText;
+		this.cancelText = cancelText;
+		this.callback = callback;
+		this.confirmed = false;
+	}
+
+	onOpen() {
+		const { contentEl } = this;
+		contentEl.empty();
+		contentEl.addClass("qb-confirm-modal");
+
+		contentEl.createEl("h2", { text: this.modalTitle, cls: "qb-confirm-title" });
+		contentEl.createEl("p", { text: this.message, cls: "qb-confirm-message" });
+
+		const btnRow = contentEl.createDiv({ cls: "qb-confirm-buttons" });
+
+		const cancelBtn = btnRow.createEl("button", {
+			cls: "qb-btn",
+			text: this.cancelText
+		});
+		cancelBtn.addEventListener("click", () => {
+			this.confirmed = false;
+			this.close();
+		});
+
+		const confirmBtn = btnRow.createEl("button", {
+			cls: "qb-btn qb-btn-danger",
+			text: this.confirmText
+		});
+		confirmBtn.addEventListener("click", () => {
+			this.confirmed = true;
+			this.close();
+		});
+	}
+
+	onClose() {
+		this.callback(this.confirmed);
+		this.contentEl.empty();
+	}
 }
 
 /* ════════════════════════════════════════════════════════
@@ -742,4 +1666,269 @@ class TypePickerModal extends obsidian.Modal {
 	onClose() { this.contentEl.empty(); }
 }
 
-module.exports = { QuizBuilderView, VIEW_TYPE }; 
+/* ════════════════════════════════════════════════════════
+   IMPORT QUIZ MODAL
+   ════════════════════════════════════════════════════════ */
+class ImportQuizModal extends obsidian.Modal {
+	constructor(app, builderView) {
+		super(app);
+		this.builderView = builderView;
+	}
+
+	onOpen() {
+		const { contentEl } = this;
+		contentEl.empty();
+		contentEl.addClass("qb-import-modal");
+		contentEl.createEl("h2", { text: "Importer un quiz" });
+
+		const textarea = contentEl.createEl("textarea", {
+			cls: "qb-import-textarea",
+			placeholder: "Collez ici le contenu d'un bloc quiz-blocks ou le code JSON5 du quiz..."
+		});
+
+		const loadBtn = contentEl.createEl("button", { cls: "qb-import-btn", text: "Charger" });
+		loadBtn.addEventListener("click", async () => {
+			const text = textarea.value.trim();
+			if (!text) return;
+
+			await this.loadQuiz(text);
+		});
+
+		const fromNoteBtn = contentEl.createEl("button", { cls: "qb-import-from-note", text: "Importer depuis une note" });
+		fromNoteBtn.addEventListener("click", () => {
+			this.close();
+			new ImportFromNoteModal(this.app, this.builderView).open();
+		});
+	}
+
+	async loadQuiz(text) {
+		try {
+			// Extract content from fence if present
+			let jsonText = text;
+			const fenceMatch = text.match(/```quiz-blocks\n([\s\S]*?)\n```/);
+			if (fenceMatch) {
+				jsonText = fenceMatch[1];
+			}
+
+			// Parse the quiz
+			const parsed = parseQuizSource(jsonText);
+			if (!Array.isArray(parsed) || parsed.length === 0) {
+				new obsidian.Notice("Aucune question trouvée dans le contenu");
+				return;
+			}
+
+			// Convert to internal format
+			const questions = [];
+			let examOptions = null;
+
+			for (const q of parsed) {
+				// Skip exam options entry
+				if (q.examMode) {
+					examOptions = {
+						enabled: true,
+						durationMinutes: q.examDurationMinutes || 10,
+						autoSubmit: q.examAutoSubmit ?? false,
+						showTimer: q.examShowTimer ?? true
+					};
+					continue;
+				}
+
+				const question = this.convertToInternalFormat(q);
+				if (question) questions.push(question);
+			}
+
+			if (questions.length === 0) {
+				new obsidian.Notice("Aucune question valide trouvée");
+				return;
+			}
+
+			// Update builder state
+			this.builderView.questions = questions;
+			this.builderView.activeIdx = 0;
+			if (examOptions) {
+				this.builderView.examOptions = examOptions;
+			}
+
+			this.builderView.render();
+			new obsidian.Notice(`${questions.length} question(s) importée(s)`);
+			this.close();
+		} catch (err) {
+			console.error("Import error:", err);
+			new obsidian.Notice("Erreur lors de l'import: " + err.message);
+		}
+	}
+
+	convertToInternalFormat(q) {
+		// Detect type
+		let type = "single";
+		if (q.ordering) type = "ordering";
+		else if (q.matching) type = "matching";
+		else if (q.multiSelect) type = "multi";
+		else if (q.type === "text") {
+			if (q.terminalVariant === "cmd") type = "cmd";
+			else if (q.textVariant === "powershell") type = "powershell";
+			else if (q.textVariant === "bash") type = "bash";
+			else type = "text";
+		}
+
+		const question = makeDefault(type);
+		question._id = q.id || Math.random().toString(36).slice(2, 10);
+		question.title = q.title || "";
+		question.hint = q.hint || "";
+
+		// Handle prompt - convert promptHtml to text if needed
+		if (q.prompt) {
+			question.prompt = q.prompt;
+		} else if (q.promptHtml) {
+			// Convert HTML to text by removing tags
+			question.prompt = q.promptHtml.replace(/<[^>]+>/g, "").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&");
+		}
+
+		// Handle explain
+		if (q.explain) question.explain = q.explain;
+		else if (q.explainHtml) {
+			question.explain = q.explainHtml.replace(/<[^>]+>/g, "").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&");
+		}
+
+		// Resource button
+		if (q.resourceButton) {
+			question.resourceButton = { ...q.resourceButton };
+		}
+
+		// Type-specific fields
+		if (type === "single" || type === "multi") {
+			question.options = q.options || ["", ""];
+			if (type === "single") {
+				question.correctIndex = q.correctIndex ?? 0;
+			} else {
+				question.correctIndices = q.correctIndices || [];
+			}
+		}
+
+		if (type === "ordering") {
+			question.slots = q.slots || ["Étape 1", "Étape 2"];
+			question.possibilities = q.possibilities || ["", ""];
+			question.correctOrder = q.correctOrder || [0, 1];
+		}
+
+		if (type === "matching") {
+			question.rows = q.rows || ["", ""];
+			question.choices = q.choices || ["", ""];
+			question.correctMap = q.correctMap || [0, 0];
+		}
+
+		if (["text", "cmd", "powershell", "bash"].includes(type)) {
+			question.acceptedAnswers = q.acceptedAnswers || [""];
+			question.caseSensitive = q.caseSensitive || false;
+			question.placeholder = q.placeholder || "";
+			if (type === "cmd" || type === "powershell") {
+				question.commandPrefix = q.commandPrefix || (type === "cmd" ? "C:\\>" : "PS>");
+			}
+		}
+
+		return question;
+	}
+
+	onClose() { this.contentEl.empty(); }
+}
+
+/* ════════════════════════════════════════════════════════
+   QUIZ FILE SUGGEST MODAL (with open files prioritized)
+   ════════════════════════════════════════════════════════ */
+class QuizFileSuggestModal extends obsidian.FuzzySuggestModal {
+	constructor(app, onChoose) {
+		super(app);
+		this.onChooseCallback = onChoose;
+		this.setPlaceholder("Choisir une note contenant un quiz...");
+		this.openFiles = new Set();
+	}
+
+	getItems() {
+		const result = [];
+		const seenPaths = new Set();
+
+		// First, get open markdown files
+		this.app.workspace.getLeavesOfType('markdown').forEach(leaf => {
+			if (leaf.view && leaf.view.file) {
+				result.push(leaf.view.file);
+				seenPaths.add(leaf.view.file.path);
+				this.openFiles.add(leaf.view.file.path);
+			}
+		});
+
+		// Then add other markdown files
+		this.app.vault.getMarkdownFiles().forEach(file => {
+			if (!seenPaths.has(file.path)) {
+				result.push(file);
+				seenPaths.add(file.path);
+			}
+		});
+
+		return result;
+	}
+
+	getItemText(file) {
+		return file.path;
+	}
+
+	renderSuggestion(file, el) {
+		el.createDiv({ cls: "qb-suggest-item" }, div => {
+			const isOpen = this.openFiles.has(file.path);
+
+			// Main row with name and badge
+			div.createDiv({ cls: "qb-suggest-main" }, main => {
+				main.createEl("span", { cls: "qb-suggest-name", text: file.basename });
+				if (isOpen) {
+					main.createEl("span", { cls: "qb-suggest-badge", text: "Ouvert" });
+				}
+			});
+
+			// Path row
+			div.createEl("span", { cls: "qb-suggest-path", text: file.path });
+		});
+	}
+
+	async onChooseItem(file) {
+		this.onChooseCallback(file);
+	}
+}
+
+/* ════════════════════════════════════════════════════════
+   IMPORT FROM NOTE MODAL (uses QuizFileSuggestModal)
+   ════════════════════════════════════════════════════════ */
+class ImportFromNoteModal extends obsidian.Modal {
+	constructor(app, builderView) {
+		super(app);
+		this.builderView = builderView;
+	}
+
+	onOpen() {
+		const { contentEl } = this;
+		contentEl.empty();
+		this.close();
+
+		// Open the file suggest modal
+		new QuizFileSuggestModal(this.app, async (file) => {
+			try {
+				const content = await this.app.vault.read(file);
+				// Find first quiz-blocks fence
+				const match = content.match(/```quiz-blocks\n([\s\S]*?)\n```/);
+				if (!match) {
+					new obsidian.Notice("Aucun bloc quiz-blocks trouvé dans cette note");
+					return;
+				}
+
+				// Load the quiz using the view's method
+				await this.builderView.importQuizSource(match[1]);
+				new obsidian.Notice(`Quiz importé depuis ${file.basename}`);
+			} catch (err) {
+				console.error("Import from note error:", err);
+				new obsidian.Notice("Erreur lors de la lecture de la note");
+			}
+		}).open();
+	}
+
+	onClose() { this.contentEl.empty(); }
+}
+
+module.exports = { QuizBuilderView, VIEW_TYPE, QuizFileSuggestModal }; 

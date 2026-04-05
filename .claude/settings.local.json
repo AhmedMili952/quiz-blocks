@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run:*)",
+      "Bash(VBoxManage --version)",
+      "Bash(/c/Program Files/Oracle/VirtualBox/VBoxManage.exe list:*)",
+      "Bash(/c/Program Files/Oracle/VirtualBox/VBoxManage.exe startvm:*)",
+      "Bash(\"/c/Program Files/Oracle/VirtualBox/VBoxManage.exe\" showvminfo \"CLI-LINUX-01\")",
+      "Bash(\"/c/Program Files/Oracle/VirtualBox/VBoxManage.exe\" guestproperty enumerate \"CLI-LINUX-01\")",
+      "WebFetch(domain:github.com)",
+      "WebSearch"
+    ]
+  }
+}

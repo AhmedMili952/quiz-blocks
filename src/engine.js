@@ -21,6 +21,24 @@ function parseQuizSource(source) {
 	return parsed;
 }
 
+function extractExamOptions(quizArray) {
+	if (!Array.isArray(quizArray) || quizArray.length === 0) return { questions: quizArray, examOptions: null };
+
+	const lastItem = quizArray[quizArray.length - 1];
+	if (lastItem && typeof lastItem === "object" && lastItem.examMode === true) {
+		return {
+			questions: quizArray.slice(0, -1),
+			examOptions: {
+				durationMinutes: Math.max(1, Math.min(180, Number(lastItem.examDurationMinutes) || 10)),
+				autoSubmit: lastItem.examAutoSubmit !== false,
+				showTimer: lastItem.examShowTimer !== false
+			}
+		};
+	}
+
+	return { questions: quizArray, examOptions: null };
+}
+
 function renderParagraph(container, text) {
 	return container.createEl("p", {
 		text: String(text ?? "")
@@ -28,21 +46,36 @@ function renderParagraph(container, text) {
 }
 
 async function renderInteractiveQuiz(context) {
- 
+
 	const {
 		app,
 		container,
-		quiz,
+		quiz: rawQuiz,
 		sourcePath,
 		Notice
 	} = context;
 
 	container.empty();
 
+	if (!Array.isArray(rawQuiz) || rawQuiz.length === 0) {
+		renderParagraph(container, "⚠️ Aucune question fournie au moteur de quiz.");
+		return;
+	}
+
+	const { questions: quiz, examOptions } = extractExamOptions(rawQuiz);
+
 	if (!Array.isArray(quiz) || quiz.length === 0) {
 		renderParagraph(container, "⚠️ Aucune question fournie au moteur de quiz.");
 		return;
 	}
+
+	const isExamMode = examOptions !== null;
+	const examDurationMs = isExamMode ? examOptions.durationMinutes * 60 * 1000 : 0;
+	let examStartTime = 0;
+	let examTimerId = null;
+	let examTimeRemaining = examDurationMs;
+	let examEnded = false;
+	let examStarted = false;
 
 	const QUIZ_INSTANCE_ID = (
 		typeof crypto !== "undefined" && crypto.randomUUID
@@ -1723,6 +1756,15 @@ function goToSubmit() {
 function goToResults() {
 	if (isQuestionSlideIndex(quizState.current)) quizState.lastQuestionIndex = quizState.current;
 	quizState.pendingResultsLock = true;
+
+	// Si mode examen et que le timer tourne encore, on l'arrête (sans reset)
+	if (isExamMode && examStarted && !examEnded) {
+		examEnded = true;
+		stopExamTimer();
+		// Mettre à jour l'affichage du timer avec le temps restant figé
+		updateExamTimerDisplay();
+	}
+
 	updateNavHighlight();
 	goToSlide(SLIDE_RESULTS_INDEX, { forceRender: false });
 }
@@ -1754,6 +1796,13 @@ function resetQuiz({ preserveSliding = false } = {}) {
 
 	__quizSlideHeightCache.clear();
 	__quizWarmSlidePromises.clear();
+
+	// Réinitialiser l'état du mode examen
+	examStarted = false;
+	examEnded = false;
+	examStartTime = 0;
+	examTimeRemaining = examDurationMs;
+	stopExamTimer();
 
 	render();
 }
@@ -2175,6 +2224,136 @@ function tabClass(i) {
 function navHtml() {
 	const resultsActive = (isSubmitSlideIndex(quizState.current) || isResultsSlideIndex(quizState.current)) ? "active" : "";
 	return `<div class="quiz-nav">${quiz.map((_, i) => `<a class="quiz-tab ${tabClass(i)}" href="#" data-nav="${i}">Q${i + 1}</a>`).join("")}<a class="quiz-tab is-result ${resultsActive}" href="#" data-nav-results="1">Résultats</a></div>`;
+}
+
+function examTimerHtml() {
+	if (!isExamMode || !examOptions.showTimer) return "";
+	if (!examStarted) {
+		return `<div class="quiz-exam-start-screen" data-exam-start-screen="1">
+			<div class="quiz-exam-start-content">
+				<div class="quiz-exam-start-icon">
+					<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						<line x1="10" x2="14" y1="2" y2="2"></line>
+						<line x1="12" x2="15" y1="14" y2="11"></line>
+						<circle cx="12" cy="14" r="8"></circle>
+					</svg>
+				</div>
+				<div class="quiz-exam-start-title">Mode Examen</div>
+				<div class="quiz-exam-start-duration">Durée : ${examOptions.durationMinutes} minutes</div>
+				<button class="quiz-exam-start-btn" type="button">Commencer l'examen</button>
+			</div>
+		</div>`;
+	}
+	// Calculer le temps restant à afficher (minutes:secondes)
+	const minutes = Math.floor(examTimeRemaining / 60000);
+	const seconds = Math.floor((examTimeRemaining % 60000) / 1000);
+	const timerDisplay = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+
+	return `<div class="quiz-exam-timer" data-exam-timer="1">
+		<div class="quiz-exam-timer-bar">
+			<div class="quiz-exam-timer-progress" data-exam-progress="1"></div>
+		</div>
+		<div class="quiz-exam-timer-text" data-exam-text="1">${timerDisplay}</div>
+	</div>`;
+}
+
+function startExamTimer() {
+	// Ne pas lancer le timer si l'examen est terminé
+	if (!isExamMode || examTimerId || !examStarted || examEnded) return;
+
+	// Sécurité : arrêter tout timer existant avant d'en lancer un nouveau
+	stopExamTimer();
+
+	examStartTime = Date.now();
+	examTimeRemaining = examDurationMs;
+	updateExamTimerDisplay();
+
+	let lastDisplayedSecond = Math.floor(examDurationMs / 1000);
+	let animationFrameId = null;
+
+	const tick = () => {
+		if (examEnded) return;
+
+		const elapsed = Date.now() - examStartTime;
+		examTimeRemaining = Math.max(0, examDurationMs - elapsed);
+
+		// Toujours mettre à jour l'affichage, même à 0:00
+		updateExamTimerDisplay();
+
+		if (examTimeRemaining <= 0) {
+			// Le timer est arrêté dans handleExamTimeUp()
+			handleExamTimeUp();
+			return;
+		}
+
+		animationFrameId = requestAnimationFrame(tick);
+	};
+
+	animationFrameId = requestAnimationFrame(tick);
+	examTimerId = animationFrameId;
+}
+
+function startExam() {
+	if (!isExamMode || examStarted) return;
+	examStarted = true;
+
+	// Lancer le timer
+	startExamTimer();
+
+	// Faire le rendu complet du quiz
+	render();
+}
+
+function updateExamTimerDisplay() {
+	const progressEl = container.querySelector('[data-exam-progress="1"]');
+	const textEl = container.querySelector('[data-exam-text="1"]');
+	if (!progressEl || !textEl) return;
+
+	const pct = Math.max(0, Math.min(100, (examTimeRemaining / examDurationMs) * 100));
+	progressEl.style.width = `${pct}%`;
+
+	const minutes = Math.floor(examTimeRemaining / 60000);
+	const seconds = Math.floor((examTimeRemaining % 60000) / 1000);
+	textEl.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+
+	const timerContainer = container.querySelector('[data-exam-timer="1"]');
+	if (timerContainer) {
+		timerContainer.classList.remove('quiz-exam-timer-warning', 'quiz-exam-timer-danger');
+		if (pct <= 20) timerContainer.classList.add('quiz-exam-timer-danger');
+		else if (pct <= 50) timerContainer.classList.add('quiz-exam-timer-warning');
+	}
+}
+
+function handleExamTimeUp() {
+	if (examEnded) return;
+	examEnded = true;
+
+	// Arrêter le timer et mettre à jour l'affichage avec le temps restant (0:00)
+	stopExamTimer();
+	updateExamTimerDisplay();
+
+	// Verrouiller le quiz
+	quizState.locked = true;
+
+	// Aller directement aux résultats (comme un clic sur "Voir le score")
+	goToResults();
+
+	if (typeof Notice === 'function') {
+		new Notice('Temps écoulé ! Le quiz a été verrouillé.', 5000);
+	}
+}
+
+function stopExamTimer({ resetTimeRemaining = false } = {}) {
+	if (examTimerId) {
+		cancelAnimationFrame(examTimerId);
+		examTimerId = null;
+	}
+	// Réinitialiser examStartTime pour éviter les calculs erronés
+	examStartTime = 0;
+	// Optionnel : reset aussi le temps restant (seulement pour resetQuiz)
+	if (resetTimeRemaining) {
+		examTimeRemaining = examDurationMs;
+	}
 }
 
 function optionClass(qi, origIndex) {
@@ -2880,9 +3059,33 @@ function questionCardHtml(qi) {
 	else {
 		const smap = quizState.shuffleMap[qi] || [];
 		const mi = isMulti ? `<div class="quiz-multi-indicator">Sélectionnez une ou plusieurs réponses</div>` : "";
-		body = mi + smap.map(oi =>
-			`<div class="quiz-option ${isMulti ? "multi" : ""} ${optionClass(qi, oi)}" role="button" tabindex="0" data-orig="${oi}">${renderRawHtmlWithEmbeds(q.options[oi], { wrapClass: "quiz-option-embed-wrap", imgClass: "quiz-option-embed" })}</div>`
-		).join("");
+		const optionsHtml = smap.map((oi) => {
+			let optionContentHtml = "";
+			if (q.optionHtml?.[oi]) {
+				// Use rich HTML content, resolve image paths
+				optionContentHtml = q.optionHtml[oi];
+				if (typeof app?.vault?.adapter?.getResourcePath === "function") {
+					// Resolve image paths that are not already resource URLs
+					optionContentHtml = optionContentHtml.replace(/src="([^"]+)"/g, (match, src) => {
+						if (src.startsWith("http") || src.startsWith("data:") || src.startsWith("app://")) {
+							return match;
+						}
+						try {
+							const resolved = app.vault.adapter.getResourcePath(src);
+							return `src="${escapeHtmlAttr(resolved)}"`;
+						} catch {
+							return match;
+						}
+					});
+				}
+			} else {
+				// Fallback to plain text with embeds
+				optionContentHtml = renderRawHtmlWithEmbeds(q.options[oi], { wrapClass: "quiz-option-embed-wrap", imgClass: "quiz-option-embed" });
+			}
+			return `<div class="quiz-option ${isMulti ? "multi" : ""} ${optionClass(qi, oi)}" role="button" tabindex="0" data-orig="${oi}">${optionContentHtml}</div>`;
+		}).join("");
+		const hasImg = /<img[\s>]/i.test(optionsHtml);
+		body = mi + `<div class="quiz-options-wrap${hasImg ? " quiz-options-image-grid" : ""}">${optionsHtml}</div>`;
 	}
 
 	const hintBtn = (q.hint && String(q.hint).trim()) ? `<button class="quiz-hint-btn" type="button">Indice</button>` : "";
@@ -3380,6 +3583,7 @@ function destroyQuiz() {
 	if (__quizHintFocusTimer) { clearTimeout(__quizHintFocusTimer); __quizHintFocusTimer = 0; }
 	if (__quizBootstrapRaf1) { cancelAnimationFrame(__quizBootstrapRaf1); __quizBootstrapRaf1 = 0; }
 	if (__quizBootstrapRaf2) { cancelAnimationFrame(__quizBootstrapRaf2); __quizBootstrapRaf2 = 0; }
+	stopExamTimer();
 
 	const hintOverlay = document.getElementById(HINT_OVERLAY_ID);
 	if (hintOverlay) {
@@ -3745,6 +3949,13 @@ function bindQuestionTrackItem(trackItem) {
 	if (nextBtn) nextBtn.addEventListener("click", () => goToQuestion(qi + 1));
 }
 
+function bindExamStartButton() {
+	const startBtn = container.querySelector('.quiz-exam-start-btn');
+	if (startBtn) {
+		startBtn.addEventListener('click', () => startExam());
+	}
+}
+
 function bindStaticControls() {
 	bindSubmitSlideControls(container.querySelector('.quiz-track-item[data-slide-kind="submit"]'));
 	bindResultsSlideControls(container.querySelector('.quiz-track-item[data-slide-kind="results"]'));
@@ -3898,7 +4109,7 @@ function render() {
 	destroyViewportResizeObserver();
 	clearTrackTransitionFallback();
 
-	container.innerHTML = `${navHtml()}<div class="quiz-track-viewport" data-quiz-height-ready="0"><div class="quiz-track">${quiz.map((_, i) => questionCardHtml(i)).join("")}${submitSlideHtml()}${resultsSlideHtml()}</div></div>`;
+	container.innerHTML = `${examTimerHtml()}${navHtml()}<div class="quiz-track-viewport" data-quiz-height-ready="0"><div class="quiz-track">${quiz.map((_, i) => questionCardHtml(i)).join("")}${submitSlideHtml()}${resultsSlideHtml()}</div></div>`;
 	__quizSubmitSlideSignature = getSubmitSlideSignature();
 	__quizResultsSlideSignature = getResultsSlideSignature();
 
@@ -3931,11 +4142,23 @@ function render() {
 	container.querySelectorAll('.quiz-track-item[data-slide-kind="question"]').forEach(bindQuestionTrackItem);
 	bindStaticControls();
 
+	if (isExamMode && !examStarted) {
+		// En mode examen, tant que l'examen n'a pas commencé,
+		// on affiche seulement l'écran de démarrage (pas de navigation, pas de quiz)
+		container.innerHTML = `${examTimerHtml()}<div class="quiz-exam-placeholder" data-exam-placeholder="1"><p>Commencez l'examen pour afficher le quiz.</p></div>`;
+		bindExamStartButton();
+		return;
+	}
+
 	primeAllSlideHeights({ retries: 6, syncCurrent: true });
 	warmSlidesAroundIndex(quizState.current, 3);
 	startFullBackgroundWarm();
 	updateNavHighlight();
 	setSlidingClass(quizState.isSliding);
+
+	if (isExamMode) {
+		startExamTimer();
+	}
 }
 
 render();
