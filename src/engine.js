@@ -544,8 +544,8 @@ function requestQuizIdle(timeout = 500, epoch = currentAsyncEpoch()) {
 
 function getViewportStableWidth({ refresh = false } = {}) {
 	if (!refresh && __quizTrackViewportWidth > 0) return __quizTrackViewportWidth;
-	const { viewport } = viewport.getTrackElements();
-	const width = Math.max(1, Math.ceil(viewport?.clientWidth || viewport?.getBoundingClientRect?.().width || 0));
+	const { viewport: vpElement } = viewport.getTrackElements();
+	const width = Math.max(1, Math.ceil(vpElement?.clientWidth || vpElement?.getBoundingClientRect?.().width || 0));
 	__quizTrackViewportWidth = width;
 	return width;
 }
@@ -556,8 +556,8 @@ const alignToDevicePixel = value => {
 };
 
 function getSlideTranslateX(index = quizState.current) {
-	const { viewport, track } = viewport.getTrackElements();
-	if (!viewport || !track) return 0;
+	const { viewport: vp, track } = viewport.getTrackElements();
+	if (!vp || !track) return 0;
 	return alignToDevicePixel(-(getViewportStableWidth() * index));
 }
 function setTrackTransformPx(x) {
@@ -720,7 +720,7 @@ function cancelRunningTrackAnimation() {
 }
 
 function settleViewportHeightToIndex(index, { animate = true, refresh = true } = {}) {
-	const { viewport } = viewport.getTrackElements();
+	const { viewport: vpElement } = viewport.getTrackElements();
 	if (!viewport) return;
 	const targetHeight = Math.max(1, viewport.getSlideStableHeight(index, { refresh }) || 0);
 	if (!targetHeight) return;
@@ -3217,7 +3217,7 @@ function destroyViewportResizeObserver() {
 function bindViewportResizeObserver() {
 	destroyViewportResizeObserver();
 	if (typeof ResizeObserver === "undefined") return;
-	const { viewport } = viewport.getTrackElements();
+	const { viewport: vpElement } = viewport.getTrackElements();
 	if (!viewport) return;
 	let lastWidth = Math.round(viewport.getBoundingClientRect().width || viewport.clientWidth || 0);
 
@@ -3272,18 +3272,18 @@ function bindViewportResizeObserver() {
 }
 
 function syncTrackViewportIsolation() {
-	const { viewport, track } = viewport.getTrackElements();
-	if (!viewport || !track) return;
+	const { viewport: vp, track } = viewport.getTrackElements();
+	if (!vp || !track) return;
 
-	viewport.applyTrackGeometry({ refreshWidth: false });
+	vp.applyTrackGeometry({ refreshWidth: false });
 
-	if (viewport.dataset.quizIsoInit !== "1") {
-		viewport.dataset.quizIsoInit = "1";
-		viewport.style.position = "relative";
-		viewport.style.overflow = "hidden";
-		viewport.style.overflowX = "hidden";
-		viewport.style.overflowY = "hidden";
-		viewport.style.clipPath = "none";
+	if (vp.dataset.quizIsoInit !== "1") {
+		vp.dataset.quizIsoInit = "1";
+		vp.style.position = "relative";
+		vp.style.overflow = "hidden";
+		vp.style.overflowX = "hidden";
+		vp.style.overflowY = "hidden";
+		vp.style.clipPath = "none";
 		viewport.style.setProperty("-webkit-clip-path", "none");
 		viewport.style.isolation = "isolate";
 		viewport.style.contain = "layout style";
@@ -3903,19 +3903,19 @@ function render() {
 	__quizSubmitSlideSignature = getSubmitSlideSignature();
 	__quizResultsSlideSignature = getResultsSlideSignature();
 
-	const { viewport, track } = viewport.getTrackElements();
+	const { viewport: vp, track } = viewport.getTrackElements();
 	bindTrackFirstLoadFix();
 	bindViewportResizeObserver();
 	bindZoomFixHandlers();
 
-	if (!track || !viewport) return;
+	if (!track || !vp) return;
 
 	track.style.transition = "none";
 	track.style.willChange = "";
 	track.style.backfaceVisibility = "hidden";
 	track.style.transformStyle = "preserve-3d";
 
-	viewport.applyTrackGeometry({ refreshWidth: true });
+	vp.applyTrackGeometry({ refreshWidth: true });
 	setTrackTransformPx(getSlideTranslateX(quizState.current));
 
 	viewport.style.willChange = "";
