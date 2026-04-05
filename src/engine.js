@@ -714,13 +714,13 @@ function settleViewportHeightToIndex(index, { animate = true, refresh = true } =
 		Math.ceil(viewport.getBoundingClientRect().height || 0),
 		Math.ceil(viewport.clientHeight || 0)
 	);
-	if (Math.abs(currentHeight - targetHeight) <= 1) return void viewport.viewport.setViewportHeight(targetHeight, { animate: false });
+	if (Math.abs(currentHeight - targetHeight) <= 1) return void viewport.setViewportHeight(targetHeight, { animate: false });
 	viewport.style.transition = animate ? "height 240ms cubic-bezier(0.16, 1, 0.3, 1)" : "none";
 	viewport.style.height = `${targetHeight}px`;
 	viewport.dataset.quizHeightReady = "1";
 	if (animate) {
 		__quizViewportSettleTimer = window.setTimeout(() => {
-			const { viewport } = viewport.getTrackElements();
+			const { viewport: vp } = viewport.getTrackElements();
 			if (vp) vp.style.transition = "none";
 		}, 280);
 	}
