@@ -525,30 +525,16 @@ function requestQuizIdle(timeout = 500, epoch = currentAsyncEpoch()) {
 	return waiter.promise;
 }
 
-const getTrackElements = () => ({
-	viewport: container.querySelector(".quiz-track-viewport"),
-	track: container.querySelector(".quiz-track")
-});
-
-function getTrackItem(index = quizState.current) {
-	const { track } = getTrackElements();
-	return track ? track.children[index] || null : null;
-}
-function getTrackItems() {
-	const { track } = getTrackElements();
-	return track ? Array.from(track.children || []) : [];
-}
-
 function getViewportStableWidth({ refresh = false } = {}) {
 	if (!refresh && __quizTrackViewportWidth > 0) return __quizTrackViewportWidth;
-	const { viewport } = getTrackElements();
+	const { viewport } = viewport.getTrackElements();
 	const width = Math.max(1, Math.ceil(viewport?.clientWidth || viewport?.getBoundingClientRect?.().width || 0));
 	__quizTrackViewportWidth = width;
 	return width;
 }
 
 function applyTrackGeometry({ refreshWidth = false } = {}) {
-	const { track } = getTrackElements();
+	const { track } = viewport.getTrackElements();
 	const width = getViewportStableWidth({ refresh: refreshWidth });
 	if (!track || !width) return width;
 	const items = Array.from(track.children || []);
@@ -576,17 +562,17 @@ const alignToDevicePixel = value => {
 };
 
 function getSlideTranslateX(index = quizState.current) {
-	const { viewport, track } = getTrackElements();
+	const { viewport, track } = viewport.getTrackElements();
 	if (!viewport || !track) return 0;
 	return alignToDevicePixel(-(getViewportStableWidth() * index));
 }
 function setTrackTransformPx(x) {
-	const { track } = getTrackElements();
+	const { track } = viewport.getTrackElements();
 	if (track) track.style.transform = `translate3d(${alignToDevicePixel(x)}px, 0, 0)`;
 }
 
 function readCurrentTrackTranslateX() {
-	const { track } = getTrackElements();
+	const { track } = viewport.getTrackElements();
 	if (!track) return getSlideTranslateX(quizState.current);
 	try {
 		const computed = getComputedStyle(track).transform;
@@ -602,7 +588,7 @@ const setSlidingClass = on => container.classList.toggle("quiz-is-sliding", !!on
 const getSlidingWindow = () => ({ from: Math.min(quizState.prevCurrent, quizState.current), to: Math.max(quizState.prevCurrent, quizState.current) });
 
 function primeTrackAndViewportForSlideStart(startX, lockedHeight) {
-	const { track, viewport } = getTrackElements();
+	const { track, viewport } = viewport.getTrackElements();
 	if (!track || !viewport) return;
 	viewport.applyTrackGeometry({ refreshWidth: true });
 	const safeHeight = Math.max(1, Math.ceil(lockedHeight));
@@ -660,7 +646,7 @@ function bindActiveSlideResizeObserver() {
 function bindAllSlidesResizeObserver() {
 	destroyAllSlidesResizeObserver();
 	if (typeof ResizeObserver === "undefined") return;
-	const { track, viewport } = getTrackElements();
+	const { track, viewport } = viewport.getTrackElements();
 	if (!track || !viewport) return;
 
 	__quizAllSlidesResizeObserver = new ResizeObserver(entries => {
@@ -709,7 +695,7 @@ function bindAllSlidesResizeObserver() {
 }
 
 function cancelRunningTrackAnimation() {
-	const { track, viewport } = getTrackElements();
+	const { track, viewport } = viewport.getTrackElements();
 	clearTrackTransitionFallback();
 	const currentX = readCurrentTrackTranslateX();
 	const currentHeight = Math.max(
@@ -772,7 +758,7 @@ function getMaxRenderedSlideHeight({ refresh = false, padding = 24 } = {}) {
 }
 
 function setViewportHeight(height, { animate = false } = {}) {
-	const { viewport } = getTrackElements();
+	const { viewport } = viewport.getTrackElements();
 	if (!viewport) return false;
 	const h = Math.max(1, Math.ceil(Number(height) || 0));
 	viewport.style.transition = animate ? "height 220ms cubic-bezier(0.16, 1, 0.3, 1)" : "none";
@@ -787,7 +773,7 @@ function syncViewportHeight({ index = quizState.current, animate = false, refres
 }
 
 function settleViewportHeightToIndex(index, { animate = true, refresh = true } = {}) {
-	const { viewport } = getTrackElements();
+	const { viewport } = viewport.getTrackElements();
 	if (!viewport) return;
 	const targetHeight = Math.max(1, getSlideStableHeight(index, { refresh }) || 0);
 	if (!targetHeight) return;
@@ -803,7 +789,7 @@ function settleViewportHeightToIndex(index, { animate = true, refresh = true } =
 	viewport.dataset.quizHeightReady = "1";
 	if (animate) {
 		__quizViewportSettleTimer = window.setTimeout(() => {
-			const { viewport: vp } = getTrackElements();
+			const { viewport } = viewport.getTrackElements();
 			if (vp) vp.style.transition = "none";
 		}, 280);
 	}
@@ -989,7 +975,7 @@ function bindTrackItemImages(slide, slideIndex) {
 }
 
 function bindAllTrackImages() {
-	const { track } = getTrackElements();
+	const { track } = viewport.getTrackElements();
 	if (!track) return;
 	Array.from(track.children || []).forEach((slide, slideIndex) => bindTrackItemImages(slide, slideIndex));
 }
@@ -1026,7 +1012,7 @@ function resyncCommandTextareasOnSlide(index) {
 }
 
 function applyTrackPositionAndHeightInstant() {
-	const { track } = getTrackElements();
+	const { track } = viewport.getTrackElements();
 	if (!track) return false;
 	syncTrackViewportIsolation();
 	viewport.applyTrackGeometry({ refreshWidth: true });
@@ -1043,7 +1029,7 @@ function applyTrackPositionAndHeightInstant() {
 function ensureTrackVisibleAfterLayout(retries = 24, epoch = currentAsyncEpoch()) {
 	cancelEnsureTrackVisibleRaf();
 	if (!isQuizInstanceAlive(epoch)) return;
-	const { track } = getTrackElements();
+	const { track } = viewport.getTrackElements();
 	if (!track) return;
 	syncTrackViewportIsolation();
 	viewport.applyTrackGeometry({ refreshWidth: true });
@@ -1073,7 +1059,7 @@ function bindTrackFirstLoadFix() {
 	__quizTrackFixBound = true;
 	const resyncLayout = () => requestAnimationFrame(() => {
 		if (__quizDestroyed) return;
-		const { track } = getTrackElements();
+		const { track } = viewport.getTrackElements();
 		if (track) {
 			track.style.transition = "none";
 			track.style.willChange = "";
@@ -1108,7 +1094,7 @@ function getTrackEaseForDistance(hops) {
 
 function finishTrackSlideAnimation(token, targetIndex) {
 	if (token !== quizState.slideToken) return;
-	const { track, viewport } = getTrackElements();
+	const { track, viewport } = viewport.getTrackElements();
 	const shouldLockResultsNow = isResultsSlideIndex(targetIndex) && quizState.pendingResultsLock;
 	const grewDuringSlide = viewport?.dataset.quizGrowDuringSlide === "1";
 	clearTrackTransitionFallback();
@@ -1172,7 +1158,7 @@ function finishTrackSlideAnimation(token, targetIndex) {
 }
 
 function animateTrackToIndex(targetIndex, { fromX = null, fromHeight = null, refreshTargetHeight = true } = {}) {
-	const { track, viewport } = getTrackElements();
+	const { track, viewport } = viewport.getTrackElements();
 	if (!track || !viewport) {
 		quizState.isSliding = false;
 		setSlidingClass(false);
@@ -1225,7 +1211,7 @@ function animateTrackToIndex(targetIndex, { fromX = null, fromHeight = null, ref
 	primeTrackAndViewportForSlideStart(startX, lockedHeight);
 	requestAnimationFrame(() => {
 		if (token !== quizState.slideToken || __quizDestroyed) return;
-		const { track: liveTrack, viewport: liveViewport } = getTrackElements();
+		const { track: liveTrack, viewport: liveViewport } = viewport.getTrackElements();
 		if (!liveTrack || !liveViewport) return;
 		liveViewport.style.transition = "none";
 		liveViewport.style.willChange = "height";
@@ -1564,8 +1550,8 @@ async function goToSlide(index, { forceRender = false } = {}) {
 		fromX: getSlideTranslateX(quizState.prevCurrent),
 		fromHeight: Math.max(
 			getSlideStableHeight(quizState.prevCurrent, { refresh: true }) || 0,
-			Math.ceil(getTrackElements().viewport?.getBoundingClientRect?.().height || 0),
-			Math.ceil(getTrackElements().viewport?.clientHeight || 0)
+			Math.ceil(viewport.getTrackElements().viewport?.getBoundingClientRect?.().height || 0),
+			Math.ceil(viewport.getTrackElements().viewport?.clientHeight || 0)
 		),
 		refreshTargetHeight: true
 	});
@@ -2418,7 +2404,7 @@ function refreshMetaSlides({ force = false } = {}) {
 
 	viewport.applyTrackGeometry({ refreshWidth: false });
 	syncTrackViewportIsolation();
-	const { track } = getTrackElements();
+	const { track } = viewport.getTrackElements();
 	if (track && (quizState.current === SLIDE_SUBMIT_INDEX || quizState.current === SLIDE_RESULTS_INDEX)) {
 		track.style.transition = "none";
 		setTrackTransformPx(getSlideTranslateX(quizState.current));
@@ -3284,12 +3270,12 @@ function destroyViewportResizeObserver() {
 function bindViewportResizeObserver() {
 	destroyViewportResizeObserver();
 	if (typeof ResizeObserver === "undefined") return;
-	const { viewport } = getTrackElements();
+	const { viewport } = viewport.getTrackElements();
 	if (!viewport) return;
 	let lastWidth = Math.round(viewport.getBoundingClientRect().width || viewport.clientWidth || 0);
 
 	const realignViewportAndTrack = ({ settle = false } = {}) => {
-		const { track, viewport: vp } = getTrackElements();
+		const { track, viewport } = viewport.getTrackElements();
 		if (!track || !vp) return;
 		viewport.applyTrackGeometry({ refreshWidth: true });
 		if (quizState.isSliding) {
@@ -3339,7 +3325,7 @@ function bindViewportResizeObserver() {
 }
 
 function syncTrackViewportIsolation() {
-	const { viewport, track } = getTrackElements();
+	const { viewport, track } = viewport.getTrackElements();
 	if (!viewport || !track) return;
 
 	viewport.applyTrackGeometry({ refreshWidth: false });
@@ -3494,7 +3480,7 @@ function refreshQuestionSlide(qi, { syncHeight = true } = {}) {
 	updateNavHighlight();
 	syncTrackViewportIsolation();
 
-	const { track } = getTrackElements();
+	const { track } = viewport.getTrackElements();
 	if (track) {
 		track.style.transition = "none";
 		setTrackTransformPx(getSlideTranslateX(quizState.current));
@@ -3910,7 +3896,7 @@ function bindZoomFixHandlers() {
 					refreshTargetHeight: true
 				});
 			} else {
-				const { track } = getTrackElements();
+				const { track } = viewport.getTrackElements();
 				if (track) {
 					track.style.transition = "none";
 					track.style.willChange = "";
@@ -3970,7 +3956,7 @@ function render() {
 	__quizSubmitSlideSignature = getSubmitSlideSignature();
 	__quizResultsSlideSignature = getResultsSlideSignature();
 
-	const { viewport, track } = getTrackElements();
+	const { viewport, track } = viewport.getTrackElements();
 	bindTrackFirstLoadFix();
 	bindViewportResizeObserver();
 	bindZoomFixHandlers();
