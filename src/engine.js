@@ -160,237 +160,23 @@ async function renderInteractiveQuiz(context) {
 		buildNavTabClass: state.buildNavTabClass
 	});
 
-function normalizeTerminalVariantName(value) {
-	const raw = String(value ?? "").trim().toLowerCase();
-	if (!raw) return null;
-
-	if ([
-		"command",
-		"cmd",
-		"windows-cmd",
-		"windows cmd",
-		"invite-de-commandes",
-		"invite de commandes"
-	].includes(raw)) return "cmd";
-
-	if ([
-		"powershell",
-		"ps",
-		"pwsh",
-		"windows-powershell",
-		"windows powershell",
-		"power-shell",
-		"power shell"
-	].includes(raw)) return "powershell";
-
-	if ([
-		"bash",
-		"shell",
-		"sh",
-		"zsh",
-		"terminal",
-		"linux"
-	].includes(raw)) {
-		return (raw === "terminal" || raw === "linux") ? "bash" : raw;
-	}
-
-	return raw.replace(/\s+/g, "-");
-}
-
-function getTerminalTextVariant(q) {
-	if (!isTextQuestion(q)) return null;
-
-	const candidates = [
-		q?.terminalVariant,
-		q?.textVariant,
-		q?.text?.variant,
-		q?.terminal?.variant
-	];
-
-	for (const candidate of candidates) {
-		const normalized = normalizeTerminalVariantName(candidate);
-		if (normalized) return normalized;
-	}
-
-	if (q?.command === true) return "cmd";
-
-	return null;
-}
-
-const isTerminalTextQuestion = q => !!getTerminalTextVariant(q);
-
-/* Compatibilité avec ton moteur actuel :
-   on garde ce nom pour ne pas casser le comportement existant. */
-const isCommandTextQuestion = q => isTerminalTextQuestion(q);
-
-function getTerminalPromptPrefix(q) {
-	const explicitPrefix = [
-		q?.commandPrefix,
-		q?.terminalPrefix,
-		q?.promptPrefix,
-		q?.terminal?.prefix
-	].find(value => typeof value === "string" && value.length > 0);
-
-	if (explicitPrefix) return explicitPrefix;
-
-	const variant = getTerminalTextVariant(q);
-
-	switch (variant) {
-		case "cmd":
-			return "C:\\>";
-
-		case "powershell":
-			return "PS>";
-
-		case "bash":
-			return "user@hostname:~$ ";
-
-		case "zsh":
-			return "user@hostname %";
-
-		case "sh":
-			return "$";
-	}
-	return "C:\\>";
-
-}
-
-
-function renderTerminalPromptPrefixHtml(q) {
-	const promptPrefix = String(getTerminalPromptPrefix(q) ?? "");
-	const variant = getTerminalTextVariant(q);
-
-	if (variant === "bash") {
-		const match = promptPrefix.match(/^([^:]+)(:)([^$]*)(\$ ?)$/);
-
-		if (match) {
-			const [, userHost, colon, pathPart, dollarPart] = match;
-
-			return '<span class="quiz-command-prefix quiz-command-prefix-bash">' +
-				`<span class="quiz-bash-prefix-userhost">${escapeHtmlText(userHost)}</span>` +
-				`<span class="quiz-bash-prefix-colon">${escapeHtmlText(colon)}</span>` +
-				`<span class="quiz-bash-prefix-path">${escapeHtmlText(pathPart)}</span>` +
-				`<span class="quiz-bash-prefix-dollar">${escapeHtmlText(dollarPart)}</span>` +
-			'</span>';
-		}
-	}
-
-	return `<span class="quiz-command-prefix">${escapeHtmlText(promptPrefix)}</span>`;
-}
-
-
-
-function getTextMaxLength(q) {
-	const candidates = [
-		q?.maxLength,
-		q?.textMaxLength,
-		q?.text?.maxLength,
-		q?.commandMaxLength,
-		q?.terminalMaxLength,
-		q?.terminal?.maxLength
-	];
-
-	for (const value of candidates) {
-		const n = Number(value);
-		if (Number.isFinite(n) && n > 0) return Math.floor(n);
-	}
-
-	return null;
-}
-
-function sliceToMaxChars(value, maxLength) {
-	if (!Number.isFinite(maxLength) || maxLength <= 0) return String(value ?? "");
-	return Array.from(String(value ?? "")).slice(0, maxLength).join("");
-}
-
-function sanitizeTextAnswerValue(q, value) {
-	let out = String(value ?? "");
-
-	if (isTerminalTextQuestion(q)) {
-		out = out.replace(/[\r\n]+/g, "");
-	}
-
-	const maxLength = getTextMaxLength(q);
-	if (Number.isFinite(maxLength) && maxLength > 0) {
-		out = sliceToMaxChars(out, maxLength);
-	}
-
-	return out;
-}
-
-
-function getTextAcceptedAnswers(q) {
-	const values = [];
-
-	if (Array.isArray(q?.acceptedAnswers)) values.push(...q.acceptedAnswers);
-	if (Array.isArray(q?.acceptableAnswers)) values.push(...q.acceptableAnswers);
-	if (Array.isArray(q?.correctAnswers)) values.push(...q.correctAnswers);
-	if (typeof q?.correctText === "string") values.push(q.correctText);
-	if (typeof q?.answer === "string") values.push(q.answer);
-
-	return values
-		.filter(v => v !== null && v !== undefined)
-		.map(v => String(v));
-}
-
-function normalizeTextAnswer(value, { caseSensitive = false } = {}) {
-	let out = String(value ?? "")
-		.normalize("NFD")
-		.replace(/[\u0300-\u036f]/g, "")
-		.replace(/\s+/g, " ")
-		.trim();
-
-	if (!caseSensitive) out = out.toLowerCase();
-	return out;
-}
-
-function isTextAnswerCorrect(q, value) {
-	const accepted = getTextAcceptedAnswers(q);
-	if (!accepted.length) return false;
-
-	return accepted.some(expected =>
-		normalizeTextAnswer(expected, { caseSensitive: !!q.caseSensitive }) ===
-		normalizeTextAnswer(value, { caseSensitive: !!q.caseSensitive })
-	);
-}
-
-function syncTextAreaHeight(textarea) {
-	if (!textarea) return;
-	textarea.style.height = "auto";
-	textarea.style.height = `${Math.max(220, textarea.scrollHeight)}px`;
-}
-
-
 function firstArray(...candidates) {
 	for (const c of candidates) if (Array.isArray(c)) return c;
 	return [];
 }
-
-function getOrderingItems(q) {
-	return firstArray(q?.possibilities, q?.orderingItems, q?.ordering?.items, q?.options);
-}
-function getOrderingCorrectOrder(q) {
-	return firstArray(q?.correctOrder, q?.ordering?.correctOrder, [...Array(getOrderingItems(q).length).keys()]);
-}
-function getOrderingSlotLabels(q) {
-	return firstArray(q?.slots, q?.slotLabels, q?.ordering?.slotLabels, getOrderingItems(q).map((_, i) => String(i + 1)));
-}
-function getMatchRows(q) { return firstArray(q?.rows, q?.matching?.rows); }
-function getMatchChoices(q) { return firstArray(q?.choices, q?.matching?.choices); }
-function getMatchCorrectMap(q) { return firstArray(q?.correctMap, q?.matching?.correctMap); }
 
 function buildShuffleMap() {
 	return quiz.map(q => {
 		if (isTextQuestion(q)) return null;
 
 		if (isOrderingQuestion(q)) {
-			return shuffleArray([...Array(getOrderingItems(q).length).keys()]);
+			return shuffleArray([...Array(questions.getOrderingItems(q).length).keys()]);
 		}
 
 		if (isMatchingQuestion(q)) {
 			return {
-				rows: shuffleArray([...Array(getMatchRows(q).length).keys()]),
-				choices: shuffleArray([...Array(getMatchChoices(q).length).keys()])
+				rows: shuffleArray([...Array(questions.getMatchRows(q).length).keys()]),
+				choices: shuffleArray([...Array(questions.getMatchChoices(q).length).keys()])
 			};
 		}
 
@@ -401,8 +187,8 @@ function buildShuffleMap() {
 function initSelections() {
 	return quiz.map(q => {
 		if (isTextQuestion(q)) return "";
-		if (isOrderingQuestion(q)) return Array(getOrderingItems(q).length).fill(null);
-		if (isMatchingQuestion(q)) return Array(getMatchRows(q).length).fill(null);
+		if (isOrderingQuestion(q)) return Array(questions.getOrderingItems(q).length).fill(null);
+		if (isMatchingQuestion(q)) return Array(questions.getMatchRows(q).length).fill(null);
 		if (q.multiSelect) return new Set();
 		return null;
 	});
@@ -1699,17 +1485,17 @@ function isCorrect(i) {
 	const q = quiz[i], sel = quizState.selections[i];
 
 	if (isTextQuestion(q)) {
-		return isTextAnswerCorrect(q, sel);
+		return terminal.isTextAnswerCorrect(q, sel);
 	}
 
 	if (isOrderingQuestion(q)) {
-		const co = getOrderingCorrectOrder(q);
+		const co = questions.getOrderingCorrectOrder(q);
 		if (!Array.isArray(sel) || sel.length !== co.length) return false;
 		return co.every((v, k) => sel[k] === v);
 	}
 
 	if (isMatchingQuestion(q)) {
-		const rows = getMatchRows(q), cm = getMatchCorrectMap(q);
+		const rows = questions.getMatchRows(q), cm = questions.getMatchCorrectMap(q);
 		if (!Array.isArray(sel) || sel.length !== rows.length || !Array.isArray(cm) || cm.length !== rows.length) return false;
 		return cm.every((v, k) => sel[k] === v);
 	}
@@ -2504,8 +2290,8 @@ function renderQuizPromptHtml(q) {
 function orderingCardHtml(q, qi) {
 	const items = getOrderingItems(q);
 	const sel = quizState.selections[qi];
-	const slotLabels = getOrderingSlotLabels(q);
-	const correctOrder = getOrderingCorrectOrder(q);
+	const slotLabels = questions.getOrderingSlotLabels(q);
+	const correctOrder = questions.getOrderingCorrectOrder(q);
 	const shuffled = quizState.shuffleMap[qi] || [];
 	const pick = quizState.orderingPick[qi];
 
@@ -2546,7 +2332,7 @@ function orderingCardHtml(q, qi) {
 function matchingCardHtml(q, qi) {
 	const rows = getMatchRows(q);
 	const choices = getMatchChoices(q);
-	const correctMap = getMatchCorrectMap(q);
+	const correctMap = questions.getMatchCorrectMap(q);
 	const sel = quizState.selections[qi];
 	const shuffleData = quizState.shuffleMap[qi] || {};
 	const shuffledRows = Array.isArray(shuffleData.rows) ? shuffleData.rows : [...Array(rows.length).keys()];
@@ -2689,10 +2475,10 @@ function splitTerminalVisualTokens(value, variant) {
 
 function textQuestionCardHtml(q, qi) {
 	const value = typeof quizState.selections[qi] === "string" ? quizState.selections[qi] : "";
-	const terminalVariant = getTerminalTextVariant(q);
+	const terminalVariant = terminal.getTerminalTextVariant(q);
 	const isTerminal = !!terminalVariant;
 	const isPowerShell = terminalVariant === "powershell";
-	const maxLength = getTextMaxLength(q);
+	const maxLength = terminal.getTextMaxLength(q);
 
 	const statusClass = quizState.locked
 		? (isCorrect(qi) ? "correct" : "wrong")
@@ -2707,7 +2493,7 @@ function textQuestionCardHtml(q, qi) {
 	const textareaName = escapeHtmlAttr(q?.id || `q${qi + 1}`);
 
 	if (isTerminal) {
-		const promptPrefixHtml = renderTerminalPromptPrefixHtml(q);
+		const promptPrefixHtml = terminal.renderTerminalPromptPrefixHtml(q);
 		const variantClass = `quiz-terminal-variant-${escapeHtmlAttr(terminalVariant)}`;
 		const variantAttr = escapeHtmlAttr(terminalVariant);
 
@@ -2776,8 +2562,8 @@ function bindTextQuestion(trackItem, qi) {
 	if (!textarea) return;
 
 	const q = quiz[qi];
-	const terminalVariant = getTerminalTextVariant(q);
-	const isCommand = isCommandTextQuestion(q);
+	const terminalVariant = terminal.getTerminalTextVariant(q);
+	const isCommand = terminal.isCommandTextQuestion(q);
 	const isPowerShell = terminalVariant === "powershell";
 
 	const shell = trackItem.querySelector(".quiz-command-shell");
@@ -2802,7 +2588,7 @@ function bindTextQuestion(trackItem, qi) {
 		const rawStart = typeof textarea.selectionStart === "number" ? textarea.selectionStart : rawValue.length;
 		const rawEnd = typeof textarea.selectionEnd === "number" ? textarea.selectionEnd : rawStart;
 
-		const sanitized = sanitizeTextAnswerValue(q, rawValue);
+		const sanitized = terminal.sanitizeTextAnswerValue(q, rawValue);
 
 		if (sanitized !== rawValue) {
 			textarea.value = sanitized;
@@ -2825,7 +2611,7 @@ function bindTextQuestion(trackItem, qi) {
 		const currentValue = String(textarea.value ?? "");
 
 		if (quizState.locked) {
-			return isTextAnswerCorrect(q, currentValue) ? "correct" : "wrong";
+			return terminal.isTextAnswerCorrect(q, currentValue) ? "correct" : "wrong";
 		}
 
 		return currentValue.trim().length > 0 ? "filled" : "";
@@ -3004,7 +2790,7 @@ function bindTextQuestion(trackItem, qi) {
 			updateCommandVisuals();
 		}
 		else {
-			syncTextAreaHeight(textarea);
+			terminal.syncTextAreaHeight(textarea);
 		}
 
 		__quizSlideHeightCache.delete(qi);
