@@ -40,7 +40,22 @@ function makeDefault(type) {
 
 function md2html(src) {
 	if (!src) return "";
-	return String(src)
+
+	// ═══════════════════════════════════════════════════════
+	// ÉTAPE 1: Extraire les blocs code markdown pour les préserver
+	// Les blocs ``` doivent être traités AVANT l'échappement HTML
+	// ═══════════════════════════════════════════════════════
+	const codeBlocks = [];
+	let processed = String(src).replace(/```(\w*)\n?([\s\S]*?)```/g, (match, lang, code) => {
+		const placeholder = `___CODE_BLOCK_${codeBlocks.length}___`;
+		codeBlocks.push({ lang: lang || '', code: code.trim() });
+		return placeholder;
+	});
+
+	// ═══════════════════════════════════════════════════════
+	// ÉTAPE 2: Traitement Markdown + échappement HTML
+	// ═══════════════════════════════════════════════════════
+	processed = processed
 		.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
 		.replace(/^### (.+)$/gm, "<h3>$1</h3>")
 		.replace(/^## (.+)$/gm, "<h2>$1</h2>")
@@ -52,10 +67,26 @@ function md2html(src) {
 		.replace(/(<li>.*<\/li>\n?)+/g, m => "<ul>" + m + "</ul>")
 		.replace(/^> (.+)$/gm, "<blockquote>$1</blockquote>")
 		.replace(/(<blockquote>.*<\/blockquote>\n?)+/g, m => m.replace(/<\/blockquote>\n?<blockquote>/g, "\n"))
-		.replace(/```(\w*)\n([\s\S]*?)```/g, (_, l, c) => "<pre><code>" + c.trim() + "</code></pre>")
 		.replace(/!\[\[([^\]]+)\]\]/g, "<img src=\"$1\" class=\"qb-md-img\" />")
 		.replace(/\n{2,}/g, "</p><p>")
 		.replace(/\n/g, "<br>");
+
+	// ═══════════════════════════════════════════════════════
+	// ÉTAPE 3: Réinsérer les blocs code avec leur contenu échappé
+	// Le contenu du code est échappé pour la sécurité
+	// ═══════════════════════════════════════════════════════
+	codeBlocks.forEach(({ lang, code }, index) => {
+		const placeholder = `___CODE_BLOCK_${index}___`;
+		// Échapper le HTML dans le contenu du code pour la sécurité
+		const escapedCode = code
+			.replace(/&/g, "&amp;")
+			.replace(/</g, "&lt;")
+			.replace(/>/g, "&gt;");
+		const langAttr = lang ? ` class="language-${lang}"` : '';
+		processed = processed.replace(placeholder, `<pre><code${langAttr}>${escapedCode}</code></pre>`);
+	});
+
+	return processed;
 }
 
 function escHtml(s) { return String(s ?? "").replace(/"/g, "&quot;").replace(/'/g, "&#39;"); }

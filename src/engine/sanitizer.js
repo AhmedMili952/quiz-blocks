@@ -238,12 +238,25 @@ module.exports = function createSanitizer(ctx) {
 		const text = String(raw ?? "");
 		const embedRe = /!\[\[([^\]]+)\]\]/g;
 
+		// ═══════════════════════════════════════════════════════
+		// ÉTAPE 1: Extraire les blocs code markdown pour les préserver
+		// ═══════════════════════════════════════════════════════
+		const codeBlocks = [];
+		let processedText = text.replace(/```(\w*)\n?([\s\S]*?)```/g, (match, lang, code) => {
+			const placeholder = `___CODE_BLOCK_${codeBlocks.length}___`;
+			codeBlocks.push({ lang: lang || '', code: code.trim() });
+			return placeholder;
+		});
+
+		// ═══════════════════════════════════════════════════════
+		// ÉTAPE 2: Traiter les embeds et échapper le HTML
+		// ═══════════════════════════════════════════════════════
 		let html = "";
 		let lastIndex = 0;
 		let match;
 
-		while ((match = embedRe.exec(text)) !== null) {
-			const before = text.slice(lastIndex, match.index);
+		while ((match = embedRe.exec(processedText)) !== null) {
+			const before = processedText.slice(lastIndex, match.index);
 
 			if (before) {
 				html += restoreAllowedInlineTags(
@@ -255,13 +268,24 @@ module.exports = function createSanitizer(ctx) {
 			lastIndex = match.index + match[0].length;
 		}
 
-		const tail = text.slice(lastIndex);
+		const tail = processedText.slice(lastIndex);
 
 		if (tail) {
 			html += restoreAllowedInlineTags(
 				escapeHtmlText(tail).replace(/\n/g, "<br>")
 			);
 		}
+
+		// ═══════════════════════════════════════════════════════
+		// ÉTAPE 3: Réinsérer les blocs code avec leur contenu échappé
+		// ═══════════════════════════════════════════════════════
+		codeBlocks.forEach(({ lang, code }, index) => {
+			const placeholder = `___CODE_BLOCK_${index}___`;
+			// Échapper le HTML dans le contenu du code pour la sécurité
+			const escapedCode = escapeHtmlText(code);
+			const langAttr = lang ? ` class="language-${lang}"` : '';
+			html = html.replace(placeholder, `<pre><code${langAttr}>${escapedCode}</code></pre>`);
+		});
 
 		return html;
 	}
