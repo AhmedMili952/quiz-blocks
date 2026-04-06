@@ -278,8 +278,11 @@ module.exports = function createSanitizer(ctx) {
 	}
 
 	function replaceObsidianEmbedsInHtml(html, { wrapClass = "quiz-explain-embed-wrap", imgClass = "quiz-explain-embed" } = {}) {
-		const unescaped = unescapeHtmlText(String(html ?? ""));
-		return unescaped.replace(/!\[\[([^\]]+)\]\]/g, (_, spec) => buildEmbedImgHtml(spec, { wrapClass, imgClass }));
+		// NE PAS faire unescapeHtmlText ici car cela casserait l'affichage
+		// des entités HTML comme &gt; qui doivent rester comme &gt; pour être
+		// affichées comme > par le navigateur, pas interprétées comme des balises
+		const content = String(html ?? "");
+		return content.replace(/!\[\[([^\]]+)\]\]/g, (_, spec) => buildEmbedImgHtml(spec, { wrapClass, imgClass }));
 	}
 
 	return {
