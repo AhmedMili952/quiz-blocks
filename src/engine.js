@@ -596,7 +596,7 @@ function refreshQuestionSlide(qi, { syncHeight = true } = {}) {
 	ctx.lifecycle.bumpSlideGeneration(qi);
 
 	const tmp = document.createElement("div");
-	tmp.innerHTML = ctx.cards.questionCardHtml(qi).trim();
+		tmp.innerHTML = ctx.cards.questionCardHtml(qi).trim();
 	const newItem = tmp.firstElementChild;
 	if (!newItem) return null;
 

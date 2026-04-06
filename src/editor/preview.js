@@ -32,7 +32,10 @@ module.exports = function createPreviewHandlers(ctx) {
 			rbtn.createSpan({ cls: "quiz-resource-btn-label", text: q.resourceButton.label || "Ressource" });
 		}
 
-		if (q.prompt) {
+		if (q._promptHtml) {
+			const promptEl = card.createDiv({ cls: "quiz-question" });
+			promptEl.innerHTML = q._promptHtml;
+		} else if (q.prompt) {
 			const promptEl = card.createDiv({ cls: "quiz-question" });
 			promptEl.innerHTML = md2html(q.prompt);
 			promptEl.querySelectorAll("img.qb-md-img").forEach(img => {
