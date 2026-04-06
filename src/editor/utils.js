@@ -63,10 +63,11 @@ function escHtml(s) { return String(s ?? "").replace(/"/g, "&quot;").replace(/'/
 function esc5(s) {
 	return String(s ?? "")
 		.replace(/\\/g, "\\\\")    // Échapper les antislashs d'abord
-		.replace(/'/g, "\\'")          // Échapper les apostrophes
-		.replace(/"/g, '\\"')          // Échapper les guillemets doubles
+		.replace(/'/g, "\\'")          // Échapper les apostrophes (car on utilise ' pour délimiter)
 		.replace(/\r/g, "\\r")        // Échapper les retours chariot
 		.replace(/\n/g, "\\n");        // Échapper les sauts de ligne
+	// Note: Les guillemets doubles n'ont pas besoin d'être échappés car
+	// les chaînes sont délimitées par des guillemets simples dans export.js
 }
 
 module.exports = { Q_TYPES, loadReact, _setIcon, _iconSpan, makeDefault, md2html, escHtml, esc5 };
