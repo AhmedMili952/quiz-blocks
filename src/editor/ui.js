@@ -117,6 +117,7 @@ module.exports = function createEditorUIHandlers(ctx) {
 		// Fonction pour mettre à jour l'état visuel de l'examen
 		function updateExamUIState() {
 			examTrack.classList.toggle("on", ctx.examOptions.enabled);
+			examSection.classList.toggle("qb-exam-active", ctx.examOptions.enabled);
 			examOptionsContainer.classList.toggle("qb-exam-disabled", !ctx.examOptions.enabled);
 			durationInput.disabled = !ctx.examOptions.enabled;
 			autoSubmitCb.disabled = !ctx.examOptions.enabled;
