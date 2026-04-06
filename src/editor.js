@@ -35,9 +35,9 @@ class QuizBuilderView extends obsidian.ItemView {
 		this.activeEditorTab = 'content';
 
 		this._savedWidths = {
-			sidebar: 224,
+			sidebar: 320,
 			editor: 352,
-			preview: 400,
+			preview: 304,
 			code: 288
 		};
 		this._minPanelWidth = 50;

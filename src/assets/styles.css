@@ -3577,7 +3577,7 @@ body{
 }
 
 .qb-main .qb-sidebar {
-	width: var(--qb-sidebar-w, 224px);
+	width: var(--qb-sidebar-w, 320px);
 	min-width: 0;
 	max-width: none;
 	flex-shrink: 0;

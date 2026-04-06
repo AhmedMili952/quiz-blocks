@@ -21,20 +21,12 @@ module.exports = function createSidebarHandlers(ctx) {
 			text.createDiv({ cls: "qb-q-title", text: q.title || `Question ${i + 1}` });
 			text.createDiv({ cls: "qb-q-type", text: ti.label });
 
-			let previewText = "";
-			if (q._type === "single" && q.options && q.options[q.correctIndex]) {
-				previewText = q.options[q.correctIndex];
-			} else if (q._type === "multi" && q.options && q.correctIndices && q.correctIndices.length > 0) {
-				previewText = q.options[q.correctIndices[0]];
-			} else if (["text", "cmd", "powershell", "bash"].includes(q._type) && q.acceptedAnswers && q.acceptedAnswers.length > 0) {
-				previewText = q.acceptedAnswers[0];
-			} else if (q._type === "ordering" && q.possibilities && q.possibilities.length > 0) {
-				previewText = q.possibilities[0];
-			} else if (q._type === "matching" && q.rows && q.rows.length > 0) {
-				previewText = typeof q.rows[0] === "string" ? q.rows[0] : (q.rows[0]?.left || "");
-			}
+			// Afficher le début de la question (prompt) pour reconnaissance facile
+			let previewText = q.prompt || "";
+			// Nettoyer le markdown pour l'aperçu
+			previewText = previewText.replace(/[#*_`\[\]!]/g, '').replace(/\n/g, ' ').trim();
 			if (previewText) {
-				if (previewText.length > 50) previewText = previewText.substring(0, 50) + "...";
+				if (previewText.length > 60) previewText = previewText.substring(0, 60) + "...";
 				text.createDiv({ cls: "qb-q-preview", text: previewText });
 			}
 

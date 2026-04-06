@@ -31,7 +31,7 @@ module.exports = function createEditorUIHandlers(ctx) {
 				if (!wasVisible && ctx.panels[key]) {
 					const mainEl = view.contentEl.querySelector('.qb-main');
 					if (mainEl) {
-						mainEl.style.setProperty('--qb-sidebar-w', '224px');
+						mainEl.style.setProperty('--qb-sidebar-w', '320px');
 						mainEl.style.setProperty('--qb-editor-w', '352px');
 						mainEl.style.setProperty('--qb-code-w', '288px');
 					}
@@ -71,7 +71,7 @@ module.exports = function createEditorUIHandlers(ctx) {
 		const main = root.createDiv({ cls: "qb-main" });
 
 		if (!main.style.getPropertyValue('--qb-sidebar-w')) {
-			main.style.setProperty('--qb-sidebar-w', '224px');
+			main.style.setProperty('--qb-sidebar-w', '320px');
 			main.style.setProperty('--qb-editor-w', '352px');
 			main.style.setProperty('--qb-code-w', '288px');
 		}
@@ -202,7 +202,7 @@ module.exports = function createEditorUIHandlers(ctx) {
 		const mainEl = view.contentEl.querySelector('.qb-main');
 		const map = { sidebar: view.sidebarEl, editor: view.editorEl, preview: view.previewEl, code: view.codeEl };
 
-		const defaultWidths = { sidebar: '224px', editor: '352px', code: '288px' };
+		const defaultWidths = { sidebar: '320px', editor: '352px', code: '288px' };
 
 		if (ctx.panels.preview && mainEl) {
 			const editorWidth = mainEl.style.getPropertyValue('--qb-editor-w');
@@ -224,7 +224,7 @@ module.exports = function createEditorUIHandlers(ctx) {
 			const mainRect = mainEl.getBoundingClientRect();
 			let fixedWidthSum = 0;
 			if (ctx.panels.sidebar) {
-				const sidebarWidth = parseFloat(mainEl.style.getPropertyValue('--qb-sidebar-w') || '224');
+				const sidebarWidth = parseFloat(mainEl.style.getPropertyValue('--qb-sidebar-w') || '320');
 				fixedWidthSum += sidebarWidth;
 			}
 			if (ctx.panels.editor) {
@@ -236,7 +236,7 @@ module.exports = function createEditorUIHandlers(ctx) {
 				fixedWidthSum += codeWidth;
 			}
 			if (fixedWidthSum > mainRect.width * 0.7) {
-				mainEl.style.setProperty('--qb-sidebar-w', '224px');
+				mainEl.style.setProperty('--qb-sidebar-w', '320px');
 				mainEl.style.setProperty('--qb-editor-w', '352px');
 				mainEl.style.setProperty('--qb-code-w', '288px');
 			}
