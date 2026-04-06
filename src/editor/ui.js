@@ -48,19 +48,17 @@ module.exports = function createEditorUIHandlers(ctx) {
 		}
 
 		const actions = header.createDiv({ cls: "qb-actions" });
-		// Indicateur de sauvegarde (visible quand on édite un fichier)
-		view._saveIndicator = actions.createDiv({ cls: "qb-save-indicator" });
-		view._saveIndicator.style.display = "none";
-		_iconSpan(view._saveIndicator, "file-edit", "qb-save-icon");
-		view._saveIndicator.createSpan({ cls: "qb-save-text", text: "Modifié" });
 
-		// Bouton Sauvegarder (visible quand on édite un fichier)
+		// Bouton Sauvegarder - toujours visible mais grisé par défaut
 		view._saveBtn = actions.createEl("button", { cls: "qb-btn qb-btn-primary qb-save-btn" });
-		view._saveBtn.style.display = "none";
+		view._saveBtn.disabled = true;
+		view._saveBtn.title = "Aucune modification à sauvegarder";
 		_iconSpan(view._saveBtn, "save", "qb-btn-leading-icon");
 		view._saveBtn.createSpan({ text: "Sauvegarder" });
 		view._saveBtn.addEventListener("click", () => {
-			view.saveToSourceFile?.();
+			if (!view._saveBtn.disabled) {
+				view.saveToSourceFile?.();
+			}
 		});
 
 
@@ -217,18 +215,26 @@ module.exports = function createEditorUIHandlers(ctx) {
 
 		view.editorInnerEl = view.editorEl.createDiv({ cls: "qb-editor-inner" });
 
-		// Fonction pour mettre à jour l'indicateur de sauvegarde
+		// Fonction pour mettre à jour le bouton de sauvegarde et afficher notifications
 		view.updateSaveIndicator = (saved) => {
 			if (!view.sourceFile) {
-				view._saveIndicator.style.display = "none";
-				view._saveBtn.style.display = "none";
+				// Pas de fichier source - bouton grisé
+				view._saveBtn.disabled = true;
+				view._saveBtn.title = "Ouvrez un fichier pour sauvegarder";
 				return;
 			}
-			view._saveIndicator.style.display = "flex";
-			view._saveBtn.style.display = "flex";
-			const text = view._saveIndicator.querySelector(".qb-save-text");
-			if (text) text.textContent = saved ? "Sauvegardé" : "Modifié";
-			view._saveIndicator.classList.toggle("is-saved", saved);
+
+			if (saved) {
+				// Sauvegardé - bouton grisé, notification de confirmation
+				view._saveBtn.disabled = true;
+				view._saveBtn.title = "Toutes les modifications sont sauvegardées";
+				// Notification professionnelle
+				new obsidian.Notice("✓ Sauvegardé", 2000);
+			} else {
+				// Modifications en attente - bouton actif
+				view._saveBtn.disabled = false;
+				view._saveBtn.title = "Cliquez pour sauvegarder les modifications";
+			}
 		};
 
 		syncPanels();

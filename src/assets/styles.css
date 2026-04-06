@@ -5777,8 +5777,16 @@ body{
 .qb-save-btn {
 	background: var(--interactive-accent) !important;
 	color: white !important;
+	transition: all 0.2s ease;
 }
 
-.qb-save-btn:hover {
+.qb-save-btn:hover:not(:disabled) {
 	filter: brightness(1.1);
+}
+
+.qb-save-btn:disabled {
+	background: var(--background-modifier-border) !important;
+	color: var(--text-muted) !important;
+	cursor: not-allowed !important;
+	opacity: 0.6;
 }
