@@ -240,14 +240,25 @@ class QuizBuilderView extends obsidian.ItemView {
 			const newQuizContent = exportAllWithFence(this.questions, this.examOptions);
 
 			// Valider que le JSON5 généré est correct avant de sauvegarder
+			let innerContent;
 			try {
 				const { parseQuizSource } = require("./quiz-utils");
 				// Extraire le contenu entre les fences pour validation
-				const innerContent = newQuizContent.replace(/```quiz-blocks\n?/, "").replace(/```\n?$/, "");
+				innerContent = newQuizContent.replace(/```quiz-blocks\n?/, "").replace(/```\n?$/, "");
+				console.log("[Quiz Blocks] Contenu à valider (premiers 500 caractères):", innerContent.substring(0, 500));
 				parseQuizSource(innerContent);
 			} catch (parseErr) {
 				console.error("[Quiz Blocks] JSON5 invalide généré:", parseErr);
-				new obsidian.Notice("Erreur: le quiz généré n'est pas valide. Vérifiez les caractères spéciaux.");
+				console.error("[Quiz Blocks] Contenu problématique (complet):", innerContent);
+				// Trouver la position approximative de l'erreur
+				if (parseErr.message && parseErr.message.includes("position")) {
+					const match = parseErr.message.match(/position (\d+)/);
+					if (match) {
+						const pos = parseInt(match[1]);
+						console.error("[Quiz Blocks] Caractères autour de la position", pos + ":", innerContent.substring(Math.max(0, pos-50), pos+50));
+					}
+				}
+				new obsidian.Notice("Erreur: le quiz généré n'est pas valide. Vérifiez la console.");
 				return;
 			}
 
