@@ -229,8 +229,8 @@ module.exports = class InteractiveQuizPlugin extends obsidian.Plugin {
 					// Import the quiz
 					const view = leaf.view;
 					if (view && view.importQuizSource) {
-						await view.importQuizSource(match[1], activeFile.basename);
-						new obsidian.Notice(`Quiz importé depuis ${activeFile.basename}`);
+						await view.importQuizSource(match[1], activeFile.name);
+						new obsidian.Notice(`Quiz importé depuis ${activeFile.name}`);
 					}
 				} catch (err) {
 					console.error("Import error:", err);
