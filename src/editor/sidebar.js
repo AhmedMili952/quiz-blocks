@@ -1,123 +1,98 @@
 'use strict';
 
+const obsidian = require("obsidian");
+
 module.exports = function createSidebarHandlers(ctx) {
-	const { _setIcon, Q_TYPES, ConfirmModal, TypePickerModal } = ctx;
+	const { Q_TYPES, _setIcon } = ctx;
 	const view = ctx.view;
 
-	function _renderSidebar() {
-		if (!view.sidebarListEl) return;
-		view.sidebarListEl.empty();
+	function renderSidebar() {
+		const list = view.sidebarListEl;
+		list.empty();
+		view.qCountEl.textContent = `Questions (${ctx.questions.length})`;
 
-		if (view.qCountEl) {
-			view.qCountEl.textContent = `Questions (${ctx.questions.length})`;
-		}
+		ctx.questions.forEach((q, i) => {
+			const ti = Q_TYPES.find(t => t.key === q._type) || Q_TYPES[0];
+			const item = list.createDiv({ cls: `qb-q-item ${i === ctx.activeIdx ? "active" : ""}` });
+			const qIcon = item.createDiv({ cls: "qb-q-icon" });
+			_setIcon(qIcon, ti.lucide);
+			const text = item.createDiv({ cls: "qb-q-text" });
+			text.createDiv({ cls: "qb-q-title", text: q.title || `Question ${i + 1}` });
+			text.createDiv({ cls: "qb-q-type", text: ti.label });
 
-		ctx.questions.forEach((q, idx) => {
-			const row = view.sidebarListEl.createEl("button", { cls: "qb-q-item" });
-			if (idx === ctx.activeIdx) row.classList.add("active");
+			let previewText = "";
+			if (q._type === "single" && q.options && q.options[q.correctIndex]) {
+				previewText = q.options[q.correctIndex];
+			} else if (q._type === "multi" && q.options && q.correctIndices && q.correctIndices.length > 0) {
+				previewText = q.options[q.correctIndices[0]];
+			} else if (["text", "cmd", "powershell", "bash"].includes(q._type) && q.acceptedAnswers && q.acceptedAnswers.length > 0) {
+				previewText = q.acceptedAnswers[0];
+			} else if (q._type === "ordering" && q.possibilities && q.possibilities.length > 0) {
+				previewText = q.possibilities[0];
+			} else if (q._type === "matching" && q.rows && q.rows.length > 0) {
+				previewText = typeof q.rows[0] === "string" ? q.rows[0] : (q.rows[0]?.left || "");
+			}
+			if (previewText) {
+				if (previewText.length > 50) previewText = previewText.substring(0, 50) + "...";
+				text.createDiv({ cls: "qb-q-preview", text: previewText });
+			}
 
-			const icon = row.createSpan({ cls: "qb-q-icon" });
-			const typeIcon = { single: "○", multi: "☐", text: "T", ordering: "⇅", matching: "⇄" }[q.type] || "?";
-			icon.textContent = typeIcon;
+			const acts = item.createDiv({ cls: "qb-q-actions" });
+			const up = acts.createEl("button", { cls: "qb-btn-icon qb-btn-sm" }); _setIcon(up, "chevron-up");
+			const down = acts.createEl("button", { cls: "qb-btn-icon qb-btn-sm" }); _setIcon(down, "chevron-down");
+			const del = acts.createEl("button", { cls: "qb-btn-icon qb-btn-sm qb-btn-danger" }); _setIcon(del, "x");
 
-			const title = row.createSpan({ cls: "qb-q-title" });
-			title.textContent = q.title || `Question ${idx + 1}`;
-
-			row.addEventListener("click", () => {
-				ctx.activeIdx = idx;
+			item.addEventListener("click", e => {
+				if (e.target.closest(".qb-q-actions")) return;
+				ctx.activeIdx = i;
 				view.render();
 			});
-
-			const actions = row.createSpan({ cls: "qb-q-actions" });
-
-			const dupBtn = actions.createEl("button", { cls: "qb-btn-icon qb-btn-icon-small", attr: { title: "Dupliquer" } });
-			_setIcon(dupBtn, "copy");
-			dupBtn.addEventListener("click", (e) => {
-				e.stopPropagation();
-				duplicateQuestion(idx);
-			});
-
-			const delBtn = actions.createEl("button", { cls: "qb-btn-icon qb-btn-icon-small", attr: { title: "Supprimer" } });
-			_setIcon(delBtn, "trash-2");
-			delBtn.addEventListener("click", (e) => {
-				e.stopPropagation();
-				deleteQuestion(idx);
-			});
-
-			if (idx > 0) {
-				const upBtn = actions.createEl("button", { cls: "qb-btn-icon qb-btn-icon-small", attr: { title: "Monter" } });
-				_setIcon(upBtn, "arrow-up");
-				upBtn.addEventListener("click", (e) => {
-					e.stopPropagation();
-					moveQuestion(idx, idx - 1);
-				});
-			}
-
-			if (idx < ctx.questions.length - 1) {
-				const downBtn = actions.createEl("button", { cls: "qb-btn-icon qb-btn-icon-small", attr: { title: "Descendre" } });
-				_setIcon(downBtn, "arrow-down");
-				downBtn.addEventListener("click", (e) => {
-					e.stopPropagation();
-					moveQuestion(idx, idx + 1);
-				});
-			}
+			up.addEventListener("click", () => moveQuestion(i, -1));
+			down.addEventListener("click", () => moveQuestion(i, 1));
+			del.addEventListener("click", () => deleteQuestion(i));
 		});
 	}
 
-	function showTypeModal() {
-		new TypePickerModal(view.app, (type) => {
-			addQuestion(type);
-		}).open();
-	}
-
-	function addQuestion(type) {
-		const defaults = {
-			single: { type: "single", title: "", code: "", options: [{ id: "a", label: "Option A" }, { id: "b", label: "Option B" }], answer: "a", hint: "", explain: "" },
-			multi: { type: "multi", title: "", code: "", options: [{ id: "a", label: "Option A" }, { id: "b", label: "Option B" }], answers: [], hint: "", explain: "" },
-			text: { type: "text", title: "", code: "", acceptedAnswers: [""], hint: "", explain: "" },
-			ordering: { type: "ordering", title: "", code: "", items: [{ id: "1", label: "Item 1" }, { id: "2", label: "Item 2" }], order: ["1", "2"], hint: "", explain: "" },
-			matching: { type: "matching", title: "", code: "", pairs: [{ id: "1", left: "A", right: "1" }, { id: "2", left: "B", right: "2" }], hint: "", explain: "" }
-		};
-		const newQ = JSON.parse(JSON.stringify(defaults[type] || defaults.single));
-		newQ.title = `Question ${ctx.questions.length + 1}`;
-		ctx.questions.push(newQ);
-		ctx.activeIdx = ctx.questions.length - 1;
+	function moveQuestion(i, dir) {
+		const ni = i + dir;
+		if (ni < 0 || ni >= ctx.questions.length) return;
+		[ctx.questions[i], ctx.questions[ni]] = [ctx.questions[ni], ctx.questions[i]];
+		if (ctx.activeIdx === i) ctx.activeIdx = ni;
+		else if (ctx.activeIdx === ni) ctx.activeIdx = i;
+		ctx.questions.forEach((qq, idx) => { if (/^Question \d+$/.test(qq.title)) qq.title = `Question ${idx + 1}`; });
 		view.render();
 	}
 
-	function duplicateQuestion(idx) {
-		const q = JSON.parse(JSON.stringify(ctx.questions[idx]));
-		q.title = `${q.title || `Question ${idx + 1}`} (copie)`;
-		ctx.questions.splice(idx + 1, 0, q);
-		ctx.activeIdx = idx + 1;
-		view.render();
-	}
+	function deleteQuestion(i) {
+		if (ctx.questions.length <= 1) {
+			new obsidian.Notice("Impossible de supprimer la dernière question");
+			return;
+		}
 
-	function deleteQuestion(idx) {
-		new ConfirmModal(view.app, `Supprimer la question ${idx + 1} ?`, () => {
-			ctx.questions.splice(idx, 1);
-			if (ctx.questions.length === 0) {
-				addQuestion('single');
+		const q = ctx.questions[i];
+		const title = q.title || `Question ${i + 1}`;
+
+		const modal = new obsidian.ConfirmModal(view.app,
+			`Supprimer "${title}" ?`,
+			`Cette action est irréversible. La question sera définitivement supprimée.`,
+			"Supprimer",
+			"Annuler",
+			(confirmed) => {
+				if (confirmed) {
+					ctx.questions.splice(i, 1);
+					ctx.activeIdx = Math.min(ctx.activeIdx, ctx.questions.length - 1);
+					ctx.questions.forEach((qq, idx) => { if (/^Question \d+$/.test(qq.title)) qq.title = `Question ${idx + 1}`; });
+					view.render();
+					new obsidian.Notice(`Question "${title}" supprimée`);
+				}
 			}
-			ctx.activeIdx = Math.max(0, Math.min(ctx.activeIdx, ctx.questions.length - 1));
-			view.render();
-		}).open();
-	}
-
-	function moveQuestion(fromIdx, toIdx) {
-		if (toIdx < 0 || toIdx >= ctx.questions.length) return;
-		const [q] = ctx.questions.splice(fromIdx, 1);
-		ctx.questions.splice(toIdx, 0, q);
-		ctx.activeIdx = toIdx;
-		view.render();
+		);
+		modal.open();
 	}
 
 	return {
-		_renderSidebar,
-		showTypeModal,
-		addQuestion,
-		duplicateQuestion,
-		deleteQuestion,
-		moveQuestion
+		renderSidebar,
+		moveQuestion,
+		deleteQuestion
 	};
 };

@@ -1,311 +1,329 @@
 'use strict';
 
 module.exports = function createEditorFormHandlers(ctx) {
-	const { escHtml, md2html } = ctx;
+	const { Q_TYPES, _setIcon, _iconSpan, md2html } = ctx;
 	const view = ctx.view;
 
-	function _renderEditor() {
-		if (!view.editorEl) return;
-		view.editorEl.empty();
-
-		const q = ctx.activeQuestion;
+	function renderEditor() {
+		const q = ctx.questions[ctx.activeIdx];
 		if (!q) return;
+		const ti = Q_TYPES.find(t => t.key === q._type) || Q_TYPES[0];
+		const wrap = view.editorInnerEl;
+		wrap.empty();
 
-		const tabs = view.editorEl.createDiv({ cls: "qb-editor-tabs" });
-		const contents = view.editorEl.createDiv({ cls: "qb-editor-contents" });
+		const badge = wrap.createDiv({ cls: "qb-type-badge" });
+		const badgeIcon = badge.createDiv({ cls: "qb-type-icon" }); _setIcon(badgeIcon, ti.lucide);
+		const badgeText = badge.createDiv();
+		badgeText.createDiv({ cls: "qb-type-label", text: ti.label });
+		badgeText.createDiv({ cls: "qb-type-desc", text: ti.desc });
 
-		const tabSpecs = [
-			{ key: 'content', label: 'Contenu' },
-			{ key: 'options', label: 'Options' },
-			{ key: 'settings', label: 'Paramètres' }
-		];
+		_field(wrap, "Énoncé", q.prompt, "Votre question...", true, v => { q.prompt = v; view.renderCode(); view.schedulePreview(); }, { imagePaste: true });
+		_resourceSection(wrap, q);
 
-		tabSpecs.forEach(spec => {
-			const btn = tabs.createEl("button", { cls: "qb-editor-tab" });
-			btn.textContent = spec.label;
-			if (ctx.activeEditorTab === spec.key) btn.classList.add("active");
-			btn.addEventListener("click", () => {
-				ctx.activeEditorTab = spec.key;
-				view.render();
+		const box = wrap.createDiv({ cls: "qb-section-box" });
+		_renderTypeFields(box, q);
+
+		_field(wrap, "Indice", q.hint, "Un indice pour aider...", true, v => { q.hint = v; view.renderCode(); view.schedulePreview(); }, { imagePaste: true });
+		_field(wrap, "Explication (Markdown)", q.explain, "### Rappels\n- **Terme** — Définition", true, v => { q.explain = v; view.renderCode(); view.schedulePreview(); }, { imagePaste: true });
+	}
+
+	function _field(parent, label, value, placeholder, multiline, onChange, opts = {}) {
+		const wrap = parent.createDiv();
+		wrap.createEl("label", { cls: "qb-field-label", text: label });
+		if (multiline) {
+			const ta = wrap.createEl("textarea", { cls: "qb-field-textarea", placeholder, text: value ?? "" });
+			ta.addEventListener("input", () => onChange(ta.value));
+			if (opts.imagePaste) {
+				ta.addEventListener("paste", async (e) => {
+					const items = e.clipboardData?.items;
+					if (!items) return;
+					for (const item of items) {
+						if (item.type.startsWith("image/")) {
+							e.preventDefault();
+							const file = item.getAsFile();
+							if (!file) continue;
+							const now = new Date();
+							const ts = now.getFullYear().toString() +
+								String(now.getMonth() + 1).padStart(2, "0") +
+								String(now.getDate()).padStart(2, "0") +
+								String(now.getHours()).padStart(2, "0") +
+								String(now.getMinutes()).padStart(2, "0") +
+								String(now.getSeconds()).padStart(2, "0");
+							const ext = item.type.split("/")[1] || "png";
+							const fileName = `Pasted image ${ts}.${ext}`;
+							const attachFolder = ctx.plugin.app.vault.getConfig("attachmentFolderPath") || "";
+							const filePath = attachFolder ? attachFolder + "/" + fileName : fileName;
+							const buffer = await file.arrayBuffer();
+							await ctx.plugin.app.vault.adapter.writeBinary(filePath, new Uint8Array(buffer));
+							const before = ta.value.slice(0, ta.selectionStart);
+							const after = ta.value.slice(ta.selectionEnd);
+							ta.value = before + `![[${fileName}]]` + after;
+							ta.selectionStart = ta.selectionEnd = before.length + `![[${fileName}]]`.length;
+							onChange(ta.value);
+							view.schedulePreview();
+							break;
+							}
+						}
+					});
+				}
+			} else {
+				const inp = wrap.createEl("input", { cls: "qb-field-input", placeholder, value: value ?? "" });
+				inp.addEventListener("input", () => onChange(inp.value));
+			}
+			return wrap;
+		}
+
+	function _resourceSection(parent, q) {
+		if (!q.resourceButton) {
+			q.resourceButton = { label: "", fileName: "" };
+		}
+
+		const details = parent.createEl("details", { cls: "qb-collapsible" });
+		const summary = details.createEl("summary");
+		_iconSpan(summary, "paperclip", "qb-summary-icon");
+		summary.appendChild(document.createTextNode(" Bouton ressource (optionnel)"));
+		const body = details.createDiv({ cls: "qb-collapsible-body" });
+		const renderInner = () => {
+			body.empty();
+			const has = !!q.resourceButton;
+			const toggleWrap = body.createDiv({ cls: "qb-toggle-wrap" });
+			const track = toggleWrap.createDiv({ cls: `qb-toggle-track ${has ? "on" : ""}` });
+			track.createDiv({ cls: "qb-toggle-thumb" });
+			toggleWrap.appendChild(document.createTextNode("Activer le bouton ressource"));
+			toggleWrap.addEventListener("click", () => { q.resourceButton = q.resourceButton ? null : { label: "Activité PT", fileName: "" }; renderInner(); view.renderCode(); view.schedulePreview(); });
+			if (has) {
+				_field(body, "Label", q.resourceButton.label, "Activité PT", false, v => { q.resourceButton.label = v; view.renderCode(); view.schedulePreview(); });
+				_field(body, "Nom du fichier", q.resourceButton.fileName, "fichier.pka", false, v => { q.resourceButton.fileName = v; view.renderCode(); view.schedulePreview(); });
+			}
+		};
+		renderInner();
+	}
+
+	function _renderTypeFields(box, q) {
+		const t = q._type;
+		const rerender = () => { view.renderCode(); view.schedulePreview(); };
+
+		if (t === "single" || t === "multi") {
+			const isMulti = t === "multi";
+			const cardsContainer = box.createDiv({ cls: "qb-answer-cards" });
+
+			const renderCards = () => {
+				cardsContainer.empty();
+
+				q.options.forEach((o, i) => {
+					const isCorrect = isMulti ? (q.correctIndices || []).includes(i) : i === q.correctIndex;
+					const card = cardsContainer.createDiv({ cls: `qb-answer-card ${isCorrect ? "qb-answer-correct" : "qb-answer-wrong"}` });
+
+					const toggleRow = card.createDiv({ cls: "qb-answer-toggle-row" });
+					toggleRow.createSpan({ cls: "qb-answer-toggle-label", text: isCorrect ? "Bonne réponse" : "Mauvaise réponse" });
+
+					const toggle = toggleRow.createDiv({ cls: "qb-answer-toggle" });
+					const track = toggle.createDiv({ cls: "qb-answer-toggle-track" });
+					const thumb = track.createDiv({ cls: "qb-answer-toggle-thumb" });
+					_setIcon(thumb, isCorrect ? "check" : "x");
+
+					const triggerFlash = (toCorrect) => {
+						card.classList.remove("qb-answer-flash-green", "qb-answer-flash-red");
+						void card.offsetWidth;
+						card.classList.add(toCorrect ? "qb-answer-flash-green" : "qb-answer-flash-red");
+						setTimeout(() => {
+							card.classList.remove("qb-answer-flash-green", "qb-answer-flash-red");
+						}, 500);
+					};
+
+					toggle.addEventListener("click", () => {
+						if (isMulti) {
+							const a = q.correctIndices || [];
+							if (a.includes(i)) {
+								if (a.length > 1) {
+									triggerFlash(false);
+									q.correctIndices = a.filter(x => x !== i);
+									view.render();
+								}
+							} else {
+								triggerFlash(true);
+								q.correctIndices = [...a, i].sort((a, b) => a - b);
+								view.render();
+							}
+						} else {
+							if (!isCorrect) {
+								triggerFlash(true);
+								q.correctIndex = i;
+								view.render();
+							}
+						}
+					});
+
+					const input = card.createEl("input", {
+						cls: "qb-answer-input",
+						type: "text",
+						value: o || "",
+						placeholder: "Saisir la réponse"
+					});
+
+					input.addEventListener("input", () => {
+						q.options[i] = input.value;
+						rerender();
+					});
+
+					input.addEventListener("paste", async (e) => {
+						const items = e.clipboardData?.items;
+						if (!items) return;
+
+						for (const item of items) {
+							if (item.type.startsWith("image/")) {
+								e.preventDefault();
+								const file = item.getAsFile();
+								if (!file) continue;
+
+								try {
+									const now = new Date();
+									const ts = now.getFullYear().toString() +
+										String(now.getMonth() + 1).padStart(2, "0") +
+										String(now.getDate()).padStart(2, "0") +
+										String(now.getHours()).padStart(2, "0") +
+										String(now.getMinutes()).padStart(2, "0") +
+										String(now.getSeconds()).padStart(2, "0");
+									const ext = file.type?.split("/")[1] || "png";
+									const fileName = `Pasted image ${ts}.${ext}`;
+
+									const folder = ctx.plugin.app.vault.getConfig('attachmentFolderPath') || '';
+									const path = folder ? folder + '/' + fileName : fileName;
+
+									const buf = await file.arrayBuffer();
+									await ctx.plugin.app.vault.adapter.writeBinary(path, new Uint8Array(buf));
+
+									const before = input.value.slice(0, input.selectionStart);
+									const after = input.value.slice(input.selectionEnd);
+									const wikiLink = `![[${fileName}]]`;
+									input.value = before + wikiLink + after;
+									input.selectionStart = input.selectionEnd = before.length + wikiLink.length;
+
+									q.options[i] = input.value;
+									view.schedulePreview();
+									view.renderCode();
+								} catch (err) {
+									console.error("Failed to paste image:", err);
+								}
+								break;
+							}
+						}
+					});
+
+					if (!isCorrect && q.options.length > 2) {
+						const delBtn = card.createEl("button", { cls: "qb-answer-delete" });
+						_setIcon(delBtn, "x");
+						delBtn.addEventListener("click", () => {
+							q.options.splice(i, 1);
+							if (isMulti) {
+								q.correctIndices = (q.correctIndices || []).filter(idx => idx !== i).map(idx => idx > i ? idx - 1 : idx);
+							} else {
+								if (q.correctIndex === i) q.correctIndex = 0;
+								else if (q.correctIndex > i) q.correctIndex--;
+							}
+							view.render();
+						});
+					}
+				});
+
+				const addBtn = box.createEl("button", { cls: "qb-answer-add" });
+				addBtn.appendChild(document.createTextNode("Ajouter une réponse"));
+				addBtn.addEventListener("click", () => {
+					q.options.push("");
+					if (isMulti && q.options.length === 1) {
+						q.correctIndices = [0];
+					}
+					view.render();
+				});
+			};
+
+			renderCards();
+		}
+
+		if (t === "ordering") {
+			_arrayEditor(box, "Possibilités", q.possibilities, () => {
+				while (q.correctOrder.length < q.possibilities.length) q.correctOrder.push(q.correctOrder.length);
+				q.correctOrder = q.correctOrder.slice(0, q.possibilities.length);
+				while (q.slots.length < q.possibilities.length) q.slots.push(`Étape ${q.slots.length + 1}`);
+				q.slots = q.slots.slice(0, q.possibilities.length);
+				rerender();
+			}, "Élément", "Ajouter");
+			_arrayEditor(box, "Labels des slots", q.slots, rerender, "Slot", "Ajouter");
+
+			box.createEl("label", { cls: "qb-field-label", text: "Ordre correct (index → slot)" });
+			(q.correctOrder || []).forEach((val, i) => {
+				const row = box.createDiv({ cls: "qb-arr-row" });
+				row.createSpan({ cls: "qb-arr-idx", text: (q.slots?.[i] || `S${i}`) + " →" });
+				const inp = row.createEl("input", { cls: "qb-field-input qb-field-sm", type: "number", value: val });
+				inp.min = 0; inp.max = q.possibilities.length - 1; inp.style.width = "55px";
+				inp.addEventListener("input", () => { q.correctOrder[i] = parseInt(inp.value) || 0; rerender(); });
 			});
-		});
+		}
 
-		const content = contents.createDiv({ cls: "qb-editor-content" });
+		if (t === "matching") {
+			_arrayEditor(box, "Lignes (situations)", q.rows, () => {
+				while (q.correctMap.length < q.rows.length) q.correctMap.push(0);
+				q.correctMap = q.correctMap.slice(0, q.rows.length);
+				rerender();
+			}, "Situation", "Ajouter");
+			_arrayEditor(box, "Choix (supports)", q.choices, () => {
+				q.correctMap = q.correctMap.map(v => Math.min(v, q.choices.length - 1));
+				rerender();
+			}, "Choix", "Ajouter");
 
-		if (ctx.activeEditorTab === 'content') {
-			_bindBasicField(content, q);
-		} else if (ctx.activeEditorTab === 'options') {
-			if (q.type === 'single') _bindOptionsEditor(content, q);
-			else if (q.type === 'multi') _bindMultiSelectEditor(content, q);
-			else if (q.type === 'ordering') _bindOrderingEditor(content, q);
-			else if (q.type === 'matching') _bindMatchingEditor(content, q);
-			else if (q.type === 'text') _bindTextEditor(content, q);
-		} else if (ctx.activeEditorTab === 'settings') {
-			_bindSettingsEditor(content, q);
+			box.createEl("label", { cls: "qb-field-label", text: "Associations" });
+			(q.rows || []).forEach((row, i) => {
+				const r = box.createDiv({ cls: "qb-match-row" });
+				r.createSpan({ cls: "qb-match-label", text: row || `Ligne ${i}` });
+				_iconSpan(r, "arrow-right", "qb-match-arrow");
+				const sel = r.createEl("select", { cls: "qb-field-select" });
+				(q.choices || []).forEach((c, ci) => {
+					const opt = sel.createEl("option", { text: c || "...", value: ci });
+					if ((q.correctMap?.[i] ?? 0) === ci) opt.selected = true;
+				});
+				sel.addEventListener("change", () => { q.correctMap[i] = parseInt(sel.value) || 0; rerender(); });
+			});
+		}
+
+		if (["text", "cmd", "powershell", "bash"].includes(t)) {
+			if (t === "cmd" || t === "powershell")
+				_field(box, "Préfix du prompt", q.commandPrefix, t === "cmd" ? "C:\\>" : "PS>", false, v => { q.commandPrefix = v; rerender(); });
+			_field(box, "Placeholder", q.placeholder, "Texte indicatif...", false, v => { q.placeholder = v; rerender(); });
+			_arrayEditor(box, "Réponses acceptées", q.acceptedAnswers, rerender, "Réponse", "Ajouter");
+			const toggleWrap = box.createDiv({ cls: "qb-toggle-wrap" });
+			const track = toggleWrap.createDiv({ cls: `qb-toggle-track ${q.caseSensitive ? "on" : ""}` });
+			track.createDiv({ cls: "qb-toggle-thumb" });
+			toggleWrap.appendChild(document.createTextNode("Sensible à la casse"));
+			toggleWrap.addEventListener("click", () => { q.caseSensitive = !q.caseSensitive; view.render(); });
 		}
 	}
 
-	function _bindBasicField(container, q) {
-		const titleWrap = container.createDiv({ cls: "qb-field" });
-		titleWrap.createEl("label", { cls: "qb-field-label", text: "Titre" });
-		const titleInput = titleWrap.createEl("input", { cls: "qb-field-input", type: "text", value: q.title || "" });
-		titleInput.addEventListener("input", () => {
-			q.title = titleInput.value;
-			view.renderPreview();
-			view._renderSidebar();
-		});
-
-		const codeWrap = container.createDiv({ cls: "qb-field" });
-		codeWrap.createEl("label", { cls: "qb-field-label", text: "Code (optionnel)" });
-		const codeInput = codeWrap.createEl("textarea", { cls: "qb-field-textarea" });
-		codeInput.value = q.code || "";
-		codeInput.addEventListener("input", () => {
-			q.code = codeInput.value;
-			view.renderPreview();
-		});
-
-		const hintWrap = container.createDiv({ cls: "qb-field" });
-		hintWrap.createEl("label", { cls: "qb-field-label", text: "Indice (optionnel)" });
-		const hintInput = hintWrap.createEl("textarea", { cls: "qb-field-textarea" });
-		hintInput.value = q.hint || "";
-		hintInput.addEventListener("input", () => {
-			q.hint = hintInput.value;
-			view.renderPreview();
-		});
-
-		const explainWrap = container.createDiv({ cls: "qb-field" });
-		explainWrap.createEl("label", { cls: "qb-field-label", text: "Explication (optionnel)" });
-		const explainInput = explainWrap.createEl("textarea", { cls: "qb-field-textarea" });
-		explainInput.value = q.explain || "";
-		explainInput.addEventListener("input", () => {
-			q.explain = explainInput.value;
-			view.renderPreview();
-		});
-	}
-
-	function _bindOptionsEditor(container, q) {
-		container.createEl("h4", { text: "Options" });
-		const list = container.createDiv({ cls: "qb-options-list" });
-
-		const renderOptions = () => {
-			list.empty();
-			q.options.forEach((opt, idx) => {
-				const row = list.createDiv({ cls: "qb-option-row" });
-
-				const correctBtn = row.createEl("button", { cls: `qb-btn-icon ${q.answer === opt.id ? 'is-correct' : ''}` });
-				correctBtn.textContent = q.answer === opt.id ? "●" : "○";
-				correctBtn.addEventListener("click", () => {
-					q.answer = opt.id;
-					renderOptions();
-					view.renderPreview();
-				});
-
-				const labelInput = row.createEl("input", { cls: "qb-field-input", type: "text", value: opt.label });
-				labelInput.addEventListener("input", () => {
-					opt.label = labelInput.value;
-					view.renderPreview();
-				});
-
-				const delBtn = row.createEl("button", { cls: "qb-btn-icon" });
-				delBtn.textContent = "×";
-				delBtn.addEventListener("click", () => {
-					q.options.splice(idx, 1);
-					if (q.answer === opt.id) q.answer = q.options[0]?.id || "";
-					renderOptions();
-					view.renderPreview();
-				});
-			});
-		};
-
-		renderOptions();
-
-		const addBtn = container.createEl("button", { cls: "qb-btn" });
-		addBtn.textContent = "Ajouter une option";
-		addBtn.addEventListener("click", () => {
-			const newId = String.fromCharCode(97 + q.options.length);
-			q.options.push({ id: newId, label: `Option ${newId.toUpperCase()}` });
-			renderOptions();
-			view.renderPreview();
-		});
-	}
-
-	function _bindMultiSelectEditor(container, q) {
-		container.createEl("h4", { text: "Options (sélection multiple)" });
-		const list = container.createDiv({ cls: "qb-options-list" });
-
-		const renderOptions = () => {
-			list.empty();
-			q.options.forEach((opt, idx) => {
-				const row = list.createDiv({ cls: "qb-option-row" });
-
-				const correctBtn = row.createEl("button", { cls: `qb-btn-icon ${(q.answers || []).includes(opt.id) ? 'is-correct' : ''}` });
-				correctBtn.textContent = (q.answers || []).includes(opt.id) ? "☑" : "☐";
-				correctBtn.addEventListener("click", () => {
-					if (!q.answers) q.answers = [];
-					if (q.answers.includes(opt.id)) {
-						q.answers = q.answers.filter(id => id !== opt.id);
-					} else {
-						q.answers.push(opt.id);
-					}
-					renderOptions();
-					view.renderPreview();
-				});
-
-				const labelInput = row.createEl("input", { cls: "qb-field-input", type: "text", value: opt.label });
-				labelInput.addEventListener("input", () => {
-					opt.label = labelInput.value;
-					view.renderPreview();
-				});
-
-				const delBtn = row.createEl("button", { cls: "qb-btn-icon" });
-				delBtn.textContent = "×";
-				delBtn.addEventListener("click", () => {
-					q.options.splice(idx, 1);
-					q.answers = (q.answers || []).filter(id => id !== opt.id);
-					renderOptions();
-					view.renderPreview();
-				});
-			});
-		};
-
-		renderOptions();
-
-		const addBtn = container.createEl("button", { cls: "qb-btn" });
-		addBtn.textContent = "Ajouter une option";
-		addBtn.addEventListener("click", () => {
-			const newId = String.fromCharCode(97 + q.options.length);
-			q.options.push({ id: newId, label: `Option ${newId.toUpperCase()}` });
-			renderOptions();
-			view.renderPreview();
-		});
-	}
-
-	function _bindOrderingEditor(container, q) {
-		container.createEl("h4", { text: "Items à ordonner" });
-		const list = container.createDiv({ cls: "qb-options-list" });
-
+	function _arrayEditor(parent, label, items, onChange, placeholder, addLabel) {
+		parent.createEl("label", { cls: "qb-field-label", text: label });
+		const container = parent.createDiv();
 		const renderItems = () => {
-			list.empty();
-			q.items.forEach((item, idx) => {
-				const row = list.createDiv({ cls: "qb-option-row" });
-
-				const labelInput = row.createEl("input", { cls: "qb-field-input", type: "text", value: item.label });
-				labelInput.addEventListener("input", () => {
-					item.label = labelInput.value;
-					view.renderPreview();
-				});
-
-				const upBtn = row.createEl("button", { cls: "qb-btn-icon", attr: { title: "Monter" } });
-				upBtn.textContent = "↑";
-				upBtn.disabled = idx === 0;
-				upBtn.addEventListener("click", () => {
-					if (idx > 0) {
-						[q.items[idx], q.items[idx - 1]] = [q.items[idx - 1], q.items[idx]];
-						renderItems();
-						view.renderPreview();
-					}
-				});
-
-				const downBtn = row.createEl("button", { cls: "qb-btn-icon", attr: { title: "Descendre" } });
-				downBtn.textContent = "↓";
-				downBtn.disabled = idx === q.items.length - 1;
-				downBtn.addEventListener("click", () => {
-					if (idx < q.items.length - 1) {
-						[q.items[idx], q.items[idx + 1]] = [q.items[idx + 1], q.items[idx]];
-						renderItems();
-						view.renderPreview();
-					}
-				});
-
-				const delBtn = row.createEl("button", { cls: "qb-btn-icon" });
-				delBtn.textContent = "×";
-				delBtn.addEventListener("click", () => {
-					q.items.splice(idx, 1);
-					q.order = q.items.map(i => i.id);
-					renderItems();
-					view.renderPreview();
-				});
+			container.empty();
+			items.forEach((item, i) => {
+				const row = container.createDiv({ cls: "qb-arr-row" });
+				const inp = row.createEl("input", { cls: "qb-field-input", placeholder: `${placeholder} ${i + 1}`, value: item ?? "" });
+				inp.addEventListener("input", () => { items[i] = inp.value; onChange(); });
+				const del = row.createEl("button", { cls: "qb-btn-icon qb-btn-sm qb-btn-danger" }); _setIcon(del, "x");
+				if (items.length <= 1) del.disabled = true;
+				del.addEventListener("click", () => { if (items.length <= 1) return; items.splice(i, 1); onChange(); renderItems(); });
 			});
+			const addBtn = container.createEl("button", { cls: "qb-arr-add" });
+			_iconSpan(addBtn, "plus", "qb-arr-add-icon");
+			addBtn.appendChild(document.createTextNode(addLabel));
+			addBtn.addEventListener("click", () => { items.push(""); onChange(); renderItems(); });
 		};
-
 		renderItems();
-
-		const addBtn = container.createEl("button", { cls: "qb-btn" });
-		addBtn.textContent = "Ajouter un item";
-		addBtn.addEventListener("click", () => {
-			const newId = String(q.items.length + 1);
-			q.items.push({ id: newId, label: `Item ${newId}` });
-			q.order = q.items.map(i => i.id);
-			renderItems();
-			view.renderPreview();
-		});
-	}
-
-	function _bindMatchingEditor(container, q) {
-		container.createEl("h4", { text: "Paires à associer" });
-		const list = container.createDiv({ cls: "qb-options-list" });
-
-		const renderPairs = () => {
-			list.empty();
-			q.pairs.forEach((pair, idx) => {
-				const row = list.createDiv({ cls: "qb-option-row" });
-
-				const leftInput = row.createEl("input", { cls: "qb-field-input", type: "text", value: pair.left, placeholder: "Gauche" });
-				leftInput.addEventListener("input", () => {
-					pair.left = leftInput.value;
-					view.renderPreview();
-				});
-
-				const rightInput = row.createEl("input", { cls: "qb-field-input", type: "text", value: pair.right, placeholder: "Droite" });
-				rightInput.addEventListener("input", () => {
-					pair.right = rightInput.value;
-					view.renderPreview();
-				});
-
-				const delBtn = row.createEl("button", { cls: "qb-btn-icon" });
-				delBtn.textContent = "×";
-				delBtn.addEventListener("click", () => {
-					q.pairs.splice(idx, 1);
-					renderPairs();
-					view.renderPreview();
-				});
-			});
-		};
-
-		renderPairs();
-
-		const addBtn = container.createEl("button", { cls: "qb-btn" });
-		addBtn.textContent = "Ajouter une paire";
-		addBtn.addEventListener("click", () => {
-			const newId = String(q.pairs.length + 1);
-			q.pairs.push({ id: newId, left: "", right: "" });
-			renderPairs();
-			view.renderPreview();
-		});
-	}
-
-	function _bindTextEditor(container, q) {
-		container.createEl("h4", { text: "Réponse attendue" });
-		const wrap = container.createDiv({ cls: "qb-field" });
-		const input = wrap.createEl("input", { cls: "qb-field-input", type: "text", value: (q.acceptedAnswers || [])[0] || "" });
-		input.addEventListener("input", () => {
-			q.acceptedAnswers = [input.value];
-			view.renderPreview();
-		});
-	}
-
-	function _bindSettingsEditor(container, q) {
-		container.createEl("h4", { text: "Paramètres de la question" });
-		// Paramètres spécifiques au type
 	}
 
 	return {
-		_renderEditor,
-		_bindBasicField,
-		_bindOptionsEditor,
-		_bindMultiSelectEditor,
-		_bindOrderingEditor,
-		_bindMatchingEditor,
-		_bindTextEditor
+		renderEditor,
+		_field,
+		_resourceSection,
+		_renderTypeFields,
+		_arrayEditor
 	};
 };

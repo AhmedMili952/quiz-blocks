@@ -34,27 +34,22 @@ class QuizBuilderView extends obsidian.ItemView {
 		};
 		this.activeEditorTab = 'content';
 
-		// Saved widths for restoring panels
 		this._savedWidths = {
 			sidebar: 224,
 			editor: 352,
 			preview: 400,
 			code: 288
 		};
-		// Minimum width for any panel
 		this._minPanelWidth = 50;
-		// Threshold to hide panel
 		this._hideThreshold = 10;
 
 		// Créer le contexte partagé (ctx) pour injection de dépendances
 		const ctx = {
-			// Références principales
 			view: this,
 			app: this.app,
 			plugin: plugin,
 			container: this.contentEl,
 
-			// État
 			questions: this.questions,
 			activeIdx: this.activeIdx,
 			panels: this.panels,
@@ -65,11 +60,9 @@ class QuizBuilderView extends obsidian.ItemView {
 			_hideThreshold: this._hideThreshold,
 			_previewDebounce: this._previewDebounce,
 
-			// Accesseurs
 			get activeQuestion() { return ctx.questions[ctx.activeIdx]; },
 			set activeQuestion(v) { ctx.questions[ctx.activeIdx] = v; },
 
-			// Utilitaires
 			Q_TYPES,
 			loadReact,
 			_setIcon,
@@ -112,29 +105,27 @@ class QuizBuilderView extends obsidian.ItemView {
 		this.buildUI = ui.buildUI.bind(ui);
 		this.syncPanels = ui.syncPanels.bind(ui);
 		this.render = ui.render.bind(ui);
-		this.renderPreview = ui.renderPreview.bind(ui);
+		this.showTypeModal = ui.showTypeModal.bind(ui);
 
 		this._setupResizer = resize._setupResizer.bind(resize);
 		this._closeLeftPanel = resize._closeLeftPanel.bind(resize);
 		this._closeRightPanel = resize._closeRightPanel.bind(resize);
+		this._resizePanels = resize._resizePanels.bind(resize);
 
-		this._renderSidebar = sidebar._renderSidebar.bind(sidebar);
-		this.showTypeModal = sidebar.showTypeModal.bind(sidebar);
-		this.addQuestion = sidebar.addQuestion.bind(sidebar);
-		this.duplicateQuestion = sidebar.duplicateQuestion.bind(sidebar);
-		this.deleteQuestion = sidebar.deleteQuestion.bind(sidebar);
+		this.renderSidebar = sidebar.renderSidebar.bind(sidebar);
 		this.moveQuestion = sidebar.moveQuestion.bind(sidebar);
+		this.deleteQuestion = sidebar.deleteQuestion.bind(sidebar);
 
-		this._renderEditor = editorForm._renderEditor.bind(editorForm);
-		this._bindBasicField = editorForm._bindBasicField.bind(editorForm);
-		this._bindOptionsEditor = editorForm._bindOptionsEditor.bind(editorForm);
-		this._bindOrderingEditor = editorForm._bindOrderingEditor.bind(editorForm);
-		this._bindMatchingEditor = editorForm._bindMatchingEditor.bind(editorForm);
-		this._bindTextEditor = editorForm._bindTextEditor.bind(editorForm);
-		this._bindMultiSelectEditor = editorForm._bindMultiSelectEditor.bind(editorForm);
+		this.renderEditor = editorForm.renderEditor.bind(editorForm);
+		this._field = editorForm._field.bind(editorForm);
+		this._resourceSection = editorForm._resourceSection.bind(editorForm);
+		this._renderTypeFields = editorForm._renderTypeFields.bind(editorForm);
+		this._arrayEditor = editorForm._arrayEditor.bind(editorForm);
 
-		this.renderCode = preview.renderCode.bind(preview);
+		this.schedulePreview = preview.schedulePreview.bind(preview);
+		this.renderPreview = preview.renderPreview.bind(preview);
 		this._resolveImagesInHtml = preview._resolveImagesInHtml.bind(preview);
+		this.renderCode = preview.renderCode.bind(preview);
 
 		this._ensureHintOverlay = hint._ensureHintOverlay.bind(hint);
 		this._applyHintTheme = hint._applyHintTheme.bind(hint);
@@ -166,6 +157,131 @@ class QuizBuilderView extends obsidian.ItemView {
 		}
 		this.contentEl.empty();
 	}
+
+	async importQuizSource(source) {
+		try {
+			const parsed = parseQuizSource(source);
+			if (!Array.isArray(parsed) || parsed.length === 0) {
+				new obsidian.Notice("Aucune question trouvée");
+				return;
+			}
+
+			const questions = [];
+			let examOptions = null;
+
+			for (const q of parsed) {
+				if (q.examMode) {
+					examOptions = {
+						enabled: true,
+						durationMinutes: q.examDurationMinutes || 10,
+						autoSubmit: q.examAutoSubmit ?? false,
+						showTimer: q.examShowTimer ?? true
+					};
+					continue;
+				}
+
+				const question = this.convertParsedToInternal(q);
+				if (question) questions.push(question);
+			}
+
+			if (questions.length === 0) {
+				new obsidian.Notice("Aucune question valide trouvée");
+				return;
+			}
+
+			this.questions = questions;
+			this.activeIdx = 0;
+			if (examOptions) {
+				this.examOptions = examOptions;
+			}
+
+			this.render();
+			new obsidian.Notice(`${questions.length} question(s) importée(s)`);
+		} catch (err) {
+			console.error("Import error:", err);
+			new obsidian.Notice("Erreur lors de l'import: " + err.message);
+		}
+	}
+
+	convertParsedToInternal(q) {
+		let type = "single";
+		if (q.ordering) type = "ordering";
+		else if (q.matching) type = "matching";
+		else if (q.multiSelect) type = "multi";
+		else if (q.type === "text") {
+			if (q.terminalVariant === "cmd") type = "cmd";
+			else if (q.textVariant === "powershell") type = "powershell";
+			else if (q.textVariant === "bash") type = "bash";
+			else type = "text";
+		}
+
+		const question = makeDefault(type);
+		question._id = q.id || Math.random().toString(36).slice(2, 10);
+		question.title = q.title || "";
+		question.hint = q.hint || "";
+
+		if (q.prompt) {
+			question.prompt = q.prompt;
+		} else if (q.promptHtml) {
+			question.prompt = q.promptHtml.replace(/<[^>]+>/g, "").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&");
+		}
+		if (q.promptHtml) {
+			question._promptHtml = q.promptHtml;
+		}
+
+		if (q.explain) question.explain = q.explain;
+		else if (q.explainHtml) {
+			question.explain = q.explainHtml.replace(/<[^>]+>/g, "").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&");
+		}
+		if (q.explainHtml) {
+			question._explainHtml = q.explainHtml;
+		}
+
+		if (q.resourceButton) {
+			question.resourceButton = { ...q.resourceButton };
+		}
+
+		if (type === "single" || type === "multi") {
+			question.options = q.options || ["", ""];
+			if (type === "single") {
+				question.correctIndex = q.correctIndex ?? 0;
+			} else {
+				question.correctIndices = q.correctIndices || [];
+			}
+		}
+
+		if (type === "ordering") {
+			question.slots = q.slots || ["Étape 1", "Étape 2"];
+			question.possibilities = q.possibilities || ["", ""];
+			question.correctOrder = q.correctOrder || [0, 1];
+		}
+
+		if (type === "matching") {
+			question.rows = q.rows || ["", ""];
+			question.choices = q.choices || ["", ""];
+			question.correctMap = q.correctMap || [0, 0];
+		}
+
+		if (["text", "cmd", "powershell", "bash"].includes(type)) {
+			question.acceptedAnswers = q.acceptedAnswers || q.acceptableAnswers || [""];
+			if (question.acceptedAnswers.length === 1 && question.acceptedAnswers[0] === "" && q.correctText) {
+				question.acceptedAnswers = [q.correctText];
+			}
+			question.caseSensitive = q.caseSensitive || false;
+			question.placeholder = q.placeholder || "";
+			if (type === "cmd" || type === "powershell") {
+				question.commandPrefix = q.commandPrefix || (type === "cmd" ? "C:\\>" : "PS>");
+			}
+		}
+
+		const knownKeys = new Set(['id','title','prompt','promptHtml','options','correctIndex','multiSelect','correctIndices','ordering','slots','possibilities','correctOrder','matching','rows','choices','correctMap','type','terminalVariant','textVariant','commandPrefix','placeholder','caseSensitive','acceptedAnswers','acceptableAnswers','correctText','hint','explain','explainHtml','resourceButton','examMode','examDurationMinutes','examAutoSubmit','examShowTimer']);
+		question._extraFields = {};
+		for (const key of Object.keys(q)) {
+			if (!knownKeys.has(key)) question._extraFields[key] = q[key];
+		}
+
+		return question;
+	}
 }
 
-module.exports = { QuizBuilderView, VIEW_TYPE };
+module.exports = { QuizBuilderView, VIEW_TYPE, QuizFileSuggestModal };

@@ -4,163 +4,238 @@ module.exports = function createResizeHandlers(ctx) {
 	const view = ctx.view;
 
 	function _setupResizer(resizerEl, leftPanel, rightPanel, type) {
-		const dragState = { active: false, startX: 0, startLeftWidth: 0, startRightWidth: 0, rafId: 0, needsUpdate: false, delta: 0, mainEl: null };
+		let startX = 0;
+		let startWidthLeft = 0;
+		let startWidthRight = 0;
+		let isDragging = false;
+		let overlay = null;
+		let rafId = null;
 
-		const updateSizes = () => {
+		const dragState = {
+			delta: 0,
+			mainEl: null,
+			needsUpdate: false
+		};
+
+		const updatePanels = () => {
 			if (!dragState.needsUpdate || !dragState.mainEl) return;
-			const main = dragState.mainEl;
-			const { delta } = dragState;
-			let newLeftWidth, newRightWidth;
+
+			const delta = dragState.delta;
+			const mainEl = dragState.mainEl;
+
+			const newLeftWidth = startWidthLeft + delta;
+			const newRightWidth = startWidthRight - delta;
+
+			const mainRect = mainEl.getBoundingClientRect();
+			const minPreviewWidth = 100;
 
 			if (type === 'editor-preview') {
-				const sidebarWidth = parseFloat(main.style.getPropertyValue('--qb-sidebar-w')) || ctx._savedWidths.sidebar;
-				const editorWidth = parseFloat(main.style.getPropertyValue('--qb-editor-w')) || ctx._savedWidths.editor;
-				const currentTotal = sidebarWidth + editorWidth;
-				newLeftWidth = editorWidth + delta;
-				const minPreviewWidth = 200;
-				const maxLeft = currentTotal - minPreviewWidth;
-				if (newLeftWidth <= ctx._hideThreshold && delta < 0) {
-					view._closeLeftPanel('editor', main);
+				if (newLeftWidth <= view._hideThreshold && delta < 0) {
+					_closeLeftPanel(type, mainEl);
+					view.syncPanels();
 					dragState.needsUpdate = false;
 					return;
 				}
-				if (newLeftWidth >= maxLeft && delta > 0) {
-					view._closeRightPanel('preview', main);
+				if (newRightWidth <= view._hideThreshold && delta > 0) {
+					_closeRightPanel(type, mainEl);
+					view.syncPanels();
 					dragState.needsUpdate = false;
 					return;
 				}
-				if (newLeftWidth >= ctx._minPanelWidth && newRightWidth >= minPreviewWidth) {
-					main.style.setProperty('--qb-editor-w', `${Math.round(newLeftWidth)}px`);
+				const previewWidth = mainRect.width - newLeftWidth;
+				if (newLeftWidth >= view._minPanelWidth && previewWidth >= minPreviewWidth) {
+					_resizePanels(type, mainEl, newLeftWidth, newRightWidth);
 				}
 			} else if (type === 'preview-code') {
-				const previewWidth = parseFloat(main.style.getPropertyValue('--qb-preview-w')) || ctx._savedWidths.preview;
-				const codeWidth = parseFloat(main.style.getPropertyValue('--qb-code-w')) || ctx._savedWidths.code;
-				newRightWidth = codeWidth - delta;
-				newLeftWidth = previewWidth + delta;
-				if (newRightWidth <= ctx._hideThreshold && delta > 0) {
-					view._closeRightPanel('code', main);
+				const newCodeWidth = startWidthRight - delta;
+				if (newCodeWidth <= view._hideThreshold && delta > 0) {
+					_closeRightPanel(type, mainEl);
+					view.syncPanels();
 					dragState.needsUpdate = false;
 					return;
 				}
-				if (newLeftWidth <= ctx._hideThreshold && delta < 0) {
-					view._closeLeftPanel('preview', main);
+				const previewWidth = mainRect.width - newCodeWidth;
+				if (previewWidth <= view._hideThreshold && delta < 0) {
+					_closeLeftPanel(type, mainEl);
+					view.syncPanels();
 					dragState.needsUpdate = false;
 					return;
 				}
-				if (newLeftWidth >= ctx._minPanelWidth && newRightWidth >= ctx._minPanelWidth) {
-					main.style.setProperty('--qb-preview-w', `${Math.round(newLeftWidth)}px`);
-					main.style.setProperty('--qb-code-w', `${Math.round(newRightWidth)}px`);
+				if (newCodeWidth >= view._minPanelWidth && previewWidth >= minPreviewWidth) {
+					_resizePanels(type, mainEl, 0, newCodeWidth);
 				}
-			} else if (type === 'sidebar-editor') {
-				const sidebarWidth = parseFloat(main.style.getPropertyValue('--qb-sidebar-w')) || ctx._savedWidths.sidebar;
-				const editorWidth = parseFloat(main.style.getPropertyValue('--qb-editor-w')) || ctx._savedWidths.editor;
-				newLeftWidth = sidebarWidth + delta;
-				newRightWidth = editorWidth - delta;
-				if (newLeftWidth <= ctx._hideThreshold && delta < 0) {
-					view._closeLeftPanel('sidebar', main);
+			} else {
+				if (newLeftWidth <= view._hideThreshold && delta < 0) {
+					_closeLeftPanel(type, mainEl);
+					view.syncPanels();
 					dragState.needsUpdate = false;
 					return;
 				}
-				if (newRightWidth <= ctx._hideThreshold && delta > 0) {
-					view._closeRightPanel('editor', main);
+				if (newRightWidth <= view._hideThreshold && delta > 0) {
+					_closeRightPanel(type, mainEl);
+					view.syncPanels();
 					dragState.needsUpdate = false;
 					return;
 				}
-				if (newLeftWidth >= ctx._minPanelWidth && newRightWidth >= ctx._minPanelWidth) {
-					main.style.setProperty('--qb-sidebar-w', `${Math.round(newLeftWidth)}px`);
-					main.style.setProperty('--qb-editor-w', `${Math.round(newRightWidth)}px`);
+				if (newLeftWidth >= view._minPanelWidth && newRightWidth >= view._minPanelWidth) {
+					_resizePanels(type, mainEl, newLeftWidth, newRightWidth);
 				}
 			}
+
 			dragState.needsUpdate = false;
 		};
 
 		const scheduleUpdate = () => {
-			if (!dragState.needsUpdate) return;
-			if (dragState.rafId) cancelAnimationFrame(dragState.rafId);
-			dragState.rafId = requestAnimationFrame(() => {
-				dragState.rafId = 0;
-				updateSizes();
-			});
+			if (!dragState.needsUpdate) {
+				dragState.needsUpdate = true;
+				rafId = requestAnimationFrame(() => {
+					updatePanels();
+				});
+			}
 		};
 
-		resizerEl.addEventListener('mousedown', (e) => {
+		const onMouseDown = (e) => {
 			if (e.button !== 0) return;
-			dragState.active = true;
-			dragState.startX = e.clientX;
+			e.preventDefault();
+			e.stopPropagation();
+			isDragging = true;
+			startX = e.clientX;
+
 			dragState.mainEl = view.contentEl.querySelector('.qb-main');
 			if (!dragState.mainEl) return;
 
+			const leftRect = leftPanel.getBoundingClientRect();
+			const rightRect = rightPanel.getBoundingClientRect();
+			startWidthLeft = leftRect.width;
+			startWidthRight = rightRect.width;
+
 			if (type === 'sidebar-editor') {
-				dragState.startLeftWidth = parseFloat(dragState.mainEl.style.getPropertyValue('--qb-sidebar-w')) || ctx._savedWidths.sidebar;
-				dragState.startRightWidth = parseFloat(dragState.mainEl.style.getPropertyValue('--qb-editor-w')) || ctx._savedWidths.editor;
+				view._savedWidths.sidebar = startWidthLeft;
+				view._savedWidths.editor = startWidthRight;
 			} else if (type === 'editor-preview') {
-				dragState.startLeftWidth = parseFloat(dragState.mainEl.style.getPropertyValue('--qb-editor-w')) || ctx._savedWidths.editor;
+				view._savedWidths.editor = startWidthLeft;
+				view._savedWidths.preview = startWidthRight;
 			} else if (type === 'preview-code') {
-				dragState.startLeftWidth = parseFloat(dragState.mainEl.style.getPropertyValue('--qb-preview-w')) || ctx._savedWidths.preview;
-				dragState.startRightWidth = parseFloat(dragState.mainEl.style.getPropertyValue('--qb-code-w')) || ctx._savedWidths.code;
+				view._savedWidths.preview = startWidthLeft;
+				view._savedWidths.code = startWidthRight;
 			}
 
-			document.body.style.cursor = type === 'sidebar-editor' ? 'col-resize' : type === 'editor-preview' ? 'col-resize' : 'col-resize';
-			if (dragState.mainEl) dragState.mainEl.classList.add('is-resizing');
-			e.preventDefault();
-		});
+			overlay = document.createElement('div');
+			overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:9999;cursor:ew-resize;';
+			document.body.appendChild(overlay);
 
-		document.addEventListener('mousemove', (e) => {
-			if (!dragState.active) return;
-			dragState.delta = e.clientX - dragState.startX;
-			dragState.needsUpdate = true;
-			scheduleUpdate();
-		});
+			resizerEl.classList.add('resizing');
+			document.body.style.userSelect = 'none';
 
-		document.addEventListener('mouseup', () => {
-			if (!dragState.active) return;
-			dragState.active = false;
-			document.body.style.cursor = '';
-			if (dragState.rafId) {
-				cancelAnimationFrame(dragState.rafId);
-				dragState.rafId = 0;
-			}
-			if (dragState.needsUpdate) {
-				updateSizes();
-			}
-			if (dragState.mainEl) dragState.mainEl.classList.remove('is-resizing');
-			dragState.mainEl = null;
-		});
+			const mainEl = dragState.mainEl;
+			if (mainEl) mainEl.classList.add('is-resizing');
+
+			const onMouseMove = (e) => {
+				if (!isDragging) return;
+				dragState.delta = e.clientX - startX;
+				scheduleUpdate();
+			};
+
+			const onMouseUp = (e) => {
+				if (!isDragging) return;
+				isDragging = false;
+
+				if (rafId) {
+					cancelAnimationFrame(rafId);
+					rafId = null;
+				}
+
+				if (dragState.needsUpdate) {
+					updatePanels();
+				}
+
+				resizerEl.classList.remove('resizing');
+				document.body.style.userSelect = '';
+
+				if (mainEl) mainEl.classList.remove('is-resizing');
+
+				if (overlay) {
+					overlay.remove();
+					overlay = null;
+				}
+
+				dragState.needsUpdate = false;
+				dragState.mainEl = null;
+
+				document.removeEventListener('mousemove', onMouseMove);
+				document.removeEventListener('mouseup', onMouseUp);
+			};
+
+			document.addEventListener('mousemove', onMouseMove, { passive: true });
+			document.addEventListener('mouseup', onMouseUp);
+		};
+
+		resizerEl.addEventListener('mousedown', onMouseDown);
 	}
 
 	function _closeLeftPanel(type, mainEl) {
-		const panel = type === 'sidebar' ? 'sidebar' : type === 'editor' ? 'editor' : 'preview';
+		const panelNames = {
+			'sidebar-editor': 'sidebar',
+			'editor-preview': 'editor',
+			'preview-code': 'preview'
+		};
+		const panel = panelNames[type];
+
+		if (!panel) return;
+
 		ctx.panels[panel] = false;
-		if (mainEl) {
+		if (panel !== 'preview') {
 			mainEl.style.setProperty(`--qb-${panel}-w`, '0px');
 		}
+
 		if (!Object.values(ctx.panels).some(Boolean)) {
-			ctx.panels.preview = true;
-			if (mainEl) {
-				mainEl.style.setProperty('--qb-preview-w', `${ctx._savedWidths.preview}px`);
+			ctx.panels[panel] = true;
+			if (panel !== 'preview') {
+				mainEl.style.setProperty(`--qb-${panel}-w`, `${ctx._savedWidths[panel]}px`);
 			}
 		}
-		view.syncPanels();
 	}
 
 	function _closeRightPanel(type, mainEl) {
-		const panel = type === 'editor' ? 'editor' : type === 'preview' ? 'preview' : 'code';
+		const panelNames = {
+			'sidebar-editor': 'editor',
+			'editor-preview': 'preview',
+			'preview-code': 'code'
+		};
+		const panel = panelNames[type];
+
+		if (!panel) return;
+
 		ctx.panels[panel] = false;
-		if (mainEl) {
+		if (panel !== 'preview') {
 			mainEl.style.setProperty(`--qb-${panel}-w`, '0px');
 		}
+
 		if (!Object.values(ctx.panels).some(Boolean)) {
-			ctx.panels.sidebar = true;
-			if (mainEl) {
-				mainEl.style.setProperty('--qb-sidebar-w', `${ctx._savedWidths.sidebar}px`);
+			ctx.panels[panel] = true;
+			if (panel !== 'preview') {
+				mainEl.style.setProperty(`--qb-${panel}-w`, `${ctx._savedWidths[panel]}px`);
 			}
 		}
-		view.syncPanels();
+	}
+
+	function _resizePanels(type, mainEl, leftWidth, rightWidth) {
+		const [leftPanel, rightPanel] = type.split('-');
+		ctx.panels[leftPanel] = true;
+		ctx.panels[rightPanel] = true;
+
+		if (leftPanel !== 'preview') {
+			mainEl.style.setProperty(`--qb-${leftPanel}-w`, `${leftWidth}px`);
+		}
+		if (rightPanel !== 'preview') {
+			mainEl.style.setProperty(`--qb-${rightPanel}-w`, `${rightWidth}px`);
+		}
 	}
 
 	return {
 		_setupResizer,
 		_closeLeftPanel,
-		_closeRightPanel
+		_closeRightPanel,
+		_resizePanels
 	};
 };

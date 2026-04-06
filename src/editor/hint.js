@@ -111,8 +111,10 @@ module.exports = function createHintHandlers(ctx) {
 		}
 		setTimeout(() => {
 			overlay.classList.remove("is-open");
-			overlay.style.display = "none";
-		}, 280);
+			overlay.style.transition = "";
+			overlay.style.opacity = "";
+			if (modal) { modal.style.transition = ""; modal.style.opacity = ""; modal.style.transform = ""; }
+		}, 300);
 	}
 
 	return {

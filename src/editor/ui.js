@@ -1,7 +1,9 @@
 'use strict';
 
+const { ConfirmModal, TypePickerModal, ImportQuizModal } = require('./modals');
+
 module.exports = function createEditorUIHandlers(ctx) {
-	const { _setIcon, _iconSpan, exportAllWithFence, ImportQuizModal } = ctx;
+	const { _setIcon, _iconSpan, exportAllWithFence } = ctx;
 	const view = ctx.view;
 
 	function buildUI() {
@@ -79,12 +81,10 @@ module.exports = function createEditorUIHandlers(ctx) {
 		view.resizerSidebarEditor.dataset.resizer = "sidebar-editor";
 
 		view.editorEl = main.createDiv({ cls: "qb-panel qb-editor" });
-
 		view.resizerEditorPreview = main.createDiv({ cls: "qb-resizer" });
 		view.resizerEditorPreview.dataset.resizer = "editor-preview";
 
 		view.previewEl = main.createDiv({ cls: "qb-panel qb-preview" });
-
 		view.resizerPreviewCode = main.createDiv({ cls: "qb-resizer" });
 		view.resizerPreviewCode.dataset.resizer = "preview-code";
 
@@ -98,7 +98,7 @@ module.exports = function createEditorUIHandlers(ctx) {
 		view.qCountEl = sHead.createSpan({ text: "Questions (1)" });
 		const addBtn = sHead.createEl("button", { cls: "qb-btn-icon" });
 		_setIcon(addBtn, "plus");
-		addBtn.addEventListener("click", () => view.showTypeModal());
+		addBtn.addEventListener("click", () => showTypeModal());
 		view.sidebarListEl = view.sidebarEl.createDiv({ cls: "qb-sidebar-list" });
 
 		const examSection = view.sidebarEl.createDiv({ cls: "qb-collapsible qb-exam-section" });
@@ -130,163 +130,139 @@ module.exports = function createEditorUIHandlers(ctx) {
 			value: String(ctx.examOptions.durationMinutes)
 		});
 		durationInput.addEventListener("change", () => {
-			const val = parseInt(durationInput.value, 10);
-			ctx.examOptions.durationMinutes = Number.isFinite(val) && val > 0 ? val : 10;
+			ctx.examOptions.durationMinutes = Math.max(1, Math.min(180, parseInt(durationInput.value) || 10));
 			view.renderCode();
 		});
 
-		const autoSubmitWrap = examOptionsContainer.createDiv({ cls: "qb-toggle-wrap" });
-		const autoSubmitTrack = autoSubmitWrap.createDiv({ cls: `qb-toggle-track ${ctx.examOptions.autoSubmit ? "on" : ""}` });
-		autoSubmitTrack.createDiv({ cls: "qb-toggle-thumb" });
-		autoSubmitWrap.createSpan({ text: "Soumission auto" });
-		autoSubmitWrap.addEventListener("click", () => {
-			ctx.examOptions.autoSubmit = !ctx.examOptions.autoSubmit;
-			autoSubmitTrack.classList.toggle("on", ctx.examOptions.autoSubmit);
+		const autoSubmitWrap = examOptionsContainer.createDiv({ cls: "qb-checkbox-wrap" });
+		const autoSubmitCb = autoSubmitWrap.createEl("input", {
+			type: "checkbox",
+			checked: ctx.examOptions.autoSubmit
+		});
+		autoSubmitWrap.createSpan({ text: " Soumettre auto à la fin" });
+		autoSubmitCb.addEventListener("change", () => {
+			ctx.examOptions.autoSubmit = autoSubmitCb.checked;
 			view.renderCode();
 		});
 
-		const showTimerWrap = examOptionsContainer.createDiv({ cls: "qb-toggle-wrap" });
-		const showTimerTrack = showTimerWrap.createDiv({ cls: `qb-toggle-track ${ctx.examOptions.showTimer ? "on" : ""}` });
-		showTimerTrack.createDiv({ cls: "qb-toggle-thumb" });
-		showTimerWrap.createSpan({ text: "Afficher le timer" });
-		showTimerWrap.addEventListener("click", () => {
-			ctx.examOptions.showTimer = !ctx.examOptions.showTimer;
-			showTimerTrack.classList.toggle("on", ctx.examOptions.showTimer);
+		const showTimerWrap = examOptionsContainer.createDiv({ cls: "qb-checkbox-wrap" });
+		const showTimerCb = showTimerWrap.createEl("input", {
+			type: "checkbox",
+			checked: ctx.examOptions.showTimer
+		});
+		showTimerWrap.createSpan({ text: " Afficher le timer" });
+		showTimerCb.addEventListener("change", () => {
+			ctx.examOptions.showTimer = showTimerCb.checked;
 			view.renderCode();
 		});
 
-		if (!ctx.examOptions.enabled) {
-			examOptionsContainer.classList.add("qb-exam-disabled");
-		}
+		examOptionsContainer.classList.toggle("qb-exam-disabled", !ctx.examOptions.enabled);
 
-		view._renderSidebar();
-
-		const eHead = view.editorEl.createDiv({ cls: "qb-panel-head" });
-		eHead.createSpan({ cls: "qb-panel-title", text: "Éditeur" });
+		view.renderSidebar();
 
 		const pHead = view.previewEl.createDiv({ cls: "qb-panel-head" });
 		_iconSpan(pHead, "eye", "qb-panel-head-icon");
-		pHead.createSpan({ cls: "qb-panel-title", text: "Aperçu" });
+		view.previewTitleEl = pHead.createSpan({ text: "Aperçu" });
+		view.previewBodyEl = view.previewEl.createDiv({ cls: "qb-preview-body" });
 
 		const cHead = view.codeEl.createDiv({ cls: "qb-panel-head" });
 		_iconSpan(cHead, "code", "qb-panel-head-icon");
-		cHead.createSpan({ cls: "qb-panel-title", text: "Code" });
-		const copyBtn = cHead.createEl("button", { cls: "qb-btn qb-btn-small" });
+		cHead.createSpan({ text: "JSON5 généré" });
+		const copyBtn = cHead.createEl("button", { cls: "qb-btn qb-btn-accent qb-btn-sm" });
 		_iconSpan(copyBtn, "clipboard-copy", "qb-btn-leading-icon");
-		copyBtn.addEventListener("click", () => {
-			navigator.clipboard.writeText(exportAllWithFence(ctx.questions, ctx.examOptions));
-		});
+		copyBtn.createSpan({ text: "Copier" });
+		copyBtn.addEventListener("click", () => navigator.clipboard.writeText(exportAllWithFence(ctx.questions, ctx.examOptions)));
+		view.codeOutputEl = view.codeEl.createDiv({ cls: "qb-code-output" });
 
-		view.codeOutputEl = view.codeEl.createEl("pre", { cls: "qb-code-output" });
+		view.editorInnerEl = view.editorEl.createDiv({ cls: "qb-editor-inner" });
+
 		syncPanels();
 	}
 
 	function syncPanels() {
-		const root = view.contentEl;
-		if (!root) return;
-		const panels = ['sidebar', 'editor', 'preview', 'code'];
-		panels.forEach(key => {
-			const el = root.querySelector(`.qb-${key === 'sidebar' ? 'sidebar' : key === 'editor' ? 'editor' : key === 'preview' ? 'preview' : 'code'}`);
-			if (el) el.style.display = ctx.panels[key] ? '' : 'none';
-		});
-		const resizers = root.querySelectorAll('.qb-resizer');
-		resizers.forEach(r => {
-			const type = r.dataset.resizer;
-			if (type === 'sidebar-editor') r.style.display = (ctx.panels.sidebar && ctx.panels.editor) ? '' : 'none';
-			if (type === 'editor-preview') r.style.display = (ctx.panels.editor && ctx.panels.preview) ? '' : 'none';
-			if (type === 'preview-code') r.style.display = (ctx.panels.preview && ctx.panels.code) ? '' : 'none';
-		});
-		view._renderSidebar();
-		view._renderEditor();
-		render();
+		const mainEl = view.contentEl.querySelector('.qb-main');
+		const map = { sidebar: view.sidebarEl, editor: view.editorEl, preview: view.previewEl, code: view.codeEl };
+
+		const defaultWidths = { sidebar: '224px', editor: '352px', code: '288px' };
+
+		if (ctx.panels.preview && mainEl) {
+			const editorWidth = mainEl.style.getPropertyValue('--qb-editor-w');
+			if (editorWidth === 'auto') {
+				mainEl.style.setProperty('--qb-editor-w', defaultWidths.editor);
+			}
+			const codeWidth = mainEl.style.getPropertyValue('--qb-code-w');
+			if (codeWidth === 'auto') {
+				mainEl.style.setProperty('--qb-code-w', defaultWidths.code);
+			}
+		}
+
+		for (const [k, el] of Object.entries(map)) {
+			if (!el) continue;
+			el.toggleClass("qb-hidden", !ctx.panels[k]);
+		}
+
+		if (mainEl) {
+			const mainRect = mainEl.getBoundingClientRect();
+			let fixedWidthSum = 0;
+			if (ctx.panels.sidebar) {
+				const sidebarWidth = parseFloat(mainEl.style.getPropertyValue('--qb-sidebar-w') || '224');
+				fixedWidthSum += sidebarWidth;
+			}
+			if (ctx.panels.editor) {
+				const editorWidth = parseFloat(mainEl.style.getPropertyValue('--qb-editor-w') || '352');
+				fixedWidthSum += editorWidth;
+			}
+			if (ctx.panels.code) {
+				const codeWidth = parseFloat(mainEl.style.getPropertyValue('--qb-code-w') || '288');
+				fixedWidthSum += codeWidth;
+			}
+			if (fixedWidthSum > mainRect.width * 0.7) {
+				mainEl.style.setProperty('--qb-sidebar-w', '224px');
+				mainEl.style.setProperty('--qb-editor-w', '352px');
+				mainEl.style.setProperty('--qb-code-w', '288px');
+			}
+		}
+
+		view.contentEl.querySelectorAll(".qb-toggle").forEach(btn => btn.toggleClass("active", !!ctx.panels[btn.dataset.panel]));
+
+		if (view.resizerSidebarEditor) {
+			const showSidebarEditor = ctx.panels.sidebar && ctx.panels.editor;
+			view.resizerSidebarEditor.toggleClass("qb-hidden", !showSidebarEditor);
+		}
+		if (view.resizerEditorPreview) {
+			const showEditorPreview = ctx.panels.editor && ctx.panels.preview;
+			view.resizerEditorPreview.toggleClass("qb-hidden", !showEditorPreview);
+		}
+		if (view.resizerPreviewCode) {
+			const showPreviewCode = ctx.panels.preview && ctx.panels.code;
+			view.resizerPreviewCode.toggleClass("qb-hidden", !showPreviewCode);
+		}
 	}
 
 	function render() {
-		view._renderSidebar();
-		view._renderEditor();
-		renderPreview();
+		view.renderSidebar();
+		view.renderEditor();
+		view.schedulePreview();
 		view.renderCode();
+		syncPanels();
 	}
 
-	function renderPreview() {
-		view.previewEl.empty();
-		const card = view.previewEl.createDiv({ cls: "quiz-card quiz-card-preview" });
-		const q = ctx.activeQuestion;
-		if (!q) {
-			card.createEl("p", { text: "Sélectionnez une question" });
-			return;
-		}
-
-		const typeLabel = { single: "Single", multi: "Multi", text: "Texte", ordering: "Ordre", matching: "Appariement" }[q.type] || q.type;
-		card.createEl("div", { cls: "quiz-kind", text: typeLabel });
-
-		if (q.title) {
-			const titleEl = card.createEl("h3", { cls: "quiz-question-title" });
-			titleEl.innerHTML = view._resolveImagesInHtml(ctx.md2html(q.title));
-		}
-
-		if (q.code) {
-			const pre = card.createEl("pre", { cls: "quiz-code" });
-			const code = pre.createEl("code");
-			code.textContent = q.code;
-		}
-
-		const opts = card.createDiv({ cls: "quiz-options" });
-
-		if (q.type === "single" || q.type === "multi") {
-			for (const opt of q.options || []) {
-				const row = opts.createDiv({ cls: `quiz-option ${q.type === "multi" ? "quiz-multi" : ""}` });
-				row.createEl("span", { cls: "quiz-marker", text: q.type === "single" ? "○" : "□" });
-				const label = row.createDiv({ cls: "quiz-opt-text" });
-				label.innerHTML = view._resolveImagesInHtml(ctx.md2html(opt.label));
-				if (q.type === "single" && q.answer === opt.id) {
-					row.classList.add("is-correct");
-				} else if (q.type === "multi" && (q.answers || []).includes(opt.id)) {
-					row.classList.add("is-correct");
-				}
-			}
-		}
-
-		if (q.type === "ordering") {
-			for (const item of q.items || []) {
-				const row = opts.createDiv({ cls: "quiz-ordering-item" });
-				row.createEl("span", { cls: "quiz-order-handle", text: "⋮⋮" });
-				const label = row.createDiv({ cls: "quiz-opt-text" });
-				label.innerHTML = view._resolveImagesInHtml(ctx.md2html(item.label));
-			}
-		}
-
-		if (q.type === "matching") {
-			const leftCol = opts.createDiv({ cls: "quiz-matching-col" });
-			const rightCol = opts.createDiv({ cls: "quiz-matching-col" });
-			for (const pair of q.pairs || []) {
-				const lrow = leftCol.createDiv({ cls: "quiz-matching-item" });
-				lrow.textContent = pair.left;
-				const rrow = rightCol.createDiv({ cls: "quiz-matching-item" });
-				rrow.textContent = pair.right;
-			}
-		}
-
-		if (q.type === "text") {
-			const ta = opts.createEl("textarea", { cls: "quiz-textarea", attrs: { readonly: true } });
-			ta.value = (q.acceptedAnswers || [])[0] || "";
-		}
-
-		if (q.hint && q.hint.trim()) {
-			const hintBtn = card.createEl("button", { cls: "quiz-hint-btn", text: "Indice", type: "button" });
-			hintBtn.addEventListener("click", () => view._openHint(q.hint));
-		}
-
-		if (q.explain && q.explain.trim()) {
-			const explainEl = card.createDiv({ cls: "quiz-explain good" });
-			explainEl.innerHTML = view._resolveImagesInHtml(ctx.md2html(q.explain));
-		}
+	function showTypeModal() {
+		const modal = new TypePickerModal(view.app, type => {
+			const { makeDefault } = require('./utils');
+			const nq = makeDefault(type);
+			nq.title = `Question ${ctx.questions.length + 1}`;
+			ctx.questions.push(nq);
+			ctx.activeIdx = ctx.questions.length - 1;
+			view.render();
+		});
+		modal.open();
 	}
 
 	return {
 		buildUI,
 		syncPanels,
 		render,
-		renderPreview
+		showTypeModal
 	};
 };

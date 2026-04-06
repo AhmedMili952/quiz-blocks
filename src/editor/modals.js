@@ -1,7 +1,6 @@
 'use strict';
 
 const obsidian = require("obsidian");
-const { parseQuizSource } = require("../quiz-utils");
 const { Q_TYPES, _setIcon, makeDefault } = require("./utils");
 
 /* ════════════════════════════════════════════════════════
@@ -84,41 +83,6 @@ class TypePickerModal extends obsidian.Modal {
 }
 
 /* ════════════════════════════════════════════════════════
-   IMPORT FROM NOTE MODAL
-   ════════════════════════════════════════════════════════ */
-class ImportFromNoteModal extends obsidian.Modal {
-	constructor(app, builderView) {
-		super(app);
-		this.builderView = builderView;
-	}
-
-	onOpen() {
-		const { contentEl } = this;
-		contentEl.empty();
-		this.close();
-
-		new QuizFileSuggestModal(this.app, async (file) => {
-			try {
-				const content = await this.app.vault.read(file);
-				const match = content.match(/```quiz-blocks\n([\s\S]*?)\n```/);
-				if (!match) {
-					new obsidian.Notice("Aucun bloc quiz-blocks trouvé dans cette note");
-					return;
-				}
-
-				await this.builderView.importQuizSource(match[1]);
-				new obsidian.Notice(`Quiz importé depuis ${file.basename}`);
-			} catch (err) {
-				console.error("Import from note error:", err);
-				new obsidian.Notice("Erreur lors de la lecture de la note");
-			}
-		}).open();
-	}
-
-	onClose() { this.contentEl.empty(); }
-}
-
-/* ════════════════════════════════════════════════════════
    IMPORT QUIZ MODAL
    ════════════════════════════════════════════════════════ */
 class ImportQuizModal extends obsidian.Modal {
@@ -155,6 +119,7 @@ class ImportQuizModal extends obsidian.Modal {
 
 	async loadQuiz(text) {
 		try {
+			const { parseQuizSource } = require("../quiz-utils");
 			let jsonText = text;
 			const fenceMatch = text.match(/```quiz-blocks\n([\s\S]*?)\n```/);
 			if (fenceMatch) {
@@ -225,12 +190,12 @@ class ImportQuizModal extends obsidian.Modal {
 		if (q.prompt) {
 			question.prompt = q.prompt;
 		} else if (q.promptHtml) {
-			question.prompt = q.promptHtml.replace(/<[^\u003e]+\u003e/g, "").replace(/\u0026lt;/g, "\u003c").replace(/\u0026gt;/g, "\u003e").replace(/\u0026amp;/g, "\u0026");
+			question.prompt = q.promptHtml.replace(/<[^>]+>/g, "").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&");
 		}
 
 		if (q.explain) question.explain = q.explain;
 		else if (q.explainHtml) {
-			question.explain = q.explainHtml.replace(/<[^\u003e]+\u003e/g, "").replace(/\u0026lt;/g, "\u003c").replace(/\u0026gt;/g, "\u003e").replace(/\u0026amp;/g, "\u0026");
+			question.explain = q.explainHtml.replace(/<[^>]+>/g, "").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&");
 		}
 
 		if (q.resourceButton) {
@@ -328,6 +293,41 @@ class QuizFileSuggestModal extends obsidian.FuzzySuggestModal {
 	async onChooseItem(file) {
 		this.onChooseCallback(file);
 	}
+}
+
+/* ════════════════════════════════════════════════════════
+   IMPORT FROM NOTE MODAL
+   ════════════════════════════════════════════════════════ */
+class ImportFromNoteModal extends obsidian.Modal {
+	constructor(app, builderView) {
+		super(app);
+		this.builderView = builderView;
+	}
+
+	onOpen() {
+		const { contentEl } = this;
+		contentEl.empty();
+		this.close();
+
+		new QuizFileSuggestModal(this.app, async (file) => {
+			try {
+				const content = await this.app.vault.read(file);
+				const match = content.match(/```quiz-blocks\n([\s\S]*?)\n```/);
+				if (!match) {
+					new obsidian.Notice("Aucun bloc quiz-blocks trouvé dans cette note");
+					return;
+				}
+
+				await this.builderView.importQuizSource(match[1]);
+				new obsidian.Notice(`Quiz importé depuis ${file.basename}`);
+			} catch (err) {
+				console.error("Import from note error:", err);
+				new obsidian.Notice("Erreur lors de la lecture de la note");
+			}
+		}).open();
+	}
+
+	onClose() { this.contentEl.empty(); }
 }
 
 module.exports = { ConfirmModal, TypePickerModal, ImportQuizModal, QuizFileSuggestModal, ImportFromNoteModal };

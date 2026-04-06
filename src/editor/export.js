@@ -3,6 +3,7 @@
 const { escHtml, esc5, md2html } = require("./utils");
 
 function exportQuestion(q, idx) {
+	console.log(`[QuizEditor] exportQuestion: exporting type="${q._type}" idx=${idx}`);
 	const id = q.title ? q.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 20) : `q${idx + 1}`;
 	const e = esc5;
 	const L = [];
@@ -27,8 +28,18 @@ function exportQuestion(q, idx) {
 		L.push("\t\tmultiSelect: true,");
 		L.push(`\t\tcorrectIndices: [${(q.correctIndices || []).join(", ")}],`);
 	}
-	if (t === "ordering") { L.push("\t\tordering: true,"); L.push(`\t\tslots: [${(q.slots || []).map(s => `'${e(s)}'`).join(", ")}],`); L.push(`\t\tpossibilities: [\n${(q.possibilities || []).map(p => `\t\t\t'${e(p)}',`).join("\n")}\n\t\t],`); L.push(`\t\tcorrectOrder: [${(q.correctOrder || []).join(", ")}]`); }
-	if (t === "matching") { L.push("\t\tmatching: true,"); L.push(`\t\trows: [\n${(q.rows || []).map(r => `\t\t\t'${e(r)}',`).join("\n")}\n\t\t],`); L.push(`\t\tchoices: [\n${(q.choices || []).map(c => `\t\t\t'${e(c)}',`).join("\n")}\n\t\t],`); L.push(`\t\tcorrectMap: [${(q.correctMap || []).join(", ")}]`); }
+	if (t === "ordering") {
+		L.push("\t\tordering: true,");
+		L.push(`\t\tslots: [${(q.slots || []).map(s => `'${e(s)}'`).join(", ")}],`);
+		L.push(`\t\tpossibilities: [\n${(q.possibilities || []).map(p => `\t\t\t'${e(p)}',`).join("\n")}\n\t\t],`);
+		L.push(`\t\tcorrectOrder: [${(q.correctOrder || []).join(", ")}]`);
+	}
+	if (t === "matching") {
+		L.push("\t\tmatching: true,");
+		L.push(`\t\trows: [\n${(q.rows || []).map(r => `\t\t\t'${e(r)}',`).join("\n")}\n\t\t],`);
+		L.push(`\t\tchoices: [\n${(q.choices || []).map(c => `\t\t\t'${e(c)}',`).join("\n")}\n\t\t],`);
+		L.push(`\t\tcorrectMap: [${(q.correctMap || []).join(", ")}]`);
+	}
 	if (["text", "cmd", "powershell", "bash"].includes(t)) {
 		L.push("\t\ttype: 'text',");
 		if (t === "cmd") L.push("\t\tterminalVariant: 'cmd',");
@@ -69,12 +80,16 @@ function exportQuestion(q, idx) {
 }
 
 function exportAll(questions, examOptions = null) {
+	console.log(`[QuizEditor] exportAll: exporting ${questions.length} questions, examOptions.enabled=${examOptions?.enabled || false}`);
 	let result = "[\n" + questions.map((q, i) => exportQuestion(q, i)).join(",\n\n") + "\n]";
 	if (examOptions && examOptions.enabled) {
 		result += `,\n\n\t// Options mode examen\n\t{\n\t\texamMode: true,\n\t\texamDurationMinutes: ${examOptions.durationMinutes},\n\t\texamAutoSubmit: ${examOptions.autoSubmit},\n\t\texamShowTimer: ${examOptions.showTimer}\n\t}`;
 	}
 	return result;
 }
-function exportAllWithFence(questions, examOptions = null) { return "```quiz-blocks\n" + exportAll(questions, examOptions) + "\n```"; }
+function exportAllWithFence(questions, examOptions = null) {
+	console.log(`[QuizEditor] exportAllWithFence: generating fenced code`);
+	return "```quiz-blocks\n" + exportAll(questions, examOptions) + "\n```";
+}
 
 module.exports = { exportQuestion, exportAll, exportAllWithFence };
