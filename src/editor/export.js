@@ -10,12 +10,13 @@ function exportQuestion(q, idx) {
 	L.push(`\t\tid: '${e(id)}',`);
 	L.push(`\t\ttitle: '${e(q.title || `Question ${idx + 1}`)}',`);
 	if (q.resourceButton) L.push(`\t\tresourceButton: {\n\t\t\tlabel: '${e(q.resourceButton.label)}',\n\t\t\tfileName: '${e(q.resourceButton.fileName)}'\n\t\t},`);
-	if (q._promptHtml) {
-		L.push(`\t\tpromptHtml: '${e(q._promptHtml)}',`);
-	} else if (q.prompt) {
+	// Priorité au prompt modifié par l'utilisateur, _promptHtml est fallback
+	if (q.prompt) {
 		const hasMd = q.prompt && (/[*#`>\-]/.test(q.prompt) || q.prompt.includes("\n"));
 		if (hasMd) L.push(`\t\tpromptHtml: '${e(md2html(q.prompt))}',`);
 		else L.push(`\t\tprompt: '${e(q.prompt)}',`);
+	} else if (q._promptHtml) {
+		L.push(`\t\tpromptHtml: '${e(q._promptHtml)}',`);
 	}
 	const t = q._type;
 	if (t === "single") {
@@ -53,10 +54,11 @@ function exportQuestion(q, idx) {
 		const hasExplain = q.explain || q._explainHtml;
 		L.push(`\t\thint: '${e(q.hint)}'${hasExplain ? ',' : ''}`);
 	}
-	if (q._explainHtml) {
-		L.push(`\t\texplainHtml: '${e(q._explainHtml)}'`);
-	} else if (q.explain) {
+	// Priorité à explain modifié par l'utilisateur
+	if (q.explain) {
 		L.push(`\t\texplainHtml: '${e(md2html(q.explain))}'`);
+	} else if (q._explainHtml) {
+		L.push(`\t\texplainHtml: '${e(q._explainHtml)}'`);
 	}
 
 	if (q._extraFields && Object.keys(q._extraFields).length > 0) {

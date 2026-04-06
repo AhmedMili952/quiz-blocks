@@ -229,7 +229,6 @@ class QuizBuilderView extends obsidian.ItemView {
 	}
 
 	async saveToSourceFile() {
-		console.log("[Quiz Blocks] saveToSourceFile v2 - FIX JSON5");  // VERSION CHECK
 		if (!this.sourceFile) return;
 
 		try {
@@ -246,12 +245,6 @@ class QuizBuilderView extends obsidian.ItemView {
 				parseQuizSource(newQuizJson);
 			} catch (parseErr) {
 				console.error("[Quiz Blocks] JSON5 invalide généré:", parseErr);
-				console.error("[Quiz Blocks] Contenu (début):", newQuizJson.substring(0, 500));
-				console.error("[Quiz Blocks] Contenu (fin):", newQuizJson.substring(newQuizJson.length - 500));
-				// Show lines around line 48
-				const lines = newQuizJson.split('\n');
-				console.error("[Quiz Blocks] Lignes 45-52:", lines.slice(44, 52).map((l, i) => `${i+45}: ${l}`).join('\n'));
-				console.error("[Quiz Blocks] Longueur totale:", newQuizJson.length);
 				new obsidian.Notice("Erreur: le quiz généré n'est pas valide.");
 				return;
 			}
@@ -273,7 +266,6 @@ class QuizBuilderView extends obsidian.ItemView {
 			if (updatedContent !== content) {
 				await this.app.vault.modify(this.sourceFile, updatedContent);
 				this.updateSaveIndicator?.(true);
-				console.log("[Quiz Blocks] Quiz sauvegardé");
 			}
 		} catch (err) {
 			console.error("[Quiz Blocks] Save error:", err);
