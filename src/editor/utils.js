@@ -64,6 +64,8 @@ function esc5(s) {
 	return String(s ?? "")
 		.replace(/\\/g, "\\\\")    // Échapper les antislashs d'abord
 		.replace(/'/g, "\\'")          // Échapper les apostrophes (car on utilise ' pour délimiter)
+		.replace(/</g, "\\<")          // Échapper les chevrons ouvrants (pour HTML)
+		.replace(/>/g, "\\>")          // Échapper les chevrons fermants (pour HTML)
 		.replace(/\r/g, "\\r")        // Échapper les retours chariot
 		.replace(/\n/g, "\\n");        // Échapper les sauts de ligne
 	// Note: Les guillemets doubles n'ont pas besoin d'être échappés car

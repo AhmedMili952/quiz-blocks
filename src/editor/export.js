@@ -31,13 +31,13 @@ function exportQuestion(q, idx) {
 		L.push("\t\tordering: true,");
 		L.push(`\t\tslots: [${(q.slots || []).map(s => `'${e(s)}'`).join(", ")}],`);
 		L.push(`\t\tpossibilities: [\n${(q.possibilities || []).map(p => `\t\t\t'${e(p)}',`).join("\n")}\n\t\t],`);
-		L.push(`\t\tcorrectOrder: [${(q.correctOrder || []).join(", ")}]`);
+		L.push(`\t\tcorrectOrder: [${(q.correctOrder || []).join(", ")}],`);
 	}
 	if (t === "matching") {
 		L.push("\t\tmatching: true,");
 		L.push(`\t\trows: [\n${(q.rows || []).map(r => `\t\t\t'${e(r)}',`).join("\n")}\n\t\t],`);
 		L.push(`\t\tchoices: [\n${(q.choices || []).map(c => `\t\t\t'${e(c)}',`).join("\n")}\n\t\t],`);
-		L.push(`\t\tcorrectMap: [${(q.correctMap || []).join(", ")}]`);
+		L.push(`\t\tcorrectMap: [${(q.correctMap || []).join(", ")}],`);
 	}
 	if (["text", "cmd", "powershell", "bash"].includes(t)) {
 		L.push("\t\ttype: 'text',");
@@ -47,7 +47,7 @@ function exportQuestion(q, idx) {
 		if (q.commandPrefix && (t === "cmd" || t === "powershell")) L.push(`\t\tcommandPrefix: '${e(q.commandPrefix)}',`);
 		if (q.placeholder) L.push(`\t\tplaceholder: '${e(q.placeholder)}',`);
 		if (q.caseSensitive) L.push("\t\tcaseSensitive: true,");
-		L.push(`\t\tacceptedAnswers: [\n${(q.acceptedAnswers || []).filter(Boolean).map(a => `\t\t\t'${e(a)}',`).join("\n")}\n\t\t]`);
+		L.push(`\t\tacceptedAnswers: [\n${(q.acceptedAnswers || []).filter(Boolean).map(a => `\t\t\t'${e(a)}',`).join("\n")}\n\t\t],`);
 	}
 	if (q.hint) {
 		const hasExplain = q.explain || q._explainHtml;
@@ -60,7 +60,17 @@ function exportQuestion(q, idx) {
 	}
 
 	if (q._extraFields && Object.keys(q._extraFields).length > 0) {
+		// Track keys already exported to avoid duplicates
+		const exportedKeys = new Set([
+			'id', 'title', 'prompt', 'promptHtml', 'options', 'correctIndex',
+			'multiSelect', 'correctIndices', 'ordering', 'slots', 'possibilities',
+			'correctOrder', 'matching', 'rows', 'choices', 'correctMap', 'type',
+			'terminalVariant', 'textVariant', 'commandPrefix', 'placeholder',
+			'caseSensitive', 'acceptedAnswers', 'hint', 'explainHtml',
+			'resourceButton'
+		]);
 		for (const [key, val] of Object.entries(q._extraFields)) {
+			if (exportedKeys.has(key)) continue; // Skip already exported keys
 			if (typeof val === 'string') {
 				L.push(`\t\t${key}: '${e(val)}',`);
 			} else if (typeof val === 'number') {
