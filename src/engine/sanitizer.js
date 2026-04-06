@@ -42,6 +42,15 @@ module.exports = function createSanitizer(ctx) {
 			.replace(/'/g, "\&#39;");
 	}
 
+	function unescapeHtmlText(value) {
+		return String(value ?? "")
+			.replace(/\&lt;/g, "<")
+			.replace(/\&gt;/g, ">")
+			.replace(/\&quot;/g, '"')
+			.replace(/\&#39;/g, "'")
+			.replace(/\&amp;/g, "\&");
+	}
+
 	function isSafeQuizUrl(value, { image = false } = {}) {
 		const raw = String(value ?? "").trim();
 		if (!raw) return false;
@@ -269,12 +278,14 @@ module.exports = function createSanitizer(ctx) {
 	}
 
 	function replaceObsidianEmbedsInHtml(html, { wrapClass = "quiz-explain-embed-wrap", imgClass = "quiz-explain-embed" } = {}) {
-		return String(html ?? "").replace(/!\[\[([^\]]+)\]\]/g, (_, spec) => buildEmbedImgHtml(spec, { wrapClass, imgClass }));
+		const unescaped = unescapeHtmlText(String(html ?? ""));
+		return unescaped.replace(/!\[\[([^\]]+)\]\]/g, (_, spec) => buildEmbedImgHtml(spec, { wrapClass, imgClass }));
 	}
 
 	return {
 		escapeHtmlAttr,
 		escapeHtmlText,
+		unescapeHtmlText,
 		isSafeQuizUrl,
 		unwrapQuizHtmlElement,
 		sanitizeQuizHtml,
