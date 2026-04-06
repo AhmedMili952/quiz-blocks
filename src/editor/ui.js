@@ -5,6 +5,7 @@ const { ConfirmModal, TypePickerModal, ImportQuizModal } = require('./modals');
 module.exports = function createEditorUIHandlers(ctx) {
 	const { _setIcon, _iconSpan, exportAllWithFence } = ctx;
 	const view = ctx.view;
+	const app = ctx.app;
 
 	function buildUI() {
 		const root = view.contentEl;
@@ -229,7 +230,7 @@ module.exports = function createEditorUIHandlers(ctx) {
 				view._saveBtn.disabled = true;
 				view._saveBtn.title = "Toutes les modifications sont sauvegardées";
 				// Notification professionnelle
-				new obsidian.Notice("✓ Sauvegardé", 2000);
+				new app.Notice("✓ Sauvegardé", 2000);
 			} else {
 				// Modifications en attente - bouton actif
 				view._saveBtn.disabled = false;
