@@ -4,6 +4,13 @@ module.exports = function createEditorFormHandlers(ctx) {
 	const { Q_TYPES, _setIcon, _iconSpan, md2html } = ctx;
 	const view = ctx.view;
 
+	// Helper pour marquer comme modifié et planifier la sauvegarde
+	function onEdit() {
+		view.renderCode();
+		view.schedulePreview();
+		view.scheduleSave?.();
+	}
+
 	function renderEditor() {
 		const q = ctx.questions[ctx.activeIdx];
 		if (!q) return;
@@ -17,14 +24,14 @@ module.exports = function createEditorFormHandlers(ctx) {
 		badgeText.createDiv({ cls: "qb-type-label", text: ti.label });
 		badgeText.createDiv({ cls: "qb-type-desc", text: ti.desc });
 
-		_field(wrap, "Énoncé", q.prompt, "Votre question...", true, v => { q.prompt = v; view.renderCode(); view.schedulePreview(); }, { imagePaste: true });
+		_field(wrap, "Énoncé", q.prompt, "Votre question...", true, v => { q.prompt = v; onEdit(); }, { imagePaste: true });
 		_resourceSection(wrap, q);
 
 		const box = wrap.createDiv({ cls: "qb-section-box" });
 		_renderTypeFields(box, q);
 
-		_field(wrap, "Indice", q.hint, "Un indice pour aider...", true, v => { q.hint = v; view.renderCode(); view.schedulePreview(); }, { imagePaste: true });
-		_field(wrap, "Explication (Markdown)", q.explain, "### Rappels\n- **Terme** — Définition", true, v => { q.explain = v; view.renderCode(); view.schedulePreview(); }, { imagePaste: true });
+		_field(wrap, "Indice", q.hint, "Un indice pour aider...", true, v => { q.hint = v; onEdit(); }, { imagePaste: true });
+		_field(wrap, "Explication (Markdown)", q.explain, "### Rappels\n- **Terme** — Définition", true, v => { q.explain = v; onEdit(); }, { imagePaste: true });
 	}
 
 	function _field(parent, label, value, placeholder, multiline, onChange, opts = {}) {
@@ -86,10 +93,10 @@ module.exports = function createEditorFormHandlers(ctx) {
 			const track = toggleWrap.createDiv({ cls: `qb-toggle-track ${has ? "on" : ""}` });
 			track.createDiv({ cls: "qb-toggle-thumb" });
 			toggleWrap.appendChild(document.createTextNode("Activer le bouton ressource"));
-			toggleWrap.addEventListener("click", () => { q.resourceButton = q.resourceButton ? null : { label: "Activité PT", fileName: "" }; renderInner(); view.renderCode(); view.schedulePreview(); });
+			toggleWrap.addEventListener("click", () => { q.resourceButton = q.resourceButton ? null : { label: "Activité PT", fileName: "" }; renderInner(); onEdit(); });
 			if (has) {
-				_field(body, "Label", q.resourceButton.label, "Activité PT", false, v => { q.resourceButton.label = v; view.renderCode(); view.schedulePreview(); });
-				_field(body, "Nom du fichier", q.resourceButton.fileName, "fichier.pka", false, v => { q.resourceButton.fileName = v; view.renderCode(); view.schedulePreview(); });
+				_field(body, "Label", q.resourceButton.label, "Activité PT", false, v => { q.resourceButton.label = v; onEdit(); });
+				_field(body, "Nom du fichier", q.resourceButton.fileName, "fichier.pka", false, v => { q.resourceButton.fileName = v; onEdit(); });
 			}
 		};
 		renderInner();
@@ -97,7 +104,7 @@ module.exports = function createEditorFormHandlers(ctx) {
 
 	function _renderTypeFields(box, q) {
 		const t = q._type;
-		const rerender = () => { view.renderCode(); view.schedulePreview(); };
+		const rerender = () => { onEdit(); };
 
 		if (t === "single" || t === "multi") {
 			const isMulti = t === "multi";
@@ -134,18 +141,18 @@ module.exports = function createEditorFormHandlers(ctx) {
 								if (a.length > 1) {
 									triggerFlash(false);
 									q.correctIndices = a.filter(x => x !== i);
-									view.render();
+									view.render(); view.scheduleSave?.();
 								}
 							} else {
 								triggerFlash(true);
 								q.correctIndices = [...a, i].sort((a, b) => a - b);
-								view.render();
+								view.render(); view.scheduleSave?.();
 							}
 						} else {
 							if (!isCorrect) {
 								triggerFlash(true);
 								q.correctIndex = i;
-								view.render();
+								view.render(); view.scheduleSave?.();
 							}
 						}
 					});
@@ -217,7 +224,7 @@ module.exports = function createEditorFormHandlers(ctx) {
 								if (q.correctIndex === i) q.correctIndex = 0;
 								else if (q.correctIndex > i) q.correctIndex--;
 							}
-							view.render();
+							view.render(); view.scheduleSave?.();
 						});
 					}
 				});
@@ -229,7 +236,7 @@ module.exports = function createEditorFormHandlers(ctx) {
 					if (isMulti && q.options.length === 1) {
 						q.correctIndices = [0];
 					}
-					view.render();
+					view.render(); view.scheduleSave?.();
 				});
 			};
 
@@ -290,7 +297,7 @@ module.exports = function createEditorFormHandlers(ctx) {
 			const track = toggleWrap.createDiv({ cls: `qb-toggle-track ${q.caseSensitive ? "on" : ""}` });
 			track.createDiv({ cls: "qb-toggle-thumb" });
 			toggleWrap.appendChild(document.createTextNode("Sensible à la casse"));
-			toggleWrap.addEventListener("click", () => { q.caseSensitive = !q.caseSensitive; view.render(); });
+			toggleWrap.addEventListener("click", () => { q.caseSensitive = !q.caseSensitive; view.render(); view.scheduleSave?.(); });
 		}
 	}
 

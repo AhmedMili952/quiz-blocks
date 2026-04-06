@@ -5840,3 +5840,46 @@ body{
   padding: 6px 12px;
   font-size: 12px;
 }
+
+/* ─── Save Indicator ─── */
+.qb-save-indicator {
+	display: flex;
+	align-items: center;
+	gap: 0.4em;
+	padding: 0.4em 0.8em;
+	border-radius: 6px;
+	background: rgba(var(--interactive-accent-rgb), 0.1);
+	color: var(--interactive-accent);
+	font-size: 0.8em;
+	font-weight: 600;
+	transition: all 0.2s ease;
+}
+
+.qb-save-indicator.is-saved {
+	background: rgba(var(--background-modifier-success-rgb, 0, 200, 0), 0.15);
+	color: var(--text-success);
+}
+
+.qb-save-indicator .qb-save-icon {
+	width: 1em;
+	height: 1em;
+}
+
+.qb-save-indicator.is-saved .qb-save-icon svg {
+	animation: qb-save-bounce 0.4s ease;
+}
+
+@keyframes qb-save-bounce {
+	0% { transform: scale(1); }
+	50% { transform: scale(1.2); }
+	100% { transform: scale(1); }
+}
+
+.qb-save-btn {
+	background: var(--interactive-accent) !important;
+	color: white !important;
+}
+
+.qb-save-btn:hover {
+	filter: brightness(1.1);
+}

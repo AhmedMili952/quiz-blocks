@@ -33,6 +33,8 @@ class QuizBuilderView extends obsidian.ItemView {
 			showTimer: true
 		};
 		this.activeEditorTab = 'content';
+		this.sourceFile = null; // Fichier source ouvert en mode édition directe
+		this._saveDebounce = 0; // Timer pour sauvegarde automatique
 
 		this._savedWidths = {
 			sidebar: 320,
@@ -218,6 +220,46 @@ class QuizBuilderView extends obsidian.ItemView {
 			console.error("Import error:", err);
 			new obsidian.Notice("Erreur lors de l'import: " + err.message);
 		}
+	}
+
+	async openQuizFile(file, source) {
+		// Stocker le fichier source pour sauvegarde automatique
+		this.sourceFile = file;
+		await this.importQuizSource(source, file.name);
+	}
+
+	async saveToSourceFile() {
+		if (!this.sourceFile) return;
+
+		try {
+			// Lire le contenu actuel du fichier
+			const content = await this.app.vault.read(this.sourceFile);
+
+			// Générer le nouveau contenu du quiz
+			const { exportAllWithFence } = require("./editor/export");
+			const newQuizContent = exportAllWithFence(this.questions, this.examOptions);
+
+			// Remplacer le bloc quiz-blocks dans le fichier
+			const updatedContent = content.replace(/```quiz-blocks\n[\s\S]*?\n```/, newQuizContent.trim());
+
+			// Sauvegarder si le contenu a changé
+			if (updatedContent !== content) {
+				await this.app.vault.modify(this.sourceFile, updatedContent);
+				// Mettre à jour l'indicateur de sauvegarde
+				this.updateSaveIndicator?.(true);
+			}
+		} catch (err) {
+			console.error("Save error:", err);
+			new obsidian.Notice("Erreur lors de la sauvegarde");
+		}
+	}
+
+	scheduleSave() {
+		if (!this.sourceFile) return;
+		if (this._saveDebounce) clearTimeout(this._saveDebounce);
+		this._saveDebounce = setTimeout(() => this.saveToSourceFile(), 1000);
+		// Mettre à jour l'indicateur de sauvegarde
+		this.updateSaveIndicator?.(false);
 	}
 
 	convertParsedToInternal(q) {

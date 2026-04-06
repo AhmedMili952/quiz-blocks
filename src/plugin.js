@@ -194,8 +194,8 @@ module.exports = class InteractiveQuizPlugin extends obsidian.Plugin {
 		});
 
 		this.addCommand({
-			id: "import-quiz-from-active-note",
-			name: "Importer le quiz de la note active",
+			id: "open-quiz-from-active-note",
+			name: "Ouvrir le quiz de la note active",
 			callback: async () => {
 				// Check if there's an active file
 				const activeFile = this.app.workspace.getActiveFile();
@@ -226,15 +226,15 @@ module.exports = class InteractiveQuizPlugin extends obsidian.Plugin {
 						this.app.workspace.revealLeaf(leaf);
 					}
 
-					// Import the quiz
+					// Open the quiz for editing
 					const view = leaf.view;
-					if (view && view.importQuizSource) {
-						await view.importQuizSource(match[1], activeFile.name);
-						new obsidian.Notice(`Quiz importé depuis ${activeFile.name}`);
+					if (view && view.openQuizFile) {
+						await view.openQuizFile(activeFile, match[1]);
+						new obsidian.Notice(`Quiz ouvert : ${activeFile.name}`);
 					}
 				} catch (err) {
-					console.error("Import error:", err);
-					new obsidian.Notice("Erreur lors de l'import");
+					console.error("Open error:", err);
+					new obsidian.Notice("Erreur lors de l'ouverture");
 				}
 			},
 		});

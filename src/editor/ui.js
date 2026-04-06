@@ -48,6 +48,21 @@ module.exports = function createEditorUIHandlers(ctx) {
 		}
 
 		const actions = header.createDiv({ cls: "qb-actions" });
+		// Indicateur de sauvegarde (visible quand on édite un fichier)
+		view._saveIndicator = actions.createDiv({ cls: "qb-save-indicator" });
+		view._saveIndicator.style.display = "none";
+		_iconSpan(view._saveIndicator, "file-edit", "qb-save-icon");
+		view._saveIndicator.createSpan({ cls: "qb-save-text", text: "Modifié" });
+
+		// Bouton Sauvegarder (visible quand on édite un fichier)
+		view._saveBtn = actions.createEl("button", { cls: "qb-btn qb-btn-primary qb-save-btn" });
+		view._saveBtn.style.display = "none";
+		_iconSpan(view._saveBtn, "save", "qb-btn-leading-icon");
+		view._saveBtn.createSpan({ text: "Sauvegarder" });
+		view._saveBtn.addEventListener("click", () => {
+			view.saveToSourceFile?.();
+		});
+
 
 		const importBtn = actions.createEl("button", { cls: "qb-btn" });
 		_iconSpan(importBtn, "download", "qb-btn-leading-icon");
@@ -201,6 +216,20 @@ module.exports = function createEditorUIHandlers(ctx) {
 		view.codeOutputEl = view.codeEl.createDiv({ cls: "qb-code-output" });
 
 		view.editorInnerEl = view.editorEl.createDiv({ cls: "qb-editor-inner" });
+
+		// Fonction pour mettre à jour l'indicateur de sauvegarde
+		view.updateSaveIndicator = (saved) => {
+			if (!view.sourceFile) {
+				view._saveIndicator.style.display = "none";
+				view._saveBtn.style.display = "none";
+				return;
+			}
+			view._saveIndicator.style.display = "flex";
+			view._saveBtn.style.display = "flex";
+			const text = view._saveIndicator.querySelector(".qb-save-text");
+			if (text) text.textContent = saved ? "Sauvegardé" : "Modifié";
+			view._saveIndicator.classList.toggle("is-saved", saved);
+		};
 
 		syncPanels();
 	}
