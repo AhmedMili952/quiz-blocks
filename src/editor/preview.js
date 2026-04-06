@@ -141,7 +141,10 @@ module.exports = function createPreviewHandlers(ctx) {
 			hintBtn.addEventListener("click", () => view._openHint(q.hint));
 		}
 
-		if (q.explain && q.explain.trim()) {
+		if (q._explainHtml) {
+			const explainEl = card.createDiv({ cls: "quiz-explain good" });
+			explainEl.innerHTML = q._explainHtml;
+		} else if (q.explain && q.explain.trim()) {
 			const explainEl = card.createDiv({ cls: "quiz-explain good" });
 			explainEl.innerHTML = _resolveImagesInHtml(md2html(q.explain));
 		}
