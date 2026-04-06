@@ -189,7 +189,9 @@ class QuizBuilderView extends obsidian.ItemView {
 				return;
 			}
 
-			this.questions = questions;
+			// Mettre à jour le tableau en place pour que ctx.questions reste synchronisé
+			this.questions.length = 0;
+			questions.forEach(q => this.questions.push(q));
 			this.activeIdx = 0;
 			if (examOptions) {
 				this.examOptions = examOptions;

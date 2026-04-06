@@ -2,6 +2,7 @@
 
 const obsidian = require("obsidian");
 const { Q_TYPES, _setIcon, makeDefault } = require("./utils");
+const { parseQuizSource } = require("../quiz-utils");
 
 /* ════════════════════════════════════════════════════════
    CONFIRM MODAL
@@ -119,7 +120,6 @@ class ImportQuizModal extends obsidian.Modal {
 
 	async loadQuiz(text) {
 		try {
-			const { parseQuizSource } = require("../quiz-utils");
 			let jsonText = text;
 			const fenceMatch = text.match(/```quiz-blocks\n([\s\S]*?)\n```/);
 			if (fenceMatch) {
@@ -155,7 +155,9 @@ class ImportQuizModal extends obsidian.Modal {
 				return;
 			}
 
-			this.builderView.questions = questions;
+			// Mettre à jour le tableau en place pour que ctx.questions reste synchronisé
+			this.builderView.questions.length = 0;
+			questions.forEach(q => this.builderView.questions.push(q));
 			this.builderView.activeIdx = 0;
 			if (examOptions) {
 				this.builderView.examOptions = examOptions;
@@ -192,10 +194,16 @@ class ImportQuizModal extends obsidian.Modal {
 		} else if (q.promptHtml) {
 			question.prompt = q.promptHtml.replace(/<[^>]+>/g, "").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&");
 		}
+		if (q.promptHtml) {
+			question._promptHtml = q.promptHtml;
+		}
 
 		if (q.explain) question.explain = q.explain;
 		else if (q.explainHtml) {
 			question.explain = q.explainHtml.replace(/<[^>]+>/g, "").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&");
+		}
+		if (q.explainHtml) {
+			question._explainHtml = q.explainHtml;
 		}
 
 		if (q.resourceButton) {
@@ -224,12 +232,21 @@ class ImportQuizModal extends obsidian.Modal {
 		}
 
 		if (["text", "cmd", "powershell", "bash"].includes(type)) {
-			question.acceptedAnswers = q.acceptedAnswers || [""];
+			question.acceptedAnswers = q.acceptedAnswers || q.acceptableAnswers || [""];
+			if (question.acceptedAnswers.length === 1 && question.acceptedAnswers[0] === "" && q.correctText) {
+				question.acceptedAnswers = [q.correctText];
+			}
 			question.caseSensitive = q.caseSensitive || false;
 			question.placeholder = q.placeholder || "";
 			if (type === "cmd" || type === "powershell") {
 				question.commandPrefix = q.commandPrefix || (type === "cmd" ? "C:\\>" : "PS>");
 			}
+		}
+
+		const knownKeys = new Set(['id','title','prompt','promptHtml','options','correctIndex','multiSelect','correctIndices','ordering','slots','possibilities','correctOrder','matching','rows','choices','correctMap','type','terminalVariant','textVariant','commandPrefix','placeholder','caseSensitive','acceptedAnswers','acceptableAnswers','correctText','hint','explain','explainHtml','resourceButton','examMode','examDurationMinutes','examAutoSubmit','examShowTimer']);
+		question._extraFields = {};
+		for (const key of Object.keys(q)) {
+			if (!knownKeys.has(key)) question._extraFields[key] = q[key];
 		}
 
 		return question;

@@ -3,7 +3,6 @@
 const { escHtml, esc5, md2html } = require("./utils");
 
 function exportQuestion(q, idx) {
-	console.log(`[QuizEditor] exportQuestion: exporting type="${q._type}" idx=${idx}`);
 	const id = q.title ? q.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 20) : `q${idx + 1}`;
 	const e = esc5;
 	const L = [];
@@ -80,7 +79,6 @@ function exportQuestion(q, idx) {
 }
 
 function exportAll(questions, examOptions = null) {
-	console.log(`[QuizEditor] exportAll: exporting ${questions.length} questions, examOptions.enabled=${examOptions?.enabled || false}`);
 	let result = "[\n" + questions.map((q, i) => exportQuestion(q, i)).join(",\n\n") + "\n]";
 	if (examOptions && examOptions.enabled) {
 		result += `,\n\n\t// Options mode examen\n\t{\n\t\texamMode: true,\n\t\texamDurationMinutes: ${examOptions.durationMinutes},\n\t\texamAutoSubmit: ${examOptions.autoSubmit},\n\t\texamShowTimer: ${examOptions.showTimer}\n\t}`;
@@ -88,7 +86,6 @@ function exportAll(questions, examOptions = null) {
 	return result;
 }
 function exportAllWithFence(questions, examOptions = null) {
-	console.log(`[QuizEditor] exportAllWithFence: generating fenced code`);
 	return "```quiz-blocks\n" + exportAll(questions, examOptions) + "\n```";
 }
 

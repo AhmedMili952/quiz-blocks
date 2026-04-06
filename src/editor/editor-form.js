@@ -74,10 +74,6 @@ module.exports = function createEditorFormHandlers(ctx) {
 		}
 
 	function _resourceSection(parent, q) {
-		if (!q.resourceButton) {
-			q.resourceButton = { label: "", fileName: "" };
-		}
-
 		const details = parent.createEl("details", { cls: "qb-collapsible" });
 		const summary = details.createEl("summary");
 		_iconSpan(summary, "paperclip", "qb-summary-icon");

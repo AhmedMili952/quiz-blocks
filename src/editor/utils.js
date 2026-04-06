@@ -20,17 +20,10 @@ function loadReact() {
 	return { React: null, ReactDOM: null };
 }
 
-function _setIcon(el, name) {
-	console.log(`[QuizEditor] _setIcon: setting icon="${name}"`);
-	try { obsidian.setIcon(el, name); } catch (_) {}
-}
-function _iconSpan(parent, name, cls) {
-	console.log(`[QuizEditor] _iconSpan: creating icon span name="${name}"`);
-	const s = parent.createSpan({ cls: cls || "qb-icon" }); _setIcon(s, name); return s;
-}
+function _setIcon(el, name) { try { obsidian.setIcon(el, name); } catch (_) {} }
+function _iconSpan(parent, name, cls) { const s = parent.createSpan({ cls: cls || "qb-icon" }); _setIcon(s, name); return s; }
 
 function makeDefault(type) {
-	console.log(`[QuizEditor] makeDefault: creating default question type="${type}"`);
 	const b = { _type: type, _id: Math.random().toString(36).slice(2, 10), title: "", prompt: "", hint: "", explain: "", resourceButton: null };
 	switch (type) {
 		case "single": return { ...b, options: ["", ""], correctIndex: 0 };
@@ -47,7 +40,6 @@ function makeDefault(type) {
 
 function md2html(src) {
 	if (!src) return "";
-	console.log(`[QuizEditor] md2html: converting markdown, length=${src.length}`);
 	return String(src)
 		.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
 		.replace(/^### (.+)$/gm, "<h3>$1</h3>")

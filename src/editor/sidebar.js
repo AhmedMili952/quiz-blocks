@@ -1,6 +1,7 @@
 'use strict';
 
 const obsidian = require("obsidian");
+const { ConfirmModal } = require("./modals");
 
 module.exports = function createSidebarHandlers(ctx) {
 	const { Q_TYPES, _setIcon } = ctx;
@@ -72,7 +73,7 @@ module.exports = function createSidebarHandlers(ctx) {
 		const q = ctx.questions[i];
 		const title = q.title || `Question ${i + 1}`;
 
-		const modal = new obsidian.ConfirmModal(view.app,
+		const modal = new ConfirmModal(view.app,
 			`Supprimer "${title}" ?`,
 			`Cette action est irréversible. La question sera définitivement supprimée.`,
 			"Supprimer",
