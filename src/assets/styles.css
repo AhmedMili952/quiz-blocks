@@ -3450,6 +3450,27 @@ body{
 .qb-title { font-size: 0.95em; font-weight: 700; line-height: 1.2; }
 .qb-sub { font-size: 0.7em; color: var(--text-muted); line-height: 1.2; }
 
+/* File name display - highlighted when imported */
+.qb-file-name.has-file {
+	color: var(--interactive-accent);
+	font-weight: 600;
+	font-size: 0.85em;
+	letter-spacing: -0.3px;
+	display: flex;
+	align-items: center;
+	gap: 0.3em;
+}
+
+.qb-file-name.has-file::before {
+	content: "";
+	width: 0.5em;
+	height: 0.5em;
+	background: var(--interactive-accent);
+	border-radius: 50%;
+	display: inline-block;
+	box-shadow: 0 0 0 2px rgba(var(--interactive-accent-rgb), 0.2);
+}
+
 /* ─── Panel Toggles ─── */
 .qb-toggles {
 	display: flex;

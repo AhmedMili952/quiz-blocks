@@ -15,7 +15,13 @@ module.exports = function createEditorUIHandlers(ctx) {
 		_setIcon(logo, "graduation-cap");
 		const brandText = brand.createDiv({ cls: "qb-title-group" });
 		brandText.createDiv({ cls: "qb-title", text: "Quiz Editor" });
-		view._fileNameEl = brandText.createDiv({ cls: "qb-sub", text: view.importedFileName || "quiz-blocks" });
+		view._fileNameEl = brandText.createDiv({ cls: "qb-sub qb-file-name" });
+		if (view.importedFileName) {
+			view._fileNameEl.textContent = view.importedFileName;
+			view._fileNameEl.classList.add("has-file");
+		} else {
+			view._fileNameEl.textContent = "quiz-blocks";
+		}
 
 		const toggles = header.createDiv({ cls: "qb-toggles" });
 		for (const [key, label, lucide] of [["sidebar", "Questions", "list"], ["editor", "Éditeur", "pencil"], ["preview", "Aperçu", "eye"], ["code", "Code", "code"]]) {

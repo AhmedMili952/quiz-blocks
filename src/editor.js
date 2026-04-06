@@ -209,6 +209,7 @@ class QuizBuilderView extends obsidian.ItemView {
 			// Mettre à jour le nom du fichier affiché dans l'UI
 			if (this._fileNameEl) {
 				this._fileNameEl.textContent = fileName || "quiz-blocks";
+				this._fileNameEl.classList.toggle("has-file", !!fileName);
 			}
 
 			this.render();
