@@ -1,18 +1,49 @@
 'use strict';
 
-const { parseQuizSource, extractExamOptions, renderParagraph } = require("./quiz-utils");
-const createTerminalHandlers = require("./engine/terminal");
-const createSanitizer = require("./engine/sanitizer");
-const createResourceHandlers = require("./engine/resources");
-const createExamHandlers = require("./engine/exam");
-const createCardRenderers = require("./engine/cards");
-const createViewportHandlers = require("./engine/viewport");
-const createTrackHandlers = require("./engine/track");
-const createZoomHandlers = require("./engine/zoom");
-const createInteractionHandlers = require("./engine/interactions");
-const createStateHandlers = require("./engine/state");
-const createHintHandlers = require("./engine/hint");
-const createQuestionHandlers = require("./engine/questions");
+const JSON5 = require("json5");
+
+function parseQuizSource(source) {
+	const raw = String(source ?? "").trim();
+
+	if (raw.length === 0) return [];
+
+	let parsed;
+	try {
+		parsed = JSON5.parse(raw);
+	} catch (error) {
+		throw new Error("Le bloc ```quiz-blocks doit contenir un tableau JSON5 valide.");
+	}
+
+	if (!Array.isArray(parsed)) {
+		throw new Error("Le contenu du bloc quiz-blocks doit être un tableau.");
+	}
+
+	return parsed;
+}
+
+function extractExamOptions(quizArray) {
+	if (!Array.isArray(quizArray) || quizArray.length === 0) return { questions: quizArray, examOptions: null };
+
+	const lastItem = quizArray[quizArray.length - 1];
+	if (lastItem && typeof lastItem === "object" && lastItem.examMode === true) {
+		return {
+			questions: quizArray.slice(0, -1),
+			examOptions: {
+				durationMinutes: Math.max(1, Math.min(180, Number(lastItem.examDurationMinutes) || 10)),
+				autoSubmit: lastItem.examAutoSubmit !== false,
+				showTimer: lastItem.examShowTimer !== false
+			}
+		};
+	}
+
+	return { questions: quizArray, examOptions: null };
+}
+
+function renderParagraph(container, text) {
+	return container.createEl("p", {
+		text: String(text ?? "")
+	});
+}
 
 async function renderInteractiveQuiz(context) {
 
@@ -70,126 +101,237 @@ async function renderInteractiveQuiz(context) {
 	const isMatchingQuestion = q => !!(q && (q.matching === true || typeof q.matching === "object"));
 	const isTextQuestion = q => !!(q && (q.type === "text" || q.text === true));
 
-	// Créer le contexte partagé (ctx) pour injection de dépendances
-	const ctx = {
-		app,
-		container,
-		sourcePath,
-		Notice,
-		quiz,
-		isExamMode,
-		examOptions,
-		examDurationMs,
-		get examTimeRemaining() { return examTimeRemaining; },
-		set examTimeRemaining(v) { examTimeRemaining = v; },
-		get examStarted() { return examStarted; },
-		set examStarted(v) { examStarted = v; },
-		get examEnded() { return examEnded; },
-		set examEnded(v) { examEnded = v; },
-		get examStartTime() { return examStartTime; },
-		set examStartTime(v) { examStartTime = v; },
-		QUIZ_INSTANCE_ID,
-		HINT_OVERLAY_ID,
-		HINT_TITLE_ID,
-		__quizGlobalCleanups,
-		shuffleArray,
-		clamp,
-		isOrderingQuestion,
-		isMatchingQuestion,
-		isTextQuestion
-	};
+function normalizeTerminalVariantName(value) {
+	const raw = String(value ?? "").trim().toLowerCase();
+	if (!raw) return null;
 
-	// Instancier tous les modules avec ctx injecté
-	const sanitizer = createSanitizer(ctx);
-	const resources = createResourceHandlers(ctx);
-	const exam = createExamHandlers(ctx);
-	const cards = createCardRenderers(ctx);
-	const viewport = createViewportHandlers(ctx);
-	const track = createTrackHandlers(ctx);
-	const zoom = createZoomHandlers(ctx);
-	const interactions = createInteractionHandlers(ctx);
-	const terminal = createTerminalHandlers(ctx);
-	const state = createStateHandlers(ctx);
-	const hint = createHintHandlers(ctx);
-	const questions = createQuestionHandlers(ctx);
+	if ([
+		"command",
+		"cmd",
+		"windows-cmd",
+		"windows cmd",
+		"invite-de-commandes",
+		"invite de commandes"
+	].includes(raw)) return "cmd";
 
-	// Fonctions utilitaires définies avant leur utilisation dans Object.assign
-	const isQuestionSlideIndex = i => i >= 0 && i < quiz.length;
-	const isSubmitSlideIndex = i => i === SLIDE_SUBMIT_INDEX;
-	const isResultsSlideIndex = i => i === SLIDE_RESULTS_INDEX;
-	const clampSlideIndex = i => Math.max(0, Math.min(TOTAL_SLIDES - 1, i));
+	if ([
+		"powershell",
+		"ps",
+		"pwsh",
+		"windows-powershell",
+		"windows powershell",
+		"power-shell",
+		"power shell"
+	].includes(raw)) return "powershell";
 
-	// Attacher les modules à ctx pour référence croisée
-	Object.assign(ctx, {
-		sanitize: sanitizer,
-		resources,
-		exam,
-		cards,
-		viewport,
-		track,
-		zoom,
-		interactions,
-		terminal,
-		state,
-		hint,
-		questions,
-		// Fonctions exposées directement
-		escapeHtmlText: sanitizer.escapeHtmlText,
-		escapeHtmlAttr: sanitizer.escapeHtmlAttr,
-		openHintModal: hint.openHintModal,
-		closeHintModal: hint.closeHintModal,
-		getOrderingItems: questions.getOrderingItems,
-		getOrderingCorrectOrder: questions.getOrderingCorrectOrder,
-		getOrderingSlotLabels: questions.getOrderingSlotLabels,
-		getMatchRows: questions.getMatchRows,
-		getMatchChoices: questions.getMatchChoices,
-		getMatchCorrectMap: questions.getMatchCorrectMap,
-		orderingSelectionIncludes: questions.orderingSelectionIncludes,
-		removeOrderingItemFromSlot: questions.removeOrderingItemFromSlot,
-		placeOrderingItemInSlot: questions.placeOrderingItemInSlot,
-		matchingSelectionIncludes: questions.matchingSelectionIncludes,
-		hasAnyAnswer: state.hasAnyAnswer,
-		isComplete: state.isComplete,
-		getMissingIndices: state.getMissingIndices,
-		isCorrect: state.isCorrect,
-		computeScorePercent: state.computeScorePercent,
-		getSubmitSlideSignature: state.getSubmitSlideSignature,
-		getResultsSlideSignature: state.getResultsSlideSignature,
-		goToQuestion: state.goToQuestion,
-		goToSubmit: state.goToSubmit,
-		goToResults: state.goToResults,
-		resetQuiz: state.resetQuiz,
-		goToSlide: state.goToSlide,
-		redirectSlide: state.redirectSlide,
-		updateNavHighlight: state.updateNavHighlight,
-		playNavTabPressAndNavigate: state.playNavTabPressAndNavigate,
-		clearAllNavTabPressStates: state.clearAllNavTabPressStates,
-		setNavTabPressState: state.setNavTabPressState,
-		buildNavTabClass: state.buildNavTabClass,
-		// Fonctions utilitaires slides
-		isQuestionSlideIndex,
-		isSubmitSlideIndex,
-		isResultsSlideIndex,
-		clampSlideIndex
-	});
+	if ([
+		"bash",
+		"shell",
+		"sh",
+		"zsh",
+		"terminal",
+		"linux"
+	].includes(raw)) {
+		return (raw === "terminal" || raw === "linux") ? "bash" : raw;
+	}
+
+	return raw.replace(/\s+/g, "-");
+}
+
+function getTerminalTextVariant(q) {
+	if (!isTextQuestion(q)) return null;
+
+	const candidates = [
+		q?.terminalVariant,
+		q?.textVariant,
+		q?.text?.variant,
+		q?.terminal?.variant
+	];
+
+	for (const candidate of candidates) {
+		const normalized = normalizeTerminalVariantName(candidate);
+		if (normalized) return normalized;
+	}
+
+	if (q?.command === true) return "cmd";
+
+	return null;
+}
+
+const isTerminalTextQuestion = q => !!getTerminalTextVariant(q);
+
+/* Compatibilité avec ton moteur actuel :
+   on garde ce nom pour ne pas casser le comportement existant. */
+const isCommandTextQuestion = q => isTerminalTextQuestion(q);
+
+function getTerminalPromptPrefix(q) {
+	const explicitPrefix = [
+		q?.commandPrefix,
+		q?.terminalPrefix,
+		q?.promptPrefix,
+		q?.terminal?.prefix
+	].find(value => typeof value === "string" && value.length > 0);
+
+	if (explicitPrefix) return explicitPrefix;
+
+	const variant = getTerminalTextVariant(q);
+
+	switch (variant) {
+		case "cmd":
+			return "C:\\>";
+
+		case "powershell":
+			return "PS>";
+
+		case "bash":
+			return "user@hostname:~$ ";
+
+		case "zsh":
+			return "user@hostname %";
+
+		case "sh":
+			return "$";
+	}
+	return "C:\\>";
+
+}
+
+
+function renderTerminalPromptPrefixHtml(q) {
+	const promptPrefix = String(getTerminalPromptPrefix(q) ?? "");
+	const variant = getTerminalTextVariant(q);
+
+	if (variant === "bash") {
+		const match = promptPrefix.match(/^([^:]+)(:)([^$]*)(\$ ?)$/);
+
+		if (match) {
+			const [, userHost, colon, pathPart, dollarPart] = match;
+
+			return '<span class="quiz-command-prefix quiz-command-prefix-bash">' +
+				`<span class="quiz-bash-prefix-userhost">${escapeHtmlText(userHost)}</span>` +
+				`<span class="quiz-bash-prefix-colon">${escapeHtmlText(colon)}</span>` +
+				`<span class="quiz-bash-prefix-path">${escapeHtmlText(pathPart)}</span>` +
+				`<span class="quiz-bash-prefix-dollar">${escapeHtmlText(dollarPart)}</span>` +
+			'</span>';
+		}
+	}
+
+	return `<span class="quiz-command-prefix">${escapeHtmlText(promptPrefix)}</span>`;
+}
+
+
+
+function getTextMaxLength(q) {
+	const candidates = [
+		q?.maxLength,
+		q?.textMaxLength,
+		q?.text?.maxLength,
+		q?.commandMaxLength,
+		q?.terminalMaxLength,
+		q?.terminal?.maxLength
+	];
+
+	for (const value of candidates) {
+		const n = Number(value);
+		if (Number.isFinite(n) && n > 0) return Math.floor(n);
+	}
+
+	return null;
+}
+
+function sliceToMaxChars(value, maxLength) {
+	if (!Number.isFinite(maxLength) || maxLength <= 0) return String(value ?? "");
+	return Array.from(String(value ?? "")).slice(0, maxLength).join("");
+}
+
+function sanitizeTextAnswerValue(q, value) {
+	let out = String(value ?? "");
+
+	if (isTerminalTextQuestion(q)) {
+		out = out.replace(/[\r\n]+/g, "");
+	}
+
+	const maxLength = getTextMaxLength(q);
+	if (Number.isFinite(maxLength) && maxLength > 0) {
+		out = sliceToMaxChars(out, maxLength);
+	}
+
+	return out;
+}
+
+
+function getTextAcceptedAnswers(q) {
+	const values = [];
+
+	if (Array.isArray(q?.acceptedAnswers)) values.push(...q.acceptedAnswers);
+	if (Array.isArray(q?.acceptableAnswers)) values.push(...q.acceptableAnswers);
+	if (Array.isArray(q?.correctAnswers)) values.push(...q.correctAnswers);
+	if (typeof q?.correctText === "string") values.push(q.correctText);
+	if (typeof q?.answer === "string") values.push(q.answer);
+
+	return values
+		.filter(v => v !== null && v !== undefined)
+		.map(v => String(v));
+}
+
+function normalizeTextAnswer(value, { caseSensitive = false } = {}) {
+	let out = String(value ?? "")
+		.normalize("NFD")
+		.replace(/[\u0300-\u036f]/g, "")
+		.replace(/\s+/g, " ")
+		.trim();
+
+	if (!caseSensitive) out = out.toLowerCase();
+	return out;
+}
+
+function isTextAnswerCorrect(q, value) {
+	const accepted = getTextAcceptedAnswers(q);
+	if (!accepted.length) return false;
+
+	return accepted.some(expected =>
+		normalizeTextAnswer(expected, { caseSensitive: !!q.caseSensitive }) ===
+		normalizeTextAnswer(value, { caseSensitive: !!q.caseSensitive })
+	);
+}
+
+function syncTextAreaHeight(textarea) {
+	if (!textarea) return;
+	textarea.style.height = "auto";
+	textarea.style.height = `${Math.max(220, textarea.scrollHeight)}px`;
+}
+
 
 function firstArray(...candidates) {
 	for (const c of candidates) if (Array.isArray(c)) return c;
 	return [];
 }
 
+function getOrderingItems(q) {
+	return firstArray(q?.possibilities, q?.orderingItems, q?.ordering?.items, q?.options);
+}
+function getOrderingCorrectOrder(q) {
+	return firstArray(q?.correctOrder, q?.ordering?.correctOrder, [...Array(getOrderingItems(q).length).keys()]);
+}
+function getOrderingSlotLabels(q) {
+	return firstArray(q?.slots, q?.slotLabels, q?.ordering?.slotLabels, getOrderingItems(q).map((_, i) => String(i + 1)));
+}
+function getMatchRows(q) { return firstArray(q?.rows, q?.matching?.rows); }
+function getMatchChoices(q) { return firstArray(q?.choices, q?.matching?.choices); }
+function getMatchCorrectMap(q) { return firstArray(q?.correctMap, q?.matching?.correctMap); }
+
 function buildShuffleMap() {
 	return quiz.map(q => {
 		if (isTextQuestion(q)) return null;
 
 		if (isOrderingQuestion(q)) {
-			return shuffleArray([...Array(questions.getOrderingItems(q).length).keys()]);
+			return shuffleArray([...Array(getOrderingItems(q).length).keys()]);
 		}
 
 		if (isMatchingQuestion(q)) {
 			return {
-				rows: shuffleArray([...Array(questions.getMatchRows(q).length).keys()]),
-				choices: shuffleArray([...Array(questions.getMatchChoices(q).length).keys()])
+				rows: shuffleArray([...Array(getMatchRows(q).length).keys()]),
+				choices: shuffleArray([...Array(getMatchChoices(q).length).keys()])
 			};
 		}
 
@@ -200,8 +342,8 @@ function buildShuffleMap() {
 function initSelections() {
 	return quiz.map(q => {
 		if (isTextQuestion(q)) return "";
-		if (isOrderingQuestion(q)) return Array(questions.getOrderingItems(q).length).fill(null);
-		if (isMatchingQuestion(q)) return Array(questions.getMatchRows(q).length).fill(null);
+		if (isOrderingQuestion(q)) return Array(getOrderingItems(q).length).fill(null);
+		if (isMatchingQuestion(q)) return Array(getMatchRows(q).length).fill(null);
 		if (q.multiSelect) return new Set();
 		return null;
 	});
@@ -212,6 +354,10 @@ const initMatchPicks = () => quiz.map(() => null);
 const SLIDE_SUBMIT_INDEX = quiz.length;
 const SLIDE_RESULTS_INDEX = quiz.length + 1;
 const TOTAL_SLIDES = quiz.length + 2;
+const isQuestionSlideIndex = i => i >= 0 && i < quiz.length;
+const isSubmitSlideIndex = i => i === SLIDE_SUBMIT_INDEX;
+const isResultsSlideIndex = i => i === SLIDE_RESULTS_INDEX;
+const clampSlideIndex = i => Math.max(0, Math.min(TOTAL_SLIDES - 1, i));
 
 const quizState = {
 	selections: initSelections(),
@@ -296,7 +442,24 @@ function resolveAllPendingAsync(value = false) {
 	}
 }
 
-const setSlidingClass = on => container.classList.toggle("quiz-is-sliding", !!on);
+function restartAsyncLifecycle() {
+	__quizAsyncEpoch++;
+	resolveAllPendingAsync(false);
+	clearBackgroundWarmIdleHandle();
+	cancelEnsureTrackVisibleRaf();
+
+	if (__quizBootstrapRaf1) {
+		cancelAnimationFrame(__quizBootstrapRaf1);
+		__quizBootstrapRaf1 = 0;
+	}
+	if (__quizBootstrapRaf2) {
+		cancelAnimationFrame(__quizBootstrapRaf2);
+		__quizBootstrapRaf2 = 0;
+	}
+
+	__quizBackgroundWarmStarted = false;
+	__quizWarmSlidePromises.clear();
+}
 
 function sleep(ms, epoch = currentAsyncEpoch()) {
 	let timer = 0;
@@ -320,84 +483,6 @@ async function waitFrames(count = 1, epoch = currentAsyncEpoch()) {
 	return isQuizInstanceAlive(epoch);
 }
 
-function cancelEnsureTrackVisibleRaf() {
-	if (__quizEnsureVisibleRaf) {
-		cancelAnimationFrame(__quizEnsureVisibleRaf);
-		__quizEnsureVisibleRaf = 0;
-	}
-}
-
-function clearBackgroundWarmIdleHandle() {
-	if (!__quizBackgroundWarmIdleHandle) return;
-	if (__quizBackgroundWarmIdleType === "idle" && "cancelIdleCallback" in window) {
-		try { window.cancelIdleCallback(__quizBackgroundWarmIdleHandle); } catch (_) {}
-	} else clearTimeout(__quizBackgroundWarmIdleHandle);
-	__quizBackgroundWarmIdleHandle = 0;
-	__quizBackgroundWarmIdleType = "";
-}
-
-// Étendre ctx avec les variables et fonctions partagées
-Object.assign(ctx, {
-	SLIDE_SUBMIT_INDEX,
-	SLIDE_RESULTS_INDEX,
-	TOTAL_SLIDES,
-	quizState,
-	__quizSlideHeightCache,
-	__quizWarmSlidePromises,
-	__quizSlideGeneration,
-	__quizDestroyed,
-	__quizAsyncEpoch,
-	__quizBackgroundWarmStarted,
-	__quizSubmitSlideSignature,
-	__quizResultsSlideSignature,
-	__quizBootstrapRaf1,
-	__quizBootstrapRaf2,
-	setBootstrapRaf1: v => __quizBootstrapRaf1 = v,
-	setBootstrapRaf2: v => __quizBootstrapRaf2 = v,
-	currentAsyncEpoch,
-	isQuizInstanceAlive,
-	getSlideGeneration,
-	isSlideGenerationCurrent,
-	createPendingAsyncWaiter,
-	resolveAllPendingAsync,
-	restartAsyncLifecycle,
-	isDestroyed: () => __quizDestroyed,
-	getMaxRenderedSlideHeight: ({ refresh = false, padding = 0 } = {}) => {
-		let max = 0;
-		const { track } = viewport.getTrackElements();
-		if (!track) return 0;
-		Array.from(track.children || []).forEach((slide, idx) => {
-			const h = viewport.getSlideStableHeight(idx, { refresh });
-			max = Math.max(max, h);
-		});
-		return Math.max(1, Math.ceil(max + padding));
-	},
-	setSlidingClass,
-	warmSlideForAccurateHeight,
-	clearBackgroundWarmIdleHandle,
-	cancelEnsureTrackVisibleRaf,
-	waitFrames
-});
-
-function restartAsyncLifecycle() {
-	__quizAsyncEpoch++;
-	resolveAllPendingAsync(false);
-	clearBackgroundWarmIdleHandle();
-	cancelEnsureTrackVisibleRaf();
-
-	if (__quizBootstrapRaf1) {
-		cancelAnimationFrame(__quizBootstrapRaf1);
-		__quizBootstrapRaf1 = 0;
-	}
-	if (__quizBootstrapRaf2) {
-		cancelAnimationFrame(__quizBootstrapRaf2);
-		__quizBootstrapRaf2 = 0;
-	}
-
-	__quizBackgroundWarmStarted = false;
-	__quizWarmSlidePromises.clear();
-}
-
 function bumpSlideGeneration(index) {
 	if (index < 0 || index >= TOTAL_SLIDES) return 0;
 	__quizSlideGeneration[index] = getSlideGeneration(index) + 1;
@@ -405,6 +490,12 @@ function bumpSlideGeneration(index) {
 }
 function bumpAllSlideGenerations() {
 	for (let i = 0; i < TOTAL_SLIDES; i++) bumpSlideGeneration(i);
+}
+function cancelEnsureTrackVisibleRaf() {
+	if (__quizEnsureVisibleRaf) {
+		cancelAnimationFrame(__quizEnsureVisibleRaf);
+		__quizEnsureVisibleRaf = 0;
+	}
 }
 
 const observeTrackItemInAllSlidesResizeObserver = item => {
@@ -522,6 +613,15 @@ function waitForManagedTransitions(entries, fallbackMs, epoch = currentAsyncEpoc
 	return waiter.promise;
 }
 
+function clearBackgroundWarmIdleHandle() {
+	if (!__quizBackgroundWarmIdleHandle) return;
+	if (__quizBackgroundWarmIdleType === "idle" && "cancelIdleCallback" in window) {
+		try { window.cancelIdleCallback(__quizBackgroundWarmIdleHandle); } catch (_) {}
+	} else clearTimeout(__quizBackgroundWarmIdleHandle);
+	__quizBackgroundWarmIdleHandle = 0;
+	__quizBackgroundWarmIdleType = "";
+}
+
 function requestQuizIdle(timeout = 500, epoch = currentAsyncEpoch()) {
 	const waiter = createPendingAsyncWaiter(() => clearBackgroundWarmIdleHandle());
 	if ("requestIdleCallback" in window) {
@@ -542,11 +642,48 @@ function requestQuizIdle(timeout = 500, epoch = currentAsyncEpoch()) {
 	return waiter.promise;
 }
 
+const getTrackElements = () => ({
+	viewport: container.querySelector(".quiz-track-viewport"),
+	track: container.querySelector(".quiz-track")
+});
+
+function getTrackItem(index = quizState.current) {
+	const { track } = getTrackElements();
+	return track ? track.children[index] || null : null;
+}
+function getTrackItems() {
+	const { track } = getTrackElements();
+	return track ? Array.from(track.children || []) : [];
+}
+
 function getViewportStableWidth({ refresh = false } = {}) {
 	if (!refresh && __quizTrackViewportWidth > 0) return __quizTrackViewportWidth;
-	const { viewport: vpElement } = viewport.getTrackElements();
-	const width = Math.max(1, Math.ceil(vpElement?.clientWidth || vpElement?.getBoundingClientRect?.().width || 0));
+	const { viewport } = getTrackElements();
+	const width = Math.max(1, Math.ceil(viewport?.clientWidth || viewport?.getBoundingClientRect?.().width || 0));
 	__quizTrackViewportWidth = width;
+	return width;
+}
+
+function applyTrackGeometry({ refreshWidth = false } = {}) {
+	const { track } = getTrackElements();
+	const width = getViewportStableWidth({ refresh: refreshWidth });
+	if (!track || !width) return width;
+	const items = Array.from(track.children || []);
+	const childCount = items.length;
+	let needsWrite = refreshWidth || __quizTrackAppliedWidth !== width || __quizTrackAppliedSlideCount !== childCount || track.style.width !== `${width * childCount}px`;
+	if (!needsWrite) needsWrite = items.some(item => Number(item.__quizAppliedWidth || 0) !== width);
+	if (!needsWrite) return width;
+	track.style.width = `${width * childCount}px`;
+	items.forEach(item => {
+		item.style.flex = `0 0 ${width}px`;
+		item.style.width = `${width}px`;
+		item.style.minWidth = `${width}px`;
+		item.style.maxWidth = `${width}px`;
+		item.style.boxSizing = "border-box";
+		item.__quizAppliedWidth = width;
+	});
+	__quizTrackAppliedWidth = width;
+	__quizTrackAppliedSlideCount = childCount;
 	return width;
 }
 
@@ -556,17 +693,17 @@ const alignToDevicePixel = value => {
 };
 
 function getSlideTranslateX(index = quizState.current) {
-	const { viewport: vp, track } = viewport.getTrackElements();
-	if (!vp || !track) return 0;
+	const { viewport, track } = getTrackElements();
+	if (!viewport || !track) return 0;
 	return alignToDevicePixel(-(getViewportStableWidth() * index));
 }
 function setTrackTransformPx(x) {
-	const { track } = viewport.getTrackElements();
+	const { track } = getTrackElements();
 	if (track) track.style.transform = `translate3d(${alignToDevicePixel(x)}px, 0, 0)`;
 }
 
 function readCurrentTrackTranslateX() {
-	const { track } = viewport.getTrackElements();
+	const { track } = getTrackElements();
 	if (!track) return getSlideTranslateX(quizState.current);
 	try {
 		const computed = getComputedStyle(track).transform;
@@ -578,12 +715,13 @@ function readCurrentTrackTranslateX() {
 	}
 }
 
+const setSlidingClass = on => container.classList.toggle("quiz-is-sliding", !!on);
 const getSlidingWindow = () => ({ from: Math.min(quizState.prevCurrent, quizState.current), to: Math.max(quizState.prevCurrent, quizState.current) });
 
 function primeTrackAndViewportForSlideStart(startX, lockedHeight) {
-	const { track, viewport } = viewport.getTrackElements();
+	const { track, viewport } = getTrackElements();
 	if (!track || !viewport) return;
-	viewport.applyTrackGeometry({ refreshWidth: true });
+	applyTrackGeometry({ refreshWidth: true });
 	const safeHeight = Math.max(1, Math.ceil(lockedHeight));
 	track.style.transition = "none";
 	track.style.willChange = "transform";
@@ -627,7 +765,7 @@ function destroyAllSlidesResizeObserver() {
 function bindActiveSlideResizeObserver() {
 	destroyActiveSlideResizeObserver();
 	if (typeof ResizeObserver === "undefined") return;
-	const item = viewport.getTrackItem(quizState.current);
+	const item = getTrackItem(quizState.current);
 	if (!item) return;
 	__quizActiveSlideResizeObserver = new ResizeObserver(() => {
 		__quizSlideHeightCache.delete(quizState.current);
@@ -639,7 +777,7 @@ function bindActiveSlideResizeObserver() {
 function bindAllSlidesResizeObserver() {
 	destroyAllSlidesResizeObserver();
 	if (typeof ResizeObserver === "undefined") return;
-	const { track, viewport } = viewport.getTrackElements();
+	const { track, viewport } = getTrackElements();
 	if (!track || !viewport) return;
 
 	__quizAllSlidesResizeObserver = new ResizeObserver(entries => {
@@ -660,7 +798,7 @@ function bindAllSlidesResizeObserver() {
 		if (!touched) return;
 
 		if (quizState.isSliding && slidingTouched) {
-			const liveMaxHeight = viewport.getMaxRenderedSlideHeight({ refresh: true, padding: 24 });
+			const liveMaxHeight = getMaxRenderedSlideHeight({ refresh: true, padding: 24 });
 			const currentViewportHeight = Math.max(
 				1,
 				Math.ceil(parseFloat(viewport.style.height || "0") || 0),
@@ -688,7 +826,7 @@ function bindAllSlidesResizeObserver() {
 }
 
 function cancelRunningTrackAnimation() {
-	const { track, viewport } = viewport.getTrackElements();
+	const { track, viewport } = getTrackElements();
 	clearTrackTransitionFallback();
 	const currentX = readCurrentTrackTranslateX();
 	const currentHeight = Math.max(
@@ -719,10 +857,82 @@ function cancelRunningTrackAnimation() {
 	return { x: currentX, height: currentHeight };
 }
 
+function getElementStableHeight(el) {
+	if (!el) return 0;
+	const rootRect = el.getBoundingClientRect ? el.getBoundingClientRect() : null;
+	const rootTop = rootRect ? rootRect.top : 0;
+	let maxBottom = 0;
+	const ownHeight = Math.max(
+		Math.ceil(rootRect ? rootRect.height : 0),
+		Math.ceil(el.scrollHeight || 0),
+		Math.ceil(el.offsetHeight || 0),
+		Math.ceil(el.clientHeight || 0),
+		0
+	);
+	const nodes = [el, ...Array.from(el.querySelectorAll("*"))];
+	for (const node of nodes) {
+		if (!(node instanceof HTMLElement)) continue;
+		const cs = getComputedStyle(node);
+		if (cs.display === "none" || cs.position === "fixed") continue;
+		const rect = node.getBoundingClientRect ? node.getBoundingClientRect() : null;
+		if (!rect) continue;
+		const marginBottom = parseFloat(cs.marginBottom) || 0;
+		const bottom = (rect.bottom - rootTop) + marginBottom;
+		if (bottom > maxBottom) maxBottom = bottom;
+	}
+	return Math.max(1, Math.ceil(Math.max(ownHeight, maxBottom)));
+}
+
+function getSlideStableHeight(index = quizState.current, { refresh = false } = {}) {
+	const cached = __quizSlideHeightCache.get(index);
+	if (!refresh && Number.isFinite(cached) && cached > 0) return cached;
+	const item = getTrackItem(index);
+	const h = getElementStableHeight(item);
+	if (h > 0) __quizSlideHeightCache.set(index, h);
+	return h;
+}
+
+function getMaxRenderedSlideHeight({ refresh = false, padding = 24 } = {}) {
+	const items = getTrackItems();
+	if (!items.length) return Math.max(1, padding);
+	let max = 0;
+	items.forEach((item, index) => {
+		if (!item) return;
+		let h = 0;
+		if (refresh) {
+			h = getElementStableHeight(item);
+			if (h > 0) __quizSlideHeightCache.set(index, h);
+		} else {
+			h = getSlideStableHeight(index, { refresh: false });
+			if (!h || h <= 0) {
+				h = getElementStableHeight(item);
+				if (h > 0) __quizSlideHeightCache.set(index, h);
+			}
+		}
+		if (h > max) max = h;
+	});
+	return Math.max(1, Math.ceil(max + Math.max(0, Number(padding) || 0)));
+}
+
+function setViewportHeight(height, { animate = false } = {}) {
+	const { viewport } = getTrackElements();
+	if (!viewport) return false;
+	const h = Math.max(1, Math.ceil(Number(height) || 0));
+	viewport.style.transition = animate ? "height 220ms cubic-bezier(0.16, 1, 0.3, 1)" : "none";
+	viewport.style.height = `${h}px`;
+	viewport.dataset.quizHeightReady = "1";
+	return true;
+}
+
+function syncViewportHeight({ index = quizState.current, animate = false, refresh = false } = {}) {
+	const h = getSlideStableHeight(index, { refresh });
+	return h > 0 ? setViewportHeight(h, { animate }) : false;
+}
+
 function settleViewportHeightToIndex(index, { animate = true, refresh = true } = {}) {
-	const { viewport: vpElement } = viewport.getTrackElements();
+	const { viewport } = getTrackElements();
 	if (!viewport) return;
-	const targetHeight = Math.max(1, viewport.getSlideStableHeight(index, { refresh }) || 0);
+	const targetHeight = Math.max(1, getSlideStableHeight(index, { refresh }) || 0);
 	if (!targetHeight) return;
 	const currentHeight = Math.max(
 		1,
@@ -730,13 +940,13 @@ function settleViewportHeightToIndex(index, { animate = true, refresh = true } =
 		Math.ceil(viewport.getBoundingClientRect().height || 0),
 		Math.ceil(viewport.clientHeight || 0)
 	);
-	if (Math.abs(currentHeight - targetHeight) <= 1) return void viewport.setViewportHeight(targetHeight, { animate: false });
+	if (Math.abs(currentHeight - targetHeight) <= 1) return void setViewportHeight(targetHeight, { animate: false });
 	viewport.style.transition = animate ? "height 240ms cubic-bezier(0.16, 1, 0.3, 1)" : "none";
 	viewport.style.height = `${targetHeight}px`;
 	viewport.dataset.quizHeightReady = "1";
 	if (animate) {
 		__quizViewportSettleTimer = window.setTimeout(() => {
-			const { viewport: vp } = viewport.getTrackElements();
+			const { viewport: vp } = getTrackElements();
 			if (vp) vp.style.transition = "none";
 		}, 280);
 	}
@@ -754,7 +964,7 @@ function scheduleViewportHeightSync({ delay = 0, index = quizState.current, anim
 	const run = () => {
 		__quizHeightRaf = requestAnimationFrame(() => {
 			__quizHeightRaf = 0;
-			viewport.syncViewportHeight({ index, animate, refresh });
+			syncViewportHeight({ index, animate, refresh });
 			if (index === quizState.current) {
 				bindCurrentSlideMediaHeightSync();
 				bindActiveSlideResizeObserver();
@@ -770,15 +980,15 @@ function scheduleViewportHeightSync({ delay = 0, index = quizState.current, anim
 }
 
 function primeAllSlideHeights({ retries = 8, syncCurrent = true } = {}) {
-	const items = viewport.getTrackItems();
+	const items = getTrackItems();
 	if (items.length === 0) return;
 	let zeroCount = 0;
 	items.forEach((item, index) => {
-		const h = viewport.getElementStableHeight(item);
+		const h = getElementStableHeight(item);
 		if (h > 0) __quizSlideHeightCache.set(index, h);
 		else zeroCount++;
 	});
-	if (syncCurrent) viewport.syncViewportHeight({ index: quizState.current, animate: false, refresh: true });
+	if (syncCurrent) syncViewportHeight({ index: quizState.current, animate: false, refresh: true });
 	if (zeroCount > 0 && retries > 0) {
 		__quizPrimeHeightsRaf = requestAnimationFrame(() => {
 			__quizPrimeHeightsRaf = 0;
@@ -812,7 +1022,7 @@ async function warmSlideForAccurateHeight(index, { timeoutMs = 1200, stableFrame
 
 	const p = (async () => {
 		if (!isQuizInstanceAlive(epoch) || !isSlideGenerationCurrent(index, generation)) return;
-		const item = viewport.getTrackItem(index);
+		const item = getTrackItem(index);
 		if (!item) return;
 		const imgs = Array.from(item.querySelectorAll("img"));
 		for (const img of imgs) {
@@ -832,7 +1042,7 @@ async function warmSlideForAccurateHeight(index, { timeoutMs = 1200, stableFrame
 		for (let frame = 0; frame < maxFrames; frame++) {
 			const alive = await waitFrames(1, epoch);
 			if (!alive || !isQuizInstanceAlive(epoch) || !isSlideGenerationCurrent(index, generation)) return;
-			const h = viewport.getElementStableHeight(item);
+			const h = getElementStableHeight(item);
 			if (h > 0 && isSlideGenerationCurrent(index, generation)) __quizSlideHeightCache.set(index, h);
 			if (h > 0 && Math.abs(h - last) <= 1) stableCount++;
 			else stableCount = 0;
@@ -922,14 +1132,14 @@ function bindTrackItemImages(slide, slideIndex) {
 }
 
 function bindAllTrackImages() {
-	const { track } = viewport.getTrackElements();
+	const { track } = getTrackElements();
 	if (!track) return;
 	Array.from(track.children || []).forEach((slide, slideIndex) => bindTrackItemImages(slide, slideIndex));
 }
 
 function bindCurrentSlideMediaHeightSync() {
 	const index = quizState.current;
-	const item = viewport.getTrackItem(index);
+	const item = getTrackItem(index);
 	if (!item) return;
 	const token = ++__quizMediaSyncToken;
 	const generation = getSlideGeneration(index);
@@ -951,7 +1161,7 @@ function bindCurrentSlideMediaHeightSync() {
 }
 
 function resyncCommandTextareasOnSlide(index) {
-	const item = viewport.getTrackItem(index);
+	const item = getTrackItem(index);
 	if (!item) return;
 	item.querySelectorAll('.quiz-textarea-command').forEach(ta => {
 		try { ta.dispatchEvent(new Event('scroll')); } catch (_) {}
@@ -959,14 +1169,14 @@ function resyncCommandTextareasOnSlide(index) {
 }
 
 function applyTrackPositionAndHeightInstant() {
-	const { track } = viewport.getTrackElements();
+	const { track } = getTrackElements();
 	if (!track) return false;
 	syncTrackViewportIsolation();
-	viewport.applyTrackGeometry({ refreshWidth: true });
+	applyTrackGeometry({ refreshWidth: true });
 	track.style.transition = "none";
 	track.style.willChange = "";
 	setTrackTransformPx(getSlideTranslateX(quizState.current));
-	const ok = viewport.syncViewportHeight({ index: quizState.current, animate: false, refresh: true });
+	const ok = syncViewportHeight({ index: quizState.current, animate: false, refresh: true });
 	bindCurrentSlideMediaHeightSync();
 	bindActiveSlideResizeObserver();
 	syncTrackViewportIsolation();
@@ -976,16 +1186,16 @@ function applyTrackPositionAndHeightInstant() {
 function ensureTrackVisibleAfterLayout(retries = 24, epoch = currentAsyncEpoch()) {
 	cancelEnsureTrackVisibleRaf();
 	if (!isQuizInstanceAlive(epoch)) return;
-	const { track } = viewport.getTrackElements();
+	const { track } = getTrackElements();
 	if (!track) return;
 	syncTrackViewportIsolation();
-	viewport.applyTrackGeometry({ refreshWidth: true });
+	applyTrackGeometry({ refreshWidth: true });
 	track.style.transition = "none";
 	track.style.willChange = "";
 	setTrackTransformPx(getSlideTranslateX(quizState.current));
-	const h = viewport.getSlideStableHeight(quizState.current, { refresh: true });
+	const h = getSlideStableHeight(quizState.current, { refresh: true });
 	if (h > 0) {
-		viewport.setViewportHeight(h, { animate: false });
+		setViewportHeight(h, { animate: false });
 		bindCurrentSlideMediaHeightSync();
 		bindActiveSlideResizeObserver();
 		syncTrackViewportIsolation();
@@ -1006,7 +1216,7 @@ function bindTrackFirstLoadFix() {
 	__quizTrackFixBound = true;
 	const resyncLayout = () => requestAnimationFrame(() => {
 		if (__quizDestroyed) return;
-		const { track } = viewport.getTrackElements();
+		const { track } = getTrackElements();
 		if (track) {
 			track.style.transition = "none";
 			track.style.willChange = "";
@@ -1041,7 +1251,7 @@ function getTrackEaseForDistance(hops) {
 
 function finishTrackSlideAnimation(token, targetIndex) {
 	if (token !== quizState.slideToken) return;
-	const { track, viewport } = viewport.getTrackElements();
+	const { track, viewport } = getTrackElements();
 	const shouldLockResultsNow = isResultsSlideIndex(targetIndex) && quizState.pendingResultsLock;
 	const grewDuringSlide = viewport?.dataset.quizGrowDuringSlide === "1";
 	clearTrackTransitionFallback();
@@ -1056,8 +1266,8 @@ function finishTrackSlideAnimation(token, targetIndex) {
 	const refreshedTargetHeight = Math.max(
 		1,
 		Number(viewport?.__quizTargetHeight) || 0,
-		viewport.getSlideStableHeight(targetIndex, { refresh: true }) || 0,
-		viewport.getElementStableHeight(viewport.getTrackItem(targetIndex)) || 0
+		getSlideStableHeight(targetIndex, { refresh: true }) || 0,
+		getElementStableHeight(getTrackItem(targetIndex)) || 0
 	);
 	const finalHeight = Math.max(1, Math.ceil(refreshedTargetHeight + 4));
 
@@ -1105,7 +1315,7 @@ function finishTrackSlideAnimation(token, targetIndex) {
 }
 
 function animateTrackToIndex(targetIndex, { fromX = null, fromHeight = null, refreshTargetHeight = true } = {}) {
-	const { track, viewport } = viewport.getTrackElements();
+	const { track, viewport } = getTrackElements();
 	if (!track || !viewport) {
 		quizState.isSliding = false;
 		setSlidingClass(false);
@@ -1116,25 +1326,25 @@ function animateTrackToIndex(targetIndex, { fromX = null, fromHeight = null, ref
 	quizState.isSliding = true;
 	setSlidingClass(true);
 	syncTrackViewportIsolation();
-	viewport.applyTrackGeometry({ refreshWidth: true });
+	applyTrackGeometry({ refreshWidth: true });
 	const token = quizState.slideToken;
 	const targetX = getSlideTranslateX(targetIndex);
 	const startX = Number.isFinite(fromX) ? alignToDevicePixel(fromX) : readCurrentTrackTranslateX();
 	const startHeight = Math.max(
 		1,
 		Number(fromHeight) || 0,
-		viewport.getSlideStableHeight(quizState.prevCurrent, { refresh: true }) || 0,
-		viewport.getElementStableHeight(viewport.getTrackItem(quizState.prevCurrent)) || 0,
+		getSlideStableHeight(quizState.prevCurrent, { refresh: true }) || 0,
+		getElementStableHeight(getTrackItem(quizState.prevCurrent)) || 0,
 		Math.ceil(viewport.getBoundingClientRect().height || 0),
 		Math.ceil(viewport.clientHeight || 0)
 	);
 	const targetHeight = Math.max(
 		1,
-		viewport.getSlideStableHeight(targetIndex, { refresh: refreshTargetHeight }) || 0,
-		viewport.getElementStableHeight(viewport.getTrackItem(targetIndex)) || 0,
+		getSlideStableHeight(targetIndex, { refresh: refreshTargetHeight }) || 0,
+		getElementStableHeight(getTrackItem(targetIndex)) || 0,
 		startHeight
 	);
-	const lockedHeight = Math.max(1, Math.ceil(startHeight), Math.ceil(targetHeight), Math.ceil(viewport.getMaxRenderedSlideHeight({ refresh: true, padding: 24 })));
+	const lockedHeight = Math.max(1, Math.ceil(startHeight), Math.ceil(targetHeight), Math.ceil(getMaxRenderedSlideHeight({ refresh: true, padding: 24 })));
 	const deltaPx = Math.abs(targetX - startX);
 	const viewportWidth = Math.max(1, viewport.clientWidth || Math.ceil(viewport.getBoundingClientRect().width) || 1);
 	const dist = Math.max(1, deltaPx / viewportWidth);
@@ -1149,7 +1359,7 @@ function animateTrackToIndex(targetIndex, { fromX = null, fromHeight = null, ref
 
 	if (dur <= 0) {
 		setTrackTransformPx(targetX);
-		viewport.setViewportHeight(targetHeight, { animate: false });
+		setViewportHeight(targetHeight, { animate: false });
 		viewport.style.minHeight = "";
 		finishTrackSlideAnimation(token, targetIndex);
 		return;
@@ -1158,7 +1368,7 @@ function animateTrackToIndex(targetIndex, { fromX = null, fromHeight = null, ref
 	primeTrackAndViewportForSlideStart(startX, lockedHeight);
 	requestAnimationFrame(() => {
 		if (token !== quizState.slideToken || __quizDestroyed) return;
-		const { track: liveTrack, viewport: liveViewport } = viewport.getTrackElements();
+		const { track: liveTrack, viewport: liveViewport } = getTrackElements();
 		if (!liveTrack || !liveViewport) return;
 		liveViewport.style.transition = "none";
 		liveViewport.style.willChange = "height";
@@ -1392,17 +1602,17 @@ function isCorrect(i) {
 	const q = quiz[i], sel = quizState.selections[i];
 
 	if (isTextQuestion(q)) {
-		return terminal.isTextAnswerCorrect(q, sel);
+		return isTextAnswerCorrect(q, sel);
 	}
 
 	if (isOrderingQuestion(q)) {
-		const co = questions.getOrderingCorrectOrder(q);
+		const co = getOrderingCorrectOrder(q);
 		if (!Array.isArray(sel) || sel.length !== co.length) return false;
 		return co.every((v, k) => sel[k] === v);
 	}
 
 	if (isMatchingQuestion(q)) {
-		const rows = questions.getMatchRows(q), cm = questions.getMatchCorrectMap(q);
+		const rows = getMatchRows(q), cm = getMatchCorrectMap(q);
 		if (!Array.isArray(sel) || sel.length !== rows.length || !Array.isArray(cm) || cm.length !== rows.length) return false;
 		return cm.every((v, k) => sel[k] === v);
 	}
@@ -1496,9 +1706,9 @@ async function goToSlide(index, { forceRender = false } = {}) {
 	animateTrackToIndex(quizState.current, {
 		fromX: getSlideTranslateX(quizState.prevCurrent),
 		fromHeight: Math.max(
-			viewport.getSlideStableHeight(quizState.prevCurrent, { refresh: true }) || 0,
-			Math.ceil(viewport.getTrackElements().viewport?.getBoundingClientRect?.().height || 0),
-			Math.ceil(viewport.getTrackElements().viewport?.clientHeight || 0)
+			getSlideStableHeight(quizState.prevCurrent, { refresh: true }) || 0,
+			Math.ceil(getTrackElements().viewport?.getBoundingClientRect?.().height || 0),
+			Math.ceil(getTrackElements().viewport?.clientHeight || 0)
 		),
 		refreshTargetHeight: true
 	});
@@ -2195,10 +2405,10 @@ function renderQuizPromptHtml(q) {
 }
 
 function orderingCardHtml(q, qi) {
-	const items = questions.getOrderingItems(q);
+	const items = getOrderingItems(q);
 	const sel = quizState.selections[qi];
-	const slotLabels = questions.getOrderingSlotLabels(q);
-	const correctOrder = questions.getOrderingCorrectOrder(q);
+	const slotLabels = getOrderingSlotLabels(q);
+	const correctOrder = getOrderingCorrectOrder(q);
 	const shuffled = quizState.shuffleMap[qi] || [];
 	const pick = quizState.orderingPick[qi];
 
@@ -2237,9 +2447,9 @@ function orderingCardHtml(q, qi) {
 }
 
 function matchingCardHtml(q, qi) {
-	const rows = questions.getMatchRows(q);
-	const choices = questions.getMatchChoices(q);
-	const correctMap = questions.getMatchCorrectMap(q);
+	const rows = getMatchRows(q);
+	const choices = getMatchChoices(q);
+	const correctMap = getMatchCorrectMap(q);
 	const sel = quizState.selections[qi];
 	const shuffleData = quizState.shuffleMap[qi] || {};
 	const shuffledRows = Array.isArray(shuffleData.rows) ? shuffleData.rows : [...Array(rows.length).keys()];
@@ -2349,9 +2559,9 @@ function refreshMetaSlides({ force = false } = {}) {
 		__quizResultsSlideSignature = nextResultsSignature;
 	}
 
-	viewport.applyTrackGeometry({ refreshWidth: false });
+	applyTrackGeometry({ refreshWidth: false });
 	syncTrackViewportIsolation();
-	const { track } = viewport.getTrackElements();
+	const { track } = getTrackElements();
 	if (track && (quizState.current === SLIDE_SUBMIT_INDEX || quizState.current === SLIDE_RESULTS_INDEX)) {
 		track.style.transition = "none";
 		setTrackTransformPx(getSlideTranslateX(quizState.current));
@@ -2382,10 +2592,10 @@ function splitTerminalVisualTokens(value, variant) {
 
 function textQuestionCardHtml(q, qi) {
 	const value = typeof quizState.selections[qi] === "string" ? quizState.selections[qi] : "";
-	const terminalVariant = terminal.getTerminalTextVariant(q);
+	const terminalVariant = getTerminalTextVariant(q);
 	const isTerminal = !!terminalVariant;
 	const isPowerShell = terminalVariant === "powershell";
-	const maxLength = terminal.getTextMaxLength(q);
+	const maxLength = getTextMaxLength(q);
 
 	const statusClass = quizState.locked
 		? (isCorrect(qi) ? "correct" : "wrong")
@@ -2400,7 +2610,7 @@ function textQuestionCardHtml(q, qi) {
 	const textareaName = escapeHtmlAttr(q?.id || `q${qi + 1}`);
 
 	if (isTerminal) {
-		const promptPrefixHtml = terminal.renderTerminalPromptPrefixHtml(q);
+		const promptPrefixHtml = renderTerminalPromptPrefixHtml(q);
 		const variantClass = `quiz-terminal-variant-${escapeHtmlAttr(terminalVariant)}`;
 		const variantAttr = escapeHtmlAttr(terminalVariant);
 
@@ -2469,8 +2679,8 @@ function bindTextQuestion(trackItem, qi) {
 	if (!textarea) return;
 
 	const q = quiz[qi];
-	const terminalVariant = terminal.getTerminalTextVariant(q);
-	const isCommand = terminal.isCommandTextQuestion(q);
+	const terminalVariant = getTerminalTextVariant(q);
+	const isCommand = isCommandTextQuestion(q);
 	const isPowerShell = terminalVariant === "powershell";
 
 	const shell = trackItem.querySelector(".quiz-command-shell");
@@ -2495,7 +2705,7 @@ function bindTextQuestion(trackItem, qi) {
 		const rawStart = typeof textarea.selectionStart === "number" ? textarea.selectionStart : rawValue.length;
 		const rawEnd = typeof textarea.selectionEnd === "number" ? textarea.selectionEnd : rawStart;
 
-		const sanitized = terminal.sanitizeTextAnswerValue(q, rawValue);
+		const sanitized = sanitizeTextAnswerValue(q, rawValue);
 
 		if (sanitized !== rawValue) {
 			textarea.value = sanitized;
@@ -2518,7 +2728,7 @@ function bindTextQuestion(trackItem, qi) {
 		const currentValue = String(textarea.value ?? "");
 
 		if (quizState.locked) {
-			return terminal.isTextAnswerCorrect(q, currentValue) ? "correct" : "wrong";
+			return isTextAnswerCorrect(q, currentValue) ? "correct" : "wrong";
 		}
 
 		return currentValue.trim().length > 0 ? "filled" : "";
@@ -2697,7 +2907,7 @@ function bindTextQuestion(trackItem, qi) {
 			updateCommandVisuals();
 		}
 		else {
-			terminal.syncTextAreaHeight(textarea);
+			syncTextAreaHeight(textarea);
 		}
 
 		__quizSlideHeightCache.delete(qi);
@@ -3217,14 +3427,14 @@ function destroyViewportResizeObserver() {
 function bindViewportResizeObserver() {
 	destroyViewportResizeObserver();
 	if (typeof ResizeObserver === "undefined") return;
-	const { viewport: vpElement } = viewport.getTrackElements();
+	const { viewport } = getTrackElements();
 	if (!viewport) return;
 	let lastWidth = Math.round(viewport.getBoundingClientRect().width || viewport.clientWidth || 0);
 
 	const realignViewportAndTrack = ({ settle = false } = {}) => {
-		const { track, viewport } = viewport.getTrackElements();
+		const { track, viewport: vp } = getTrackElements();
 		if (!track || !vp) return;
-		viewport.applyTrackGeometry({ refreshWidth: true });
+		applyTrackGeometry({ refreshWidth: true });
 		if (quizState.isSliding) {
 			const snapshot = cancelRunningTrackAnimation();
 			animateTrackToIndex(quizState.current, { fromX: snapshot.x, fromHeight: snapshot.height, refreshTargetHeight: true });
@@ -3236,7 +3446,7 @@ function bindViewportResizeObserver() {
 		track.style.transformStyle = "preserve-3d";
 		setTrackTransformPx(getSlideTranslateX(quizState.current));
 		__quizSlideHeightCache.delete(quizState.current);
-		viewport.syncViewportHeight({ index: quizState.current, animate: false, refresh: true });
+		syncViewportHeight({ index: quizState.current, animate: false, refresh: true });
 		primeAllSlideHeights({ retries: settle ? 4 : 2, syncCurrent: true });
 		bindCurrentSlideMediaHeightSync();
 		bindActiveSlideResizeObserver();
@@ -3272,18 +3482,18 @@ function bindViewportResizeObserver() {
 }
 
 function syncTrackViewportIsolation() {
-	const { viewport: vp, track } = viewport.getTrackElements();
-	if (!vp || !track) return;
+	const { viewport, track } = getTrackElements();
+	if (!viewport || !track) return;
 
-	vp.applyTrackGeometry({ refreshWidth: false });
+	applyTrackGeometry({ refreshWidth: false });
 
-	if (vp.dataset.quizIsoInit !== "1") {
-		vp.dataset.quizIsoInit = "1";
-		vp.style.position = "relative";
-		vp.style.overflow = "hidden";
-		vp.style.overflowX = "hidden";
-		vp.style.overflowY = "hidden";
-		vp.style.clipPath = "none";
+	if (viewport.dataset.quizIsoInit !== "1") {
+		viewport.dataset.quizIsoInit = "1";
+		viewport.style.position = "relative";
+		viewport.style.overflow = "hidden";
+		viewport.style.overflowX = "hidden";
+		viewport.style.overflowY = "hidden";
+		viewport.style.clipPath = "none";
 		viewport.style.setProperty("-webkit-clip-path", "none");
 		viewport.style.isolation = "isolate";
 		viewport.style.contain = "layout style";
@@ -3419,7 +3629,7 @@ function refreshQuestionSlide(qi, { syncHeight = true } = {}) {
 	if (!newItem) return null;
 
 	oldItem.replaceWith(newItem);
-	viewport.applyTrackGeometry({ refreshWidth: false });
+	applyTrackGeometry({ refreshWidth: false });
 	bindQuizResourceButtons(newItem);
 	bindTrackItemImages(newItem, qi);
 	bindQuestionTrackItem(newItem);
@@ -3427,7 +3637,7 @@ function refreshQuestionSlide(qi, { syncHeight = true } = {}) {
 	updateNavHighlight();
 	syncTrackViewportIsolation();
 
-	const { track } = viewport.getTrackElements();
+	const { track } = getTrackElements();
 	if (track) {
 		track.style.transition = "none";
 		setTrackTransformPx(getSlideTranslateX(quizState.current));
@@ -3478,7 +3688,7 @@ function bindBinaryQuestion(trackItem, qi, isMulti) {
 }
 
 function bindOrderingQuestion(trackItem, qi, q) {
-	const qItems = questions.getOrderingItems(q);
+	const qItems = getOrderingItems(q);
 	if (!Array.isArray(quizState.selections[qi]) || quizState.selections[qi].length !== qItems.length) quizState.selections[qi] = Array(qItems.length).fill(null);
 
 	trackItem.querySelectorAll("[data-order-item]").forEach(el => {
@@ -3593,7 +3803,7 @@ function bindOrderingQuestion(trackItem, qi, q) {
 }
 
 function bindMatchingQuestion(trackItem, qi, q) {
-	const rows = questions.getMatchRows(q);
+	const rows = getMatchRows(q);
 	if (!Array.isArray(quizState.selections[qi]) || quizState.selections[qi].length !== rows.length) quizState.selections[qi] = Array(rows.length).fill(null);
 
 	trackItem.querySelectorAll("[data-match-choice]").forEach(el => {
@@ -3831,7 +4041,7 @@ function bindZoomFixHandlers() {
 			__quizSlideHeightCache.delete(quizState.current);
 
 			// Recalage géométrie + position
-			viewport.applyTrackGeometry({ refreshWidth: true });
+			applyTrackGeometry({ refreshWidth: true });
 			syncTrackViewportIsolation();
 
 			// Si on est en slide, on repart proprement depuis l’état courant
@@ -3843,7 +4053,7 @@ function bindZoomFixHandlers() {
 					refreshTargetHeight: true
 				});
 			} else {
-				const { track } = viewport.getTrackElements();
+				const { track } = getTrackElements();
 				if (track) {
 					track.style.transition = "none";
 					track.style.willChange = "";
@@ -3903,19 +4113,19 @@ function render() {
 	__quizSubmitSlideSignature = getSubmitSlideSignature();
 	__quizResultsSlideSignature = getResultsSlideSignature();
 
-	const { viewport: vp, track } = viewport.getTrackElements();
+	const { viewport, track } = getTrackElements();
 	bindTrackFirstLoadFix();
 	bindViewportResizeObserver();
 	bindZoomFixHandlers();
 
-	if (!track || !vp) return;
+	if (!track || !viewport) return;
 
 	track.style.transition = "none";
 	track.style.willChange = "";
 	track.style.backfaceVisibility = "hidden";
 	track.style.transformStyle = "preserve-3d";
 
-	vp.applyTrackGeometry({ refreshWidth: true });
+	applyTrackGeometry({ refreshWidth: true });
 	setTrackTransformPx(getSlideTranslateX(quizState.current));
 
 	viewport.style.willChange = "";

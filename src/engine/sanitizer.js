@@ -268,6 +268,10 @@ module.exports = function createSanitizer(ctx) {
 		return renderTextWithEmbeds(raw, { wrapClass, imgClass });
 	}
 
+	function replaceObsidianEmbedsInHtml(html, { wrapClass = "quiz-explain-embed-wrap", imgClass = "quiz-explain-embed" } = {}) {
+		return String(html ?? "").replace(/!\[\[([^\]]+)\]\]/g, (_, spec) => buildEmbedImgHtml(spec, { wrapClass, imgClass }));
+	}
+
 	return {
 		escapeHtmlAttr,
 		escapeHtmlText,
@@ -282,6 +286,7 @@ module.exports = function createSanitizer(ctx) {
 		restoreAllowedInlineTags,
 		renderTextWithEmbeds,
 		renderHintWithCodeAndEmbeds,
-		renderRawHtmlWithEmbeds
+		renderRawHtmlWithEmbeds,
+		replaceObsidianEmbedsInHtml
 	};
 };

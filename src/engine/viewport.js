@@ -196,6 +196,7 @@ module.exports = function createViewportHandlers(ctx) {
 			}
 		});
 
+		const children = Array.from(track.children || []);
 		children.forEach(child => {
 			try { __quizAllSlidesResizeObserver.observe(child); } catch (_) {}
 		});

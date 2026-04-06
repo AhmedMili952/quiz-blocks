@@ -175,6 +175,12 @@ module.exports = function createStateHandlers(ctx) {
 		ctx.track.animateTrackToIndex(ctx.quizState.current, { fromX: snapshot.x, fromHeight: snapshot.height, refreshTargetHeight: true });
 	}
 
+	function setSlidingClass(on) {
+		const track = ctx.container?.querySelector?.(".quiz-track");
+		if (!track) return;
+		track.classList.toggle("is-sliding", on);
+	}
+
 	function updateNavHighlight() {
 		ctx.container.querySelectorAll("[data-nav]").forEach(tab => {
 			const i = Number(tab.dataset.nav);
@@ -262,6 +268,7 @@ module.exports = function createStateHandlers(ctx) {
 		clearAllNavTabPressStates,
 		buildNavTabClass,
 		playNavTabPressAndNavigate,
+		setSlidingClass,
 		goToSlide,
 		redirectSlide,
 		updateNavHighlight,
