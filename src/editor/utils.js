@@ -60,6 +60,12 @@ function md2html(src) {
 
 function escHtml(s) { return String(s ?? "").replace(/"/g, "&quot;").replace(/'/g, "&#39;"); }
 
-function esc5(s) { return String(s ?? "").replace(/\\/g, "\\\\").replace(/'/g, "\\'").replace(/\n/g, "\\n"); }
+function esc5(s) {
+	return String(s ?? "")
+		.replace(/\\/g, "\\\\")  // Échapper les antislashs d'abord
+		.replace(/'/g, "\\'")        // Échapper les apostrophes
+		.replace(/\r/g, "\\r")      // Échapper les retours chariot
+		.replace(/\n/g, "\\n");      // Échapper les sauts de ligne
+}
 
 module.exports = { Q_TYPES, loadReact, _setIcon, _iconSpan, makeDefault, md2html, escHtml, esc5 };

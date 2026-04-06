@@ -239,18 +239,40 @@ class QuizBuilderView extends obsidian.ItemView {
 			const { exportAllWithFence } = require("./editor/export");
 			const newQuizContent = exportAllWithFence(this.questions, this.examOptions);
 
+			// Valider que le JSON5 généré est correct avant de sauvegarder
+			try {
+				const { parseQuizSource } = require("./quiz-utils");
+				// Extraire le contenu entre les fences pour validation
+				const innerContent = newQuizContent.replace(/```quiz-blocks\n?/, "").replace(/```\n?$/, "");
+				parseQuizSource(innerContent);
+			} catch (parseErr) {
+				console.error("[Quiz Blocks] JSON5 invalide généré:", parseErr);
+				new obsidian.Notice("Erreur: le quiz généré n'est pas valide. Vérifiez les caractères spéciaux.");
+				return;
+			}
+
+			// Regex plus permissive pour matcher le bloc quiz-blocks
+			const quizBlockRegex = /```quiz-blocks[\s\S]*?```/;
+
+			if (!quizBlockRegex.test(content)) {
+				console.error("[Quiz Blocks] Aucun bloc quiz-blocks trouvé dans le fichier");
+				new obsidian.Notice("Erreur: bloc quiz-blocks introuvable dans la note");
+				return;
+			}
+
 			// Remplacer le bloc quiz-blocks dans le fichier
-			const updatedContent = content.replace(/```quiz-blocks\n[\s\S]*?\n```/, newQuizContent.trim());
+			const updatedContent = content.replace(quizBlockRegex, newQuizContent);
 
 			// Sauvegarder si le contenu a changé
 			if (updatedContent !== content) {
 				await this.app.vault.modify(this.sourceFile, updatedContent);
 				// Mettre à jour l'indicateur de sauvegarde
 				this.updateSaveIndicator?.(true);
+				console.log("[Quiz Blocks] Quiz sauvegardé dans", this.sourceFile.name);
 			}
 		} catch (err) {
-			console.error("Save error:", err);
-			new obsidian.Notice("Erreur lors de la sauvegarde");
+			console.error("[Quiz Blocks] Save error:", err);
+			new obsidian.Notice("Erreur lors de la sauvegarde: " + err.message);
 		}
 	}
 
