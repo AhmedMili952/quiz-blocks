@@ -113,10 +113,26 @@ module.exports = function createEditorUIHandlers(ctx) {
 		const examTrack = examToggleWrap.createDiv({ cls: `qb-toggle-track ${ctx.examOptions.enabled ? "on" : ""}` });
 		examTrack.createDiv({ cls: "qb-toggle-thumb" });
 		examToggleWrap.createSpan({ text: "Activer le mode examen" });
-		examToggleWrap.addEventListener("click", () => {
-			ctx.examOptions.enabled = !ctx.examOptions.enabled;
+
+		// Fonction pour mettre à jour l'état visuel de l'examen
+		function updateExamUIState() {
 			examTrack.classList.toggle("on", ctx.examOptions.enabled);
 			examOptionsContainer.classList.toggle("qb-exam-disabled", !ctx.examOptions.enabled);
+			durationInput.disabled = !ctx.examOptions.enabled;
+			autoSubmitCb.disabled = !ctx.examOptions.enabled;
+			showTimerCb.disabled = !ctx.examOptions.enabled;
+			// Mettre à jour les valeurs aussi
+			durationInput.value = String(ctx.examOptions.durationMinutes);
+			autoSubmitCb.checked = ctx.examOptions.autoSubmit;
+			showTimerCb.checked = ctx.examOptions.showTimer;
+		}
+
+		// Stocker la référence pour pouvoir l'appeler depuis l'import
+		view.updateExamUIState = updateExamUIState;
+
+		examToggleWrap.addEventListener("click", () => {
+			ctx.examOptions.enabled = !ctx.examOptions.enabled;
+			updateExamUIState();
 			view.renderCode();
 		});
 

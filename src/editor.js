@@ -199,6 +199,8 @@ class QuizBuilderView extends obsidian.ItemView {
 			if (this._ctx) this._ctx.activeIdx = 0;  // Sync ctx.activeIdx
 			if (examOptions) {
 				Object.assign(this.examOptions, examOptions);
+				// Mettre à jour l'UI de l'examen si la fonction existe
+				if (this.updateExamUIState) this.updateExamUIState();
 			}
 
 			this.render();

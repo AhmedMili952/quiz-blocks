@@ -162,6 +162,8 @@ class ImportQuizModal extends obsidian.Modal {
 			if (this.builderView._ctx) this.builderView._ctx.activeIdx = 0;  // Sync ctx
 			if (examOptions) {
 				Object.assign(this.builderView.examOptions, examOptions);
+				// Mettre à jour l'UI de l'examen si la fonction existe
+				if (this.builderView.updateExamUIState) this.builderView.updateExamUIState();
 			}
 
 			this.builderView.render();
