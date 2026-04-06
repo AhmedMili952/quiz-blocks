@@ -155,6 +155,9 @@ class QuizBuilderView extends obsidian.ItemView {
 			document.removeEventListener("keydown", this._hintEscHandler);
 			this._hintEscHandler = null;
 		}
+		// Cleanup any resize overlays that might be stuck
+		const resizeOverlays = document.querySelectorAll('div[style*="cursor:ew-resize"]');
+		resizeOverlays.forEach(el => el.remove());
 		this.contentEl.empty();
 	}
 
@@ -193,8 +196,9 @@ class QuizBuilderView extends obsidian.ItemView {
 			this.questions.length = 0;
 			questions.forEach(q => this.questions.push(q));
 			this.activeIdx = 0;
+			if (this._ctx) this._ctx.activeIdx = 0;  // Sync ctx.activeIdx
 			if (examOptions) {
-				this.examOptions = examOptions;
+				Object.assign(this.examOptions, examOptions);
 			}
 
 			this.render();

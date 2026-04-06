@@ -127,9 +127,10 @@ module.exports = function createEditorUIHandlers(ctx) {
 			type: "number",
 			min: "1",
 			max: "180",
-			value: String(ctx.examOptions.durationMinutes)
+			value: String(ctx.examOptions.durationMinutes),
+			disabled: !ctx.examOptions.enabled
 		});
-		durationInput.addEventListener("change", () => {
+		durationInput.addEventListener("input", () => {
 			ctx.examOptions.durationMinutes = Math.max(1, Math.min(180, parseInt(durationInput.value) || 10));
 			view.renderCode();
 		});
@@ -137,7 +138,8 @@ module.exports = function createEditorUIHandlers(ctx) {
 		const autoSubmitWrap = examOptionsContainer.createDiv({ cls: "qb-checkbox-wrap" });
 		const autoSubmitCb = autoSubmitWrap.createEl("input", {
 			type: "checkbox",
-			checked: ctx.examOptions.autoSubmit
+			checked: ctx.examOptions.autoSubmit,
+			disabled: !ctx.examOptions.enabled
 		});
 		autoSubmitWrap.createSpan({ text: " Soumettre auto à la fin" });
 		autoSubmitCb.addEventListener("change", () => {
@@ -148,7 +150,8 @@ module.exports = function createEditorUIHandlers(ctx) {
 		const showTimerWrap = examOptionsContainer.createDiv({ cls: "qb-checkbox-wrap" });
 		const showTimerCb = showTimerWrap.createEl("input", {
 			type: "checkbox",
-			checked: ctx.examOptions.showTimer
+			checked: ctx.examOptions.showTimer,
+			disabled: !ctx.examOptions.enabled
 		});
 		showTimerWrap.createSpan({ text: " Afficher le timer" });
 		showTimerCb.addEventListener("change", () => {

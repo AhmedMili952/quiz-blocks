@@ -41,7 +41,6 @@ function makeDefault(type) {
 function md2html(src) {
 	if (!src) return "";
 	return String(src)
-		.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
 		.replace(/^### (.+)$/gm, "<h3>$1</h3>")
 		.replace(/^## (.+)$/gm, "<h2>$1</h2>")
 		.replace(/^# (.+)$/gm, "<h1>$1</h1>")
@@ -55,7 +54,8 @@ function md2html(src) {
 		.replace(/```(\w*)\n([\s\S]*?)```/g, (_, l, c) => "<pre><code>" + c.trim() + "</code></pre>")
 		.replace(/!\[\[([^\]]+)\]\]/g, "<img src=\"$1\" class=\"qb-md-img\" />")
 		.replace(/\n{2,}/g, "</p><p>")
-		.replace(/\n/g, "<br>");
+		.replace(/\n/g, "<br>")
+		.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
 function escHtml(s) { return String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;"); }

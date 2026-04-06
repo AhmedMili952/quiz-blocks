@@ -226,9 +226,11 @@ module.exports = function createResizeHandlers(ctx) {
 
 		if (leftPanel !== 'preview') {
 			mainEl.style.setProperty(`--qb-${leftPanel}-w`, `${leftWidth}px`);
+			view._savedWidths[leftPanel] = leftWidth;  // Sauvegarder la largeur
 		}
 		if (rightPanel !== 'preview') {
 			mainEl.style.setProperty(`--qb-${rightPanel}-w`, `${rightWidth}px`);
+			view._savedWidths[rightPanel] = rightWidth;  // Sauvegarder la largeur
 		}
 	}
 

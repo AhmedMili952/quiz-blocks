@@ -159,8 +159,9 @@ class ImportQuizModal extends obsidian.Modal {
 			this.builderView.questions.length = 0;
 			questions.forEach(q => this.builderView.questions.push(q));
 			this.builderView.activeIdx = 0;
+			if (this.builderView._ctx) this.builderView._ctx.activeIdx = 0;  // Sync ctx
 			if (examOptions) {
-				this.builderView.examOptions = examOptions;
+				Object.assign(this.builderView.examOptions, examOptions);
 			}
 
 			this.builderView.render();
@@ -324,7 +325,8 @@ class ImportFromNoteModal extends obsidian.Modal {
 	onOpen() {
 		const { contentEl } = this;
 		contentEl.empty();
-		this.close();
+		// Ne pas fermer immédiatement - ouvre une autre modal directement
+		// this.close();  // SUPPRIMÉ: causait des problèmes de race condition
 
 		new QuizFileSuggestModal(this.app, async (file) => {
 			try {

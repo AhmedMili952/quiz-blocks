@@ -81,7 +81,9 @@ module.exports = function createSidebarHandlers(ctx) {
 			(confirmed) => {
 				if (confirmed) {
 					ctx.questions.splice(i, 1);
-					ctx.activeIdx = Math.min(ctx.activeIdx, ctx.questions.length - 1);
+					// Corriger l'index actif: décrémenter si on supprime avant, ajuster si on supprime la question active
+					if (ctx.activeIdx > i) ctx.activeIdx--;
+					else if (ctx.activeIdx === i) ctx.activeIdx = Math.min(i, ctx.questions.length - 1);
 					ctx.questions.forEach((qq, idx) => { if (/^Question \d+$/.test(qq.title)) qq.title = `Question ${idx + 1}`; });
 					view.render();
 					new obsidian.Notice(`Question "${title}" supprimée`);
