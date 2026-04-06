@@ -74,11 +74,28 @@ module.exports = function createViewportHandlers(ctx) {
 
 	function getElementStableHeight(el) {
 		if (!el) return 0;
-		const cs = getComputedStyle(el);
-		const rect = el.getBoundingClientRect();
-		const marginTop = parseFloat(cs.marginTop) || 0;
-		const marginBottom = parseFloat(cs.marginBottom) || 0;
-		return Math.ceil(rect.height + marginTop + marginBottom);
+		const rootRect = el.getBoundingClientRect ? el.getBoundingClientRect() : null;
+		const rootTop = rootRect ? rootRect.top : 0;
+		let maxBottom = 0;
+		const ownHeight = Math.max(
+			Math.ceil(rootRect ? rootRect.height : 0),
+			Math.ceil(el.scrollHeight || 0),
+			Math.ceil(el.offsetHeight || 0),
+			Math.ceil(el.clientHeight || 0),
+			0
+		);
+		const nodes = [el, ...Array.from(el.querySelectorAll("*"))];
+		for (const node of nodes) {
+			if (!(node instanceof HTMLElement)) continue;
+			const cs = getComputedStyle(node);
+			if (cs.display === "none" || cs.position === "fixed") continue;
+			const rect = node.getBoundingClientRect ? node.getBoundingClientRect() : null;
+			if (!rect) continue;
+			const marginBottom = parseFloat(cs.marginBottom) || 0;
+			const bottom = (rect.bottom - rootTop) + marginBottom;
+			if (bottom > maxBottom) maxBottom = bottom;
+		}
+		return Math.max(1, Math.ceil(Math.max(ownHeight, maxBottom)));
 	}
 
 	function getSlideStableHeight(index, { refresh = false } = {}) {
@@ -133,7 +150,7 @@ module.exports = function createViewportHandlers(ctx) {
 		if (__quizHeightResyncTimer) { clearTimeout(__quizHeightResyncTimer); __quizHeightResyncTimer = 0; }
 
 		const action = () => {
-			if (ctx.isDestroyed()) return;
+			if (ctx.__quizDestroyed) return;
 			const targetHeight = getSlideStableHeight(index, { refresh });
 			if (!targetHeight) return;
 			const { viewport } = getTrackElements();
@@ -158,9 +175,9 @@ module.exports = function createViewportHandlers(ctx) {
 		const { viewport } = getTrackElements();
 		if (!viewport) return;
 		const h = Math.max(1, Math.ceil(value));
-		viewport.style.transition = animate ? "height 240ms cubic-bezier(0.22, 1, 0.36, 1)" : "none";
-		viewport.style.height = `${h}px`;
-		viewport.style.minHeight = `${h}px`;
+		viewport.style.setProperty('transition', animate ? 'height 240ms cubic-bezier(0.22, 1, 0.36, 1)' : 'none', 'important');
+		viewport.style.setProperty('height', `${h}px`, 'important');
+		viewport.style.setProperty('min-height', `${h}px`, 'important');
 		viewport.dataset.quizHeightReady = "1";
 	}
 
@@ -169,6 +186,17 @@ module.exports = function createViewportHandlers(ctx) {
 		if (!targetHeight) return false;
 		setViewportHeight(targetHeight, { animate });
 		return true;
+	}
+
+	function getMaxRenderedSlideHeight({ refresh = false, padding = 0 } = {}) {
+		const items = getTrackItems();
+		if (!items.length) return 0;
+		let maxHeight = 0;
+		items.forEach((item, idx) => {
+			const h = getSlideStableHeight(idx, { refresh });
+			if (h > maxHeight) maxHeight = h;
+		});
+		return maxHeight + padding;
 	}
 
 	function observeTrackItemInAllSlidesResizeObserver(item) {
@@ -428,6 +456,7 @@ module.exports = function createViewportHandlers(ctx) {
 		syncTrackViewportIsolation,
 		destroyViewportResizeObserver,
 		bindViewportResizeObserver,
+		getMaxRenderedSlideHeight,
 		__quizSlideHeightCache,
 		__quizWarmSlidePromises
 	};

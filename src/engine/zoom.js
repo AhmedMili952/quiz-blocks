@@ -53,6 +53,12 @@ module.exports = function createZoomHandlers(ctx) {
 	}
 
 	async function restartQuizWithZoomBlurTransition() {
+		// Forcer le reset de isSliding si on est sur la page de résultats
+		// car la transition précédente peut ne pas avoir terminée correctement
+		if (ctx.quizState.isSliding && ctx.isResultsSlideIndex(ctx.quizState.current)) {
+			ctx.quizState.isSliding = false;
+			ctx.setSlidingClass(false);
+		}
 		if (ctx.quizState.isSliding) return;
 
 		let epoch = ctx.currentAsyncEpoch();
@@ -182,7 +188,6 @@ module.exports = function createZoomHandlers(ctx) {
 			cleanup();
 			return;
 		}
-
 		if (resultsSlide) {
 			Object.assign(resultsSlide.style, {
 				transition: `transform ${OUT_VIEW_DUR}ms ${EASE_OUT}, opacity ${OUT_VIEW_DUR}ms ${EASE_OUT}, filter ${OUT_VIEW_DUR}ms ${EASE_OUT}`,
@@ -215,12 +220,10 @@ module.exports = function createZoomHandlers(ctx) {
 		].filter(Boolean);
 
 		const outOk = await waitForManagedTransitions(outTransitions, OUT_TOTAL + 120, epoch);
-
 		if (!outOk || !ctx.isQuizInstanceAlive(epoch)) {
 			cleanup();
 			return;
 		}
-
 		ctx.resetQuiz({ preserveSliding: false });
 
 		/* IMPORTANT :
@@ -253,7 +256,7 @@ module.exports = function createZoomHandlers(ctx) {
 
 		q1Slide.dataset.quizTransitionLock = "1";
 
-		ctx.track.applyTrackPositionAndHeightInstant();
+		ctx.applyTrackPositionAndHeightInstant();
 		ctx.viewport.primeAllSlideHeights({ retries: 4, syncCurrent: true });
 		ctx.track.setTrackTransformPx(ctx.track.getSlideTranslateX(0));
 		ctx.settleViewportHeightToIndex(0, { animate: false, refresh: true });

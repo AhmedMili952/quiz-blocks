@@ -41,8 +41,9 @@ module.exports = function createCardRenderers(ctx) {
 	function explanationHtml(qi) {
 		const q = ctx.quiz[qi];
 		if (!q) return "";
-		if (q._explainHtml) {
-			return `<div class="quiz-explain ${ctx.isCorrect(qi) ? "good" : "bad"}">${ctx.sanitize.replaceObsidianEmbedsInHtml(q._explainHtml)}</div>`;
+		const explainHtml = q.explainHtml || q._explainHtml;
+		if (explainHtml) {
+			return `<div class="quiz-explain ${ctx.isCorrect(qi) ? "good" : "bad"}">${ctx.sanitize.replaceObsidianEmbedsInHtml(explainHtml)}</div>`;
 		}
 		if (q.explain) {
 			return `<div class="quiz-explain ${ctx.isCorrect(qi) ? "good" : "bad"}">${ctx.sanitize.renderTextWithEmbeds(q.explain)}</div>`;
@@ -51,8 +52,9 @@ module.exports = function createCardRenderers(ctx) {
 	}
 
 	function renderQuizPromptHtml(q) {
-		if (q._promptHtml) {
-			return ctx.sanitize.replaceObsidianEmbedsInHtml(q._promptHtml);
+		const promptHtml = q.promptHtml || q._promptHtml;
+		if (promptHtml) {
+			return ctx.sanitize.replaceObsidianEmbedsInHtml(promptHtml);
 		}
 		if (q.prompt) {
 			return ctx.sanitize.renderTextWithEmbeds(q.prompt);
@@ -62,56 +64,94 @@ module.exports = function createCardRenderers(ctx) {
 
 	function orderingCardHtml(q, qi) {
 		const items = ctx.getOrderingItems(q);
-		const slotLabels = ctx.getOrderingSlotLabels(q);
 		const sel = ctx.quizState.selections[qi];
+		const slotLabels = ctx.getOrderingSlotLabels(q);
+		const correctOrder = ctx.getOrderingCorrectOrder(q);
+		const shuffled = ctx.quizState.shuffleMap[qi] || [];
+		const pick = ctx.quizState.orderingPick[qi];
 
-		let slotsHtml = "";
-		for (let i = 0; i < slotLabels.length; i++) {
-			const placedIdx = Array.isArray(sel) ? sel[i] : null;
-			const placedText = placedIdx !== null && placedIdx !== undefined && items[placedIdx] ? items[placedIdx] : "";
-			const isFilled = placedText !== "";
-			slotsHtml += `<div class="quiz-slot ${isFilled ? "filled" : ""}" data-order-slot="${i}"><span class="quiz-slot-label">${slotLabels[i]}</span>${placedText ? `<span class="quiz-slot-value">${ctx.escapeHtmlText(placedText)}</span>` : ""}</div>`;
-		}
+		const slots = items.map((_, si) => {
+			const oi = Array.isArray(sel) ? sel[si] : null;
+			const filled = oi !== null;
+			let cls = "quiz-slot";
+			if (filled) cls += " filled";
+			if (!ctx.quizState.locked && pick !== null) cls += " can-place";
+			if (ctx.quizState.locked && filled) cls += oi === correctOrder[si] ? " correct" : " wrong";
 
-		let itemsHtml = "";
-		for (let i = 0; i < items.length; i++) {
-			if (!ctx.orderingSelectionIncludes(qi, i)) {
-				itemsHtml += `<div class="quiz-possibility" data-order-item="${i}">${ctx.escapeHtmlText(items[i])}</div>`;
-			}
-		}
+			return `<div class="${cls}" data-order-slot="${si}" role="button" tabindex="0" ${(!ctx.quizState.locked && filled) ? `draggable="true" data-slot-item="${oi}"` : ""}>
+				<div class="quiz-slot-label">${slotLabels[si] ?? String(si + 1)}</div>
+				<div class="quiz-slot-value">${filled ? ctx.escapeHtmlText(items[oi]) : "Glissez un élément ici"}</div>
+			</div>`;
+		}).join("");
 
-		return `<div class="quiz-ordering"><div class="quiz-ordering-slots">${slotsHtml}</div><div class="quiz-ordering-items">${itemsHtml}</div></div>`;
+		const possibilities = shuffled.map(oi => {
+			const used = ctx.orderingSelectionIncludes(qi, oi);
+			const picked = !used && pick === oi && !ctx.quizState.locked;
+			let cls = "quiz-possibility";
+			if (used) cls += " used";
+			if (picked) cls += " selected-pick";
+
+			return `<div class="${cls}" data-order-item="${oi}" role="button" tabindex="0" ${(!used && !ctx.quizState.locked) ? `draggable="true"` : ""}>
+				${ctx.escapeHtmlText(items[oi])}
+			</div>`;
+		}).join("");
+
+		return `<div class="quiz-multi-indicator">Classez les éléments dans le bon ordre (glisser-déposer). Déposez un élément sur un emplacement déjà rempli pour échanger automatiquement les positions.</div>
+		<div class="quiz-ordering">
+			<div class="quiz-ordering-slots">${slots}</div>
+			<div class="quiz-ordering-label">Éléments à placer</div>
+			<div class="quiz-ordering-possibilities">${possibilities}</div>
+		</div>`;
 	}
 
 	function matchingCardHtml(q, qi) {
 		const rows = ctx.getMatchRows(q);
 		const choices = ctx.getMatchChoices(q);
+		const correctMap = ctx.getMatchCorrectMap(q);
 		const sel = ctx.quizState.selections[qi];
+		const shuffleData = ctx.quizState.shuffleMap[qi] || {};
+		const shuffledRows = Array.isArray(shuffleData.rows) ? shuffleData.rows : [...Array(rows.length).keys()];
+		const shuffledChoices = Array.isArray(shuffleData.choices) ? shuffleData.choices : [...Array(choices.length).keys()];
+		const pick = ctx.quizState.matchPick[qi];
 
-		let rowsHtml = "";
-		for (let i = 0; i < rows.length; i++) {
-			const matchedChoiceIdx = Array.isArray(sel) ? sel[i] : null;
-			const matchedText = matchedChoiceIdx !== null && matchedChoiceIdx !== undefined && choices[matchedChoiceIdx] ? choices[matchedChoiceIdx] : "";
-			rowsHtml += `<div class="quiz-match-row" data-match-row="${i}"><span class="quiz-match-label">${ctx.escapeHtmlText(rows[i])}</span>${matchedText ? `<span class="quiz-match-value">${ctx.escapeHtmlText(matchedText)}</span>` : `<span class="quiz-match-placeholder">—</span>`}</div>`;
-		}
-
-		let choicesHtml = "";
-		for (let i = 0; i < choices.length; i++) {
-			if (!ctx.matchingSelectionIncludes(qi, i)) {
-				choicesHtml += `<div class="quiz-match-choice" data-match-choice="${i}">${ctx.escapeHtmlText(choices[i])}</div>`;
+		const slots = shuffledRows.map(rowIndex => {
+			const chosen = Array.isArray(sel) ? sel[rowIndex] : null;
+			const filled = chosen !== null;
+			let cls = "quiz-slot";
+			if (filled) cls += " filled";
+			if (!ctx.quizState.locked && pick !== null) cls += " can-place";
+			if (ctx.quizState.locked && filled && Array.isArray(correctMap) && correctMap.length === rows.length) {
+				cls += chosen === correctMap[rowIndex] ? " correct" : " wrong";
 			}
-		}
 
-		return `<div class="quiz-matching"><div class="quiz-matching-rows">${rowsHtml}</div><div class="quiz-matching-choices">${choicesHtml}</div></div>`;
+			return `<div class="${cls}" data-match-slot="${rowIndex}" role="button" tabindex="0" ${(!ctx.quizState.locked && filled) ? `draggable="true" data-slot-choice="${chosen}"` : ""}>
+				<div class="quiz-slot-label">${ctx.escapeHtmlText(rows[rowIndex])}</div>
+				<div class="quiz-slot-value">${filled ? ctx.escapeHtmlText(choices[chosen] ?? "Support inconnu") : "Déposez un support ici"}</div>
+			</div>`;
+		}).join("");
+
+		const possibilities = shuffledChoices.map(ci => {
+			const picked = !ctx.quizState.locked && pick === ci;
+			let cls = "quiz-possibility";
+			if (picked) cls += " selected-pick";
+
+			return `<div class="${cls}" data-match-choice="${ci}" role="button" tabindex="0" ${!ctx.quizState.locked ? `draggable="true"` : ""}>
+				${ctx.escapeHtmlText(choices[ci])}
+			</div>`;
+		}).join("");
+
+		return `<div class="quiz-multi-indicator">Associez chaque situation à un support (glisser-déposer). Un même support peut être utilisé plusieurs fois.</div>
+		<div class="quiz-ordering">
+			<div class="quiz-ordering-slots">${slots}</div>
+			<div class="quiz-ordering-label">Supports disponibles</div>
+			<div class="quiz-ordering-possibilities">${possibilities}</div>
+		</div>`;
 	}
 
 	function submitSlideHtml() {
 		const missing = ctx.getMissingIndices();
-		if (missing.length === 0) {
-			return `<div class="quiz-track-item" data-slide-kind="submit"><section class="quiz-card quiz-submit-card"><h2>Récapitulatif</h2><p>Toutes les questions ont une réponse. Vous pouvez soumettre !</p><div class="quiz-submit-wrap"><button class="quiz-action-btn success quiz-show-score-btn" type="button">Voir le score</button></div></section></div>`;
-		}
-		const missingList = missing.map(i => `<a href="#" data-jump="${i}">Question ${i + 1}</a>`).join(", ");
-		return `<div class="quiz-track-item" data-slide-kind="submit"><section class="quiz-card quiz-submit-card"><h2>Récapitulatif</h2><p>Questions sans réponse : ${missingList}</p><div class="quiz-submit-wrap"><button class="quiz-action-btn quiz-back-btn" type="button">Retour à la dernière question</button></div></section></div>`;
+		const mc = missing.length;
+		return `<div class="quiz-track-item" data-slide-kind="submit"><div class="quiz-submit-wrap"><div class="quiz-submit-card">${mc > 0 ? `<div class="quiz-warn">Il manque ${mc} réponse${mc > 1 ? "s" : ""}.</div><div class="quiz-submit-sub">Questions sans réponse :</div>` : `<div class="quiz-submit-sub">Revenir sur une question :</div>`}<div class="quiz-chip-row">${(mc > 0 ? missing : ctx.quiz.map((_, i) => i)).map(i => `<button class="quiz-chip ${mc > 0 ? "missing" : ""}" type="button" data-jump="${i}">Q${i + 1}</button>`).join("")}</div><div class="quiz-actions"><button class="quiz-action-btn quiz-back-btn" type="button">Retour</button><button class="quiz-action-btn success quiz-show-score-btn" type="button">Voir le score</button></div></div></div></div>`;
 	}
 
 	function resultsSlideHtml() {

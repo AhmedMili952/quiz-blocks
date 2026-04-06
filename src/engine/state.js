@@ -176,9 +176,7 @@ module.exports = function createStateHandlers(ctx) {
 	}
 
 	function setSlidingClass(on) {
-		const track = ctx.container?.querySelector?.(".quiz-track");
-		if (!track) return;
-		track.classList.toggle("is-sliding", on);
+		ctx.container?.classList?.toggle("quiz-is-sliding", !!on);
 	}
 
 	function updateNavHighlight() {
@@ -210,8 +208,8 @@ module.exports = function createStateHandlers(ctx) {
 
 		if (ctx.isExamMode && ctx.examStarted && !ctx.examEnded) {
 			ctx.examEnded = true;
-			ctx.exam.stopExamTimer();
-			ctx.exam.updateExamTimerDisplay();
+			ctx.stopExamTimer();
+			ctx.updateExamTimerDisplay();
 		}
 
 		updateNavHighlight();
@@ -250,7 +248,7 @@ module.exports = function createStateHandlers(ctx) {
 		ctx.examEnded = false;
 		ctx.examStartTime = 0;
 		ctx.examTimeRemaining = ctx.examDurationMs;
-		ctx.exam.stopExamTimer();
+		ctx.stopExamTimer();
 
 		ctx.render();
 	}

@@ -555,7 +555,7 @@ module.exports = function createTerminalHandlers(ctx) {
 			if (commandSelectionSyncRaf) return;
 			commandSelectionSyncRaf = requestAnimationFrame(() => {
 				commandSelectionSyncRaf = 0;
-				if (ctx.isDestroyed()) return;
+				if (ctx.__quizDestroyed) return;
 				sync();
 			});
 		};

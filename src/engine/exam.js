@@ -70,30 +70,49 @@ module.exports = function createExamHandlers(ctx) {
 	function startExam() {
 		if (!ctx.isExamMode || ctx.examStarted) return;
 		ctx.examStarted = true;
-		ctx.goToQuestion(0);
+		// Lancer le timer avant le rendu pour éviter les doubles appels
 		startExamTimer();
+		// Faire le rendu complet du quiz
+		ctx.render();
 	}
 
 	function updateExamTimerDisplay() {
 		const progressEl = ctx.container?.querySelector('[data-exam-progress="1"]');
 		const textEl = ctx.container?.querySelector('[data-exam-text="1"]');
 
-		if (progressEl) {
-			const pct = Math.max(0, Math.min(100, (ctx.examTimeRemaining / ctx.examDurationMs) * 100));
-			progressEl.style.width = `${pct}%`;
-		}
+		if (!progressEl || !textEl) return;
 
-		if (textEl) {
-			const minutes = Math.floor(ctx.examTimeRemaining / 60000);
-			const seconds = Math.floor((ctx.examTimeRemaining % 60000) / 1000);
-			textEl.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+		const pct = Math.max(0, Math.min(100, (ctx.examTimeRemaining / ctx.examDurationMs) * 100));
+		progressEl.style.width = `${pct}%`;
+
+		const minutes = Math.floor(ctx.examTimeRemaining / 60000);
+		const seconds = Math.floor((ctx.examTimeRemaining % 60000) / 1000);
+		textEl.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+
+		const timerContainer = ctx.container?.querySelector('[data-exam-timer="1"]');
+		if (timerContainer) {
+			timerContainer.classList.remove('quiz-exam-timer-warning', 'quiz-exam-timer-danger');
+			if (pct <= 20) timerContainer.classList.add('quiz-exam-timer-danger');
+			else if (pct <= 50) timerContainer.classList.add('quiz-exam-timer-warning');
 		}
 	}
 
 	function handleExamTimeUp() {
+		if (ctx.examEnded) return;
+		ctx.examEnded = true;
+
+		// Arrêter le timer et mettre à jour l'affichage avec le temps restant (0:00)
 		stopExamTimer();
-		if (ctx.examOptions.autoSubmit) {
-			ctx.goToResults();
+		updateExamTimerDisplay();
+
+		// Verrouiller le quiz
+		ctx.quizState.locked = true;
+
+		// Aller directement aux résultats (comme un clic sur "Voir le score")
+		ctx.goToResults();
+
+		if (typeof ctx.Notice === 'function') {
+			new ctx.Notice('Temps écoulé ! Le quiz a été verrouillé.', 5000);
 		}
 	}
 

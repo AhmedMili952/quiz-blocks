@@ -51,7 +51,7 @@ module.exports = function createFocusHandlers(ctx) {
 	function restoreQuestionFocus(rootEl, descriptor) {
 		if (!rootEl || !descriptor?.selector) return;
 		requestAnimationFrame(() => {
-			if (ctx.isDestroyed()) return;
+			if (ctx.__quizDestroyed) return;
 			const target = rootEl.querySelector(descriptor.selector);
 			if (!target || typeof target.focus !== "function") return;
 			try { target.focus({ preventScroll: true }); } catch (_) { try { target.focus(); } catch (_) {} }

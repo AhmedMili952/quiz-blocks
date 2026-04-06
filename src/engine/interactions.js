@@ -309,7 +309,12 @@ module.exports = function createInteractionHandlers(ctx) {
 		const backBtn = rootEl.querySelector(".quiz-back-btn");
 		if (backBtn) backBtn.addEventListener("click", () => ctx.goToQuestion(ctx.quizState.lastQuestionIndex));
 		const showScoreBtn = rootEl.querySelector(".quiz-show-score-btn");
-		if (showScoreBtn) showScoreBtn.addEventListener("click", () => ctx.goToResults());
+		if (showScoreBtn) showScoreBtn.addEventListener("click", e => {
+			e.preventDefault();
+			// Remove focus to avoid aria-hidden warning
+			if (document.activeElement === showScoreBtn) showScoreBtn.blur();
+			ctx.goToResults();
+		});
 	}
 
 	function bindResultsSlideControls(rootEl) {
@@ -388,12 +393,12 @@ module.exports = function createInteractionHandlers(ctx) {
 		__quizZoomLastDpr = window.devicePixelRatio || 1;
 
 		const requestResync = (settle = false) => {
-			if (ctx.isDestroyed()) return;
+			if (ctx.__quizDestroyed) return;
 
 			if (__quizZoomFixRaf) return;
 			__quizZoomFixRaf = requestAnimationFrame(() => {
 				__quizZoomFixRaf = 0;
-				if (ctx.isDestroyed()) return;
+				if (ctx.__quizDestroyed) return;
 
 				// Invalider les caches liés au layout/zoom
 				ctx.viewport.__quizTrackViewportWidth = 0;

@@ -94,7 +94,8 @@ module.exports = function createTrackHandlers(ctx) {
 	}
 
 	function slideDuration(dist) {
-		if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return 0;
+		// DEBUG: temporarily disable prefers-reduced-motion check
+		// if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return 0;
 		const d = Math.max(1, Number(dist) || 1);
 		return Math.min(1200, 860 + (d - 3) * 90);
 	}
@@ -149,7 +150,7 @@ module.exports = function createTrackHandlers(ctx) {
 		ctx.updateNavHighlight();
 
 		requestAnimationFrame(() => requestAnimationFrame(() => {
-			if (token !== ctx.quizState.slideToken || ctx.isDestroyed()) return;
+			if (token !== ctx.quizState.slideToken || ctx.__quizDestroyed) return;
 			ctx.viewport.syncTrackViewportIsolation();
 			ctx.settleViewportHeightToIndex(targetIndex, { animate: false, refresh: true });
 			ctx.viewport.scheduleViewportHeightSync({ delay: grewDuringSlide ? 180 : 320, index: targetIndex, animate: false, refresh: true });
@@ -157,7 +158,7 @@ module.exports = function createTrackHandlers(ctx) {
 			if (shouldLockResultsNow) {
 				ctx.quizState.pendingResultsLock = false;
 				requestAnimationFrame(() => {
-					if (token !== ctx.quizState.slideToken || ctx.isDestroyed()) return;
+					if (token !== ctx.quizState.slideToken || ctx.__quizDestroyed) return;
 					ctx.quizState.isSliding = false;
 					ctx.setSlidingClass(false);
 					ctx.render();
@@ -223,7 +224,7 @@ module.exports = function createTrackHandlers(ctx) {
 
 		primeTrackAndViewportForSlideStart(startX, lockedHeight);
 		requestAnimationFrame(() => {
-			if (token !== ctx.quizState.slideToken || ctx.isDestroyed()) return;
+			if (token !== ctx.quizState.slideToken) return;
 			const { track: liveTrack, viewport: liveViewport } = ctx.viewport.getTrackElements();
 			if (!liveTrack || !liveViewport) return;
 			liveViewport.style.transition = "none";
