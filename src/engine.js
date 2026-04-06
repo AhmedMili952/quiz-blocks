@@ -524,125 +524,8 @@ function bindTrackFirstLoadFix() {
 }
 ctx.bindTrackFirstLoadFix = bindTrackFirstLoadFix;
 
-async function goToSlide(index, { forceRender = false } = {}) {
-	ctx.hint.closeHintModal();
-	const next = clampSlideIndex(index);
-	if (next === quizState.current && !quizState.isSliding) return;
-	if (quizState.isSliding) return redirectSlide(next, { forceRender });
-	++quizState.slideToken;
-	const token = quizState.slideToken;
-	quizState.prevCurrent = quizState.current;
-	quizState.current = next;
-	if (isQuestionSlideIndex(next)) quizState.lastQuestionIndex = next;
-	ctx.state.updateNavHighlight();
-	quizState.isSliding = true;
-	ctx.state.setSlidingClass(true);
-	if (forceRender) render();
-	await Promise.allSettled([ctx.warming.warmSlideForAccurateHeight(quizState.prevCurrent), ctx.warming.warmSlideForAccurateHeight(quizState.current)]);
-	if (token !== quizState.slideToken) return;
-	ctx.track.animateTrackToIndex(quizState.current, {
-		fromX: ctx.track.getSlideTranslateX(quizState.prevCurrent),
-		fromHeight: Math.max(
-			viewport.getSlideStableHeight(quizState.prevCurrent, { refresh: true }) || 0,
-			Math.ceil(viewport.getTrackElements().viewport?.getBoundingClientRect?.().height || 0),
-			Math.ceil(viewport.getTrackElements().viewport?.clientHeight || 0)
-		),
-		refreshTargetHeight: true
-	});
-}
-
-async function redirectSlide(next, { forceRender = false } = {}) {
-	const targetIndex = clampSlideIndex(next);
-	if (targetIndex === quizState.current) return;
-	const snapshot = ctx.track.cancelRunningTrackAnimation();
-	++quizState.slideToken;
-	const token = quizState.slideToken;
-	quizState.prevCurrent = quizState.current;
-	quizState.current = targetIndex;
-	if (isQuestionSlideIndex(targetIndex)) quizState.lastQuestionIndex = targetIndex;
-	ctx.state.updateNavHighlight();
-	quizState.isSliding = true;
-	ctx.state.setSlidingClass(true);
-	if (forceRender) render();
-	await ctx.warming.warmSlideForAccurateHeight(quizState.current).catch(() => {});
-	if (token !== quizState.slideToken) return;
-	ctx.track.animateTrackToIndex(quizState.current, { fromX: snapshot.x, fromHeight: snapshot.height, refreshTargetHeight: true });
-}
-
-
-const goToQuestion = index => {
-	quizState.pendingResultsLock = false;
-	goToSlide(clamp(index, 0, quiz.length - 1), { forceRender: false });
-};
-function goToSubmit() {
-	if (isQuestionSlideIndex(quizState.current)) quizState.lastQuestionIndex = quizState.current;
-	quizState.pendingResultsLock = false;
-	goToSlide(SLIDE_SUBMIT_INDEX, { forceRender: false });
-}
-function goToResults() {
-	if (isQuestionSlideIndex(quizState.current)) quizState.lastQuestionIndex = quizState.current;
-	quizState.pendingResultsLock = true;
-
-	// Si mode examen et que le timer tourne encore, on l'arrête (sans reset)
-	if (isExamMode && examStarted && !examEnded) {
-		examEnded = true;
-		exam.stopExamTimer();
-		// Mettre à jour l'affichage du timer avec le temps restant figé
-		exam.updateExamTimerDisplay();
-	}
-
-	ctx.state.updateNavHighlight();
-	goToSlide(SLIDE_RESULTS_INDEX, { forceRender: false });
-}
-
-function resetQuiz({ preserveSliding = false } = {}) {
-	ctx.hint.closeHintModal();
-	ctx.track.clearTrackTransitionFallback();
-	ctx.viewport.destroyActiveSlideResizeObserver();
-	ctx.viewport.destroyAllSlidesResizeObserver();
-	ctx.viewport.destroyViewportResizeObserver();
-	clearBackgroundWarmIdleHandle();
-	cancelEnsureTrackVisibleRaf();
-
-	__quizBackgroundWarmStarted = false;
-
-	quizState.selections = initSelections();
-	quizState.current = 0;
-	quizState.prevCurrent = 0;
-	quizState.lastQuestionIndex = 0;
-	quizState.locked = false;
-	quizState.pendingResultsLock = false;
-	quizState.shuffleMap = buildShuffleMap();
-	quizState.orderingPick = initOrderingPicks();
-	quizState.matchPick = initMatchPicks();
-	quizState.slideToken++;
-
-	if (!preserveSliding) quizState.isSliding = false;
-	ctx.state.setSlidingClass(false);
-
-	__quizSlideHeightCache.clear();
-	__quizWarmSlidePromises.clear();
-
-	// Réinitialiser l'état du mode examen
-	examStarted = false;
-	examEnded = false;
-	examStartTime = 0;
-	examTimeRemaining = examDurationMs;
-	exam.stopExamTimer();
-
-	render();
-}
-
-
-
-
-
-
-
-
-
-
-
+// Navigation functions (goToSlide, redirectSlide, goToQuestion, goToSubmit, goToResults, resetQuiz)
+// sont fournies par le module state via ctx.state.*
 
 function destroyQuiz() {
 	__quizDestroyed = true;
@@ -833,8 +716,7 @@ function render() {
 ctx.render = render;
 
 // Assign remaining local functions to ctx
-ctx.goToSlide = goToSlide;
-ctx.redirectSlide = redirectSlide;
+// Navigation functions use ctx.state.*
 ctx.clearBackgroundWarmIdleHandle = clearBackgroundWarmIdleHandle;
 ctx.cancelEnsureTrackVisibleRaf = cancelEnsureTrackVisibleRaf;
 ctx.stopExamTimer = exam.stopExamTimer;
