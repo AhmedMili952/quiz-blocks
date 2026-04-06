@@ -5667,7 +5667,11 @@ body{
 .qb-q-type {
   font-size: 11px;
   color: var(--text-muted);
-  text-transform: uppercase;
+}
+
+.qb-q-item.active .qb-q-type {
+  color: var(--interactive-accent);
+  font-weight: 500;
   letter-spacing: 0.3px;
 }
 
