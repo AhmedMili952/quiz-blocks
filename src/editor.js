@@ -161,7 +161,7 @@ class QuizBuilderView extends obsidian.ItemView {
 		this.contentEl.empty();
 	}
 
-	async importQuizSource(source) {
+	async importQuizSource(source, fileName = null) {
 		try {
 			const parsed = parseQuizSource(source);
 			if (!Array.isArray(parsed) || parsed.length === 0) {
@@ -192,6 +192,9 @@ class QuizBuilderView extends obsidian.ItemView {
 				return;
 			}
 
+			// Stocker le nom du fichier importé
+			this.importedFileName = fileName;
+
 			// Mettre à jour le tableau en place pour que ctx.questions reste synchronisé
 			this.questions.length = 0;
 			questions.forEach(q => this.questions.push(q));
@@ -203,8 +206,13 @@ class QuizBuilderView extends obsidian.ItemView {
 				if (this.updateExamUIState) this.updateExamUIState();
 			}
 
+			// Mettre à jour le nom du fichier affiché dans l'UI
+			if (this._fileNameEl) {
+				this._fileNameEl.textContent = fileName || "quiz-blocks";
+			}
+
 			this.render();
-			new obsidian.Notice(`${questions.length} question(s) importée(s)`);
+			new obsidian.Notice(`${questions.length} question(s) importée(s)${fileName ? " depuis " + fileName : ""}`);
 		} catch (err) {
 			console.error("Import error:", err);
 			new obsidian.Notice("Erreur lors de l'import: " + err.message);

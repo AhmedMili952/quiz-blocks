@@ -339,7 +339,7 @@ class ImportFromNoteModal extends obsidian.Modal {
 					return;
 				}
 
-				await this.builderView.importQuizSource(match[1]);
+				await this.builderView.importQuizSource(match[1], file.basename);
 				new obsidian.Notice(`Quiz importé depuis ${file.basename}`);
 			} catch (err) {
 				console.error("Import from note error:", err);
