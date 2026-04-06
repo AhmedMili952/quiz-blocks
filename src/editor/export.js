@@ -79,11 +79,11 @@ function exportQuestion(q, idx) {
 }
 
 function exportAll(questions, examOptions = null) {
-	let result = "[\n" + questions.map((q, i) => exportQuestion(q, i)).join(",\n\n") + "\n]";
+	const parts = questions.map((q, i) => exportQuestion(q, i));
 	if (examOptions && examOptions.enabled) {
-		result += `,\n\n\t// Options mode examen\n\t{\n\t\texamMode: true,\n\t\texamDurationMinutes: ${examOptions.durationMinutes},\n\t\texamAutoSubmit: ${examOptions.autoSubmit},\n\t\texamShowTimer: ${examOptions.showTimer}\n\t}`;
+		parts.push(`\t// Options mode examen\n\t{\n\t\texamMode: true,\n\t\texamDurationMinutes: ${examOptions.durationMinutes},\n\t\texamAutoSubmit: ${examOptions.autoSubmit},\n\t\texamShowTimer: ${examOptions.showTimer}\n\t}`);
 	}
-	return result;
+	return "[\n" + parts.join(",\n\n") + "\n]";
 }
 function exportAllWithFence(questions, examOptions = null) {
 	return "```quiz-blocks\n" + exportAll(questions, examOptions) + "\n```";

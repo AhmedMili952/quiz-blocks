@@ -11,6 +11,16 @@ function parseQuizSource(source) {
 	try {
 		parsed = JSON5.parse(raw);
 	} catch (error) {
+		// Log détaillé pour déboguer
+		console.error("[Quiz Blocks] JSON5 parse error:", error.message);
+		if (error.message && error.message.includes("position")) {
+			const match = error.message.match(/position (\d+)/);
+			if (match) {
+				const pos = parseInt(match[1]);
+				console.error("[Quiz Blocks] Caractère à la position", pos + ":", raw.charAt(pos));
+				console.error("[Quiz Blocks] Contexte:", raw.substring(Math.max(0, pos-30), pos+30));
+			}
+		}
 		throw new Error("Le bloc ```quiz-blocks doit contenir un tableau JSON5 valide.");
 	}
 
