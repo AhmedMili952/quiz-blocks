@@ -1,0 +1,60 @@
+/* =========================================================
+   COMPONENTS: QUIZ CARD & QUESTION
+   ========================================================= */
+
+.quiz-card{
+  margin: 10px 0 18px;
+  padding-left: clamp(2px, 0.8vw, 6px);
+  padding-right: clamp(2px, 0.8vw, 6px);
+  overflow: visible;
+  isolation: isolate;
+}
+
+.quiz-card h2{
+  margin: 0 0 10px;
+  font-size: 2em;
+  font-weight: 800;
+}
+
+.quiz-question{
+  margin: 0 0 18px;
+  font-size: 0.875em;
+}
+
+.quiz-question pre{
+  background: var(--code-background);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  padding: 12px 14px;
+  margin: 10px 0;
+  overflow-x: auto;
+  font-family: var(--font-monospace);
+  font-size: 0.85em;
+  line-height: 1.5;
+}
+
+.quiz-question code{
+  background: var(--code-background);
+  border-radius: 4px;
+  padding: 2px 5px;
+  font-family: var(--font-monospace);
+  font-size: 0.9em;
+}
+
+.quiz-question pre code{
+  background: transparent;
+  border-radius: 0;
+  padding: 0;
+  font-size: inherit;
+}
+
+.quiz-multi-indicator{
+  margin: 0 0 12px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 0.75em;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: color-mix(in srgb, var(--quiz-primary) 8%, var(--background-secondary));
+  border: 1px solid color-mix(in srgb, var(--quiz-primary) 20%, var(--background-modifier-border));
+}

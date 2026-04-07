@@ -1,0 +1,76 @@
+/* =========================================================
+   COMPONENTS: EXPLANATIONS
+   ========================================================= */
+
+.quiz-explain{
+  margin-top: 14px;
+  padding: 16px;
+  border-radius: 14px;
+  border: 1px solid var(--background-modifier-border);
+  background: color-mix(in srgb, var(--background-primary) 80%, transparent);
+  color: var(--text-normal);
+  font-size: 0.8125em;
+  line-height: 1.55;
+}
+
+.quiz-explain.good,
+.quiz-explain.bad{
+  border-color: var(--background-modifier-border) !important;
+}
+
+.quiz-explain h3{
+  margin: 14px 0 10px;
+  font-size: 1em;
+  font-weight: 900;
+}
+
+.quiz-explain h3:first-child{
+  margin-top: 0;
+}
+
+.quiz-explain p{
+  margin: 8px 0;
+}
+
+.quiz-explain ul,
+.quiz-explain ol{
+  margin: 8px 0 12px 18px;
+}
+
+.quiz-explain li{
+  margin: 6px 0;
+}
+
+.quiz-explain table{
+  width: 100%;
+  margin: 10px 0 12px;
+  border-collapse: collapse;
+  font-size: 0.75em;
+}
+
+.quiz-explain th,
+.quiz-explain td{
+  padding: 7px 9px;
+  vertical-align: top;
+  border: 1px solid var(--background-modifier-border);
+}
+
+.quiz-explain blockquote{
+  margin: 10px 0;
+  padding: 10px 12px;
+  border-left: 4px solid var(--background-modifier-border);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--background-secondary) 70%, transparent);
+}
+
+.quiz-explain img{
+  display: block !important;
+  margin: 0.75rem auto !important;
+  max-width: min(90%, 680px) !important;
+  max-height: 320px !important;
+  width: auto !important;
+  height: auto !important;
+  object-fit: contain !important;
+  border-radius: 12px;
+  border: 1px solid var(--background-modifier-border);
+}

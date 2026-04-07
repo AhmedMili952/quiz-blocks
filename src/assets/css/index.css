@@ -2,10 +2,20 @@
    STYLES.CSS SPLIT - INDEX FILE
    ========================================================= */
 
-@import url('./part1.css');
-@import url('./part2.css');
-@import url('./part3.css');
-@import url('./part4.css');
-@import url('./part5.css');
-@import url('./part6.css');
-@import url('./part7.css');
+@import url('./tokens.css');
+@import url('./base.css');
+@import url('./layout.css');
+@import url('./utilities.css');
+
+/* Components */
+@import url('./components/nav-tabs.css');
+@import url('./components/quiz-card.css');
+@import url('./components/quiz-options.css');
+@import url('./components/action-buttons.css');
+@import url('./components/hint-modal.css');
+@import url('./components/explanations.css');
+@import url('./components/inputs.css');
+
+/* Pages */
+@import url('./pages/results.css');
+@import url('./pages/exam.css');
