@@ -11,7 +11,10 @@ function exportQuestion(q, idx) {
 	L.push(`\t\ttitle: '${e(q.title || `Question ${idx + 1}`)}',`);
 	if (q.resourceButton) L.push(`\t\tresourceButton: {\n\t\t\tlabel: '${e(q.resourceButton.label)}',\n\t\t\tfileName: '${e(q.resourceButton.fileName)}'\n\t\t},`);
 	// Priorité au prompt modifié par l'utilisateur, _promptHtml est fallback
-	if (q.prompt) {
+	if (q._useHtmlPrompt && q._promptHtml) {
+		// Si l'utilisateur édite en mode HTML, utiliser directement _promptHtml
+		L.push(`\t\tpromptHtml: '${e(q._promptHtml)}',`);
+	} else if (q.prompt) {
 		const hasMd = q.prompt && (/[*#`>\-]/.test(q.prompt) || q.prompt.includes("\n"));
 		if (hasMd) L.push(`\t\tpromptHtml: '${e(md2html(q.prompt))}',`);
 		else L.push(`\t\tprompt: '${e(q.prompt)}',`);

@@ -24,61 +24,129 @@ module.exports = function createEditorFormHandlers(ctx) {
 		badgeText.createDiv({ cls: "qb-type-label", text: ti.label });
 		badgeText.createDiv({ cls: "qb-type-desc", text: ti.desc });
 
-		_field(wrap, "Énoncé", q.prompt, "Votre question...", true, v => { q.prompt = v; onEdit(); }, { imagePaste: true });
+		// Énoncé - garde les \n natifs, md2html convertira à l'affichage
+		_field(wrap, "Énoncé", (q._promptHtml || '').replace(/<br\s*\/?>/gi, '\n'), "Votre question...", true, v => {
+			q._promptHtml = v; // Garde les \n tels quels
+			onEdit();
+		});
+
 		_resourceSection(wrap, q);
 
 		const box = wrap.createDiv({ cls: "qb-section-box" });
 		_renderTypeFields(box, q);
 
-		_field(wrap, "Indice", q.hint, "Un indice pour aider...", true, v => { q.hint = v; onEdit(); }, { imagePaste: true });
-		_field(wrap, "Explication (Markdown)", q.explain, "### Rappels\n- **Terme** — Définition", true, v => { q.explain = v; onEdit(); }, { imagePaste: true });
+		// Indice - garde les \n natifs
+		_field(wrap, "Indice", (q.hint || '').replace(/<br\s*\/?>/gi, '\n'), "Un indice pour aider...", true, v => {
+			q.hint = v; // Garde les \n tels quels
+			onEdit();
+		});
+		// Explication (Markdown) - garde les \n natifs
+		_field(wrap, "Explication (Markdown)", (q.explain || '').replace(/<br\s*\/?>/gi, '\n'), "### Rappels\n- **Terme** — Définition", true, v => {
+			q.explain = v; // Garde les \n tels quels
+			delete q._explainHtml;
+			onEdit();
+		});
+	}
+
+	// ── Entités pour la toolbar ──
+	const ENTITIES = [
+		{ label: '>', insert: '&gt;', title: 'Supérieur (>)' },
+		{ label: '<', insert: '&lt;', title: 'Inférieur (<)' },
+		{ label: '&', insert: '&amp;', title: 'Esperluette (&)' },
+		{ label: '␣', insert: '&nbsp;', title: 'Espace insécable' },
+		{ label: "'", insert: "&#39;", title: 'Apostrophe' },
+		{ label: '"', insert: '&quot;', title: 'Guillemet' },
+		{ label: '```', insert: '<pre><code>\n</code></pre>', title: 'Bloc de code' },
+	];
+
+	function _insertAt(ta, text, cb) {
+		const s = ta.selectionStart;
+		const before = ta.value.substring(0, s);
+		const after = ta.value.substring(ta.selectionEnd);
+		ta.value = before + text + after;
+		const nl = text.indexOf('\n');
+		ta.selectionStart = ta.selectionEnd = before.length + (nl !== -1 ? nl + 1 : text.length);
+		ta.focus();
+		cb(ta.value);
+	}
+
+	function _autoResize(ta) {
+		ta.style.height = 'auto';
+		const minHeight = 100; // Hauteur minimale plus grande pour être plus propre
+		const newHeight = Math.max(minHeight, ta.scrollHeight);
+		ta.style.height = newHeight + 'px';
 	}
 
 	function _field(parent, label, value, placeholder, multiline, onChange, opts = {}) {
 		const wrap = parent.createDiv();
 		wrap.createEl("label", { cls: "qb-field-label", text: label });
 		if (multiline) {
-			const ta = wrap.createEl("textarea", { cls: "qb-field-textarea", placeholder, text: value ?? "" });
-			ta.addEventListener("input", () => onChange(ta.value));
-			if (opts.imagePaste) {
-				ta.addEventListener("paste", async (e) => {
-					const items = e.clipboardData?.items;
-					if (!items) return;
-					for (const item of items) {
-						if (item.type.startsWith("image/")) {
-							e.preventDefault();
-							const file = item.getAsFile();
-							if (!file) continue;
-							const now = new Date();
-							const ts = now.getFullYear().toString() +
-								String(now.getMonth() + 1).padStart(2, "0") +
-								String(now.getDate()).padStart(2, "0") +
-								String(now.getHours()).padStart(2, "0") +
-								String(now.getMinutes()).padStart(2, "0") +
-								String(now.getSeconds()).padStart(2, "0");
-							const ext = item.type.split("/")[1] || "png";
-							const fileName = `Pasted image ${ts}.${ext}`;
-							const attachFolder = ctx.plugin.app.vault.getConfig("attachmentFolderPath") || "";
-							const filePath = attachFolder ? attachFolder + "/" + fileName : fileName;
-							const buffer = await file.arrayBuffer();
-							await ctx.plugin.app.vault.adapter.writeBinary(filePath, new Uint8Array(buffer));
-							const before = ta.value.slice(0, ta.selectionStart);
-							const after = ta.value.slice(ta.selectionEnd);
-							ta.value = before + `![[${fileName}]]` + after;
-							ta.selectionStart = ta.selectionEnd = before.length + `![[${fileName}]]`.length;
-							onChange(ta.value);
-							view.schedulePreview();
-							break;
-							}
-						}
-					});
+			// Toolbar entités
+			const toolbar = wrap.createDiv({ cls: "qb-entity-toolbar" });
+			const ta = wrap.createEl("textarea", { cls: "qb-field-textarea qb-prompt-editor", placeholder, text: value ?? "" });
+
+			ENTITIES.forEach(ent => {
+				const btn = toolbar.createEl("button", { cls: "qb-entity-btn", text: ent.label });
+				btn.title = ent.title;
+				btn.addEventListener("click", (e) => { e.preventDefault(); _insertAt(ta, ent.insert, onChange); _autoResize(ta); });
+			});
+
+			// Input + auto-resize
+			ta.addEventListener("input", () => { onChange(ta.value); _autoResize(ta); });
+			requestAnimationFrame(() => _autoResize(ta));
+
+			// Raccourci ``` + Enter
+			ta.addEventListener("keydown", (e) => {
+				if (e.key === "Enter") {
+					const pos = ta.selectionStart;
+					const lineStart = ta.value.lastIndexOf('\n', pos - 1) + 1;
+					if (ta.value.substring(lineStart, pos).trim() === '```') {
+						e.preventDefault();
+						const before = ta.value.substring(0, lineStart);
+						const after = ta.value.substring(pos);
+						ta.value = before + '<pre><code>\n</code></pre>' + after;
+						ta.selectionStart = ta.selectionEnd = before.length + '<pre><code>\n'.length;
+						onChange(ta.value);
+						_autoResize(ta);
+					}
 				}
-			} else {
-				const inp = wrap.createEl("input", { cls: "qb-field-input", placeholder, value: value ?? "" });
-				inp.addEventListener("input", () => onChange(inp.value));
-			}
-			return wrap;
+			});
+
+			// Coller des images - activé pour tous les champs textarea
+			ta.addEventListener("paste", async (e) => {
+				const items = e.clipboardData?.items;
+				if (!items) return;
+				for (const item of items) {
+					if (item.type.startsWith("image/")) {
+						e.preventDefault();
+						const file = item.getAsFile();
+						if (!file) continue;
+						const now = new Date();
+						const ts = now.getFullYear().toString() +
+							String(now.getMonth() + 1).padStart(2, "0") +
+							String(now.getDate()).padStart(2, "0") +
+							String(now.getHours()).padStart(2, "0") +
+							String(now.getMinutes()).padStart(2, "0") +
+							String(now.getSeconds()).padStart(2, "0");
+						const ext = item.type.split("/")[1] || "png";
+						const fileName = `Pasted image ${ts}.${ext}`;
+						const attachFolder = ctx.plugin.app.vault.getConfig("attachmentFolderPath") || "";
+						const filePath = attachFolder ? attachFolder + "/" + fileName : fileName;
+						const buffer = await file.arrayBuffer();
+						await ctx.plugin.app.vault.adapter.writeBinary(filePath, new Uint8Array(buffer));
+						_insertAt(ta, `![[${fileName}]]`, onChange);
+						_autoResize(ta);
+						view.schedulePreview();
+						break;
+					}
+				}
+			});
+		} else {
+			const inp = wrap.createEl("input", { cls: "qb-field-input", placeholder, value: value ?? "" });
+			inp.addEventListener("input", () => onChange(inp.value));
 		}
+		return wrap;
+	}
 
 	function _resourceSection(parent, q) {
 		const details = parent.createEl("details", { cls: "qb-collapsible" });

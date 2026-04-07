@@ -199,6 +199,8 @@ class ImportQuizModal extends obsidian.Modal {
 		}
 		if (q.promptHtml) {
 			question._promptHtml = q.promptHtml;
+			// Si promptHtml existe, activer par défaut l'édition HTML
+			question._useHtmlPrompt = true;
 		}
 
 		if (q.explain) question.explain = q.explain;

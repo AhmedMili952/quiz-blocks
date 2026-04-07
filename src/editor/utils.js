@@ -24,7 +24,7 @@ function _setIcon(el, name) { try { obsidian.setIcon(el, name); } catch (_) {} }
 function _iconSpan(parent, name, cls) { const s = parent.createSpan({ cls: cls || "qb-icon" }); _setIcon(s, name); return s; }
 
 function makeDefault(type) {
-	const b = { _type: type, _id: Math.random().toString(36).slice(2, 10), title: "", prompt: "", hint: "", explain: "", resourceButton: null };
+	const b = { _type: type, _id: Math.random().toString(36).slice(2, 10), title: "", prompt: "", hint: "", explain: "", resourceButton: null, _useHtmlPrompt: false };
 	switch (type) {
 		case "single": return { ...b, options: ["", ""], correctIndex: 0 };
 		case "multi": return { ...b, options: ["", ""], correctIndices: [] };
@@ -40,23 +40,27 @@ function makeDefault(type) {
 
 function md2html(src) {
 	if (!src) return "";
+	let text = String(src);
 
-	// ═══════════════════════════════════════════════════════
-	// ÉTAPE 1: Extraire les blocs code markdown pour les préserver
-	// Les blocs ``` doivent être traités AVANT l'échappement HTML
-	// ═══════════════════════════════════════════════════════
+	// Étape 0: Convertir les anciennes balises <br> en \n pour compatibilité
+	text = text.replace(/<br\s*\/?>/gi, '\n');
+
+	// Étape 1: Extraire les blocs de code AVANT toute échappement HTML
+	// Utiliser un placeholder qui ne contient PAS de < ou > pour éviter l'échappement
 	const codeBlocks = [];
-	let processed = String(src).replace(/```(\w*)\n?([\s\S]*?)```/g, (match, lang, code) => {
-		const placeholder = `___CODE_BLOCK_${codeBlocks.length}___`;
-		codeBlocks.push({ lang: lang || '', code: code.trim() });
+	text = text.replace(/```(\w*)\n?([\s\S]*?)```/g, (match, lang, code) => {
+		const idx = codeBlocks.length;
+		const placeholder = `__CODEBLOCK_${idx}__`;
+		// Stocker le code et échapper son contenu pour HTML immédiatement
+		codeBlocks.push(escHtml(code.trim()).replace(/\n/g, "<br>"));
 		return placeholder;
 	});
 
-	// ═══════════════════════════════════════════════════════
-	// ÉTAPE 2: Traitement Markdown + échappement HTML
-	// ═══════════════════════════════════════════════════════
-	processed = processed
-		.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+	// Étape 2: Échapper les caractères HTML du reste du texte
+	text = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+	// Étape 3: Convertir le markdown en HTML
+	text = text
 		.replace(/^### (.+)$/gm, "<h3>$1</h3>")
 		.replace(/^## (.+)$/gm, "<h2>$1</h2>")
 		.replace(/^# (.+)$/gm, "<h1>$1</h1>")
@@ -71,22 +75,13 @@ function md2html(src) {
 		.replace(/\n{2,}/g, "</p><p>")
 		.replace(/\n/g, "<br>");
 
-	// ═══════════════════════════════════════════════════════
-	// ÉTAPE 3: Réinsérer les blocs code avec leur contenu échappé
-	// Le contenu du code est échappé pour la sécurité
-	// ═══════════════════════════════════════════════════════
-	codeBlocks.forEach(({ lang, code }, index) => {
-		const placeholder = `___CODE_BLOCK_${index}___`;
-		// Échapper le HTML dans le contenu du code pour la sécurité
-		const escapedCode = code
-			.replace(/&/g, "&amp;")
-			.replace(/</g, "&lt;")
-			.replace(/>/g, "&gt;");
-		const langAttr = lang ? ` class="language-${lang}"` : '';
-		processed = processed.replace(placeholder, `<pre><code${langAttr}>${escapedCode}</code></pre>`);
+	// Étape 4: Réinsérer les blocs de code (placeholder n'a pas été échappé car pas de < >)
+	codeBlocks.forEach((escapedCode, i) => {
+		const placeholder = `__CODEBLOCK_${i}__`;
+		text = text.replace(placeholder, `<pre><code>${escapedCode}</code></pre>`);
 	});
 
-	return processed;
+	return text;
 }
 
 function escHtml(s) { return String(s ?? "").replace(/"/g, "&quot;").replace(/'/g, "&#39;"); }
@@ -95,12 +90,11 @@ function esc5(s) {
 	return String(s ?? "")
 		.replace(/\\/g, "\\\\")    // Échapper les antislashs d'abord
 		.replace(/'/g, "\\'")          // Échapper les apostrophes (car on utilise ' pour délimiter)
-		.replace(/</g, "\\<")          // Échapper les chevrons ouvrants (pour HTML)
-		.replace(/>/g, "\\>")          // Échapper les chevrons fermants (pour HTML)
 		.replace(/\r/g, "\\r")        // Échapper les retours chariot
 		.replace(/\n/g, "\\n");        // Échapper les sauts de ligne
-	// Note: Les guillemets doubles n'ont pas besoin d'être échappés car
-	// les chaînes sont délimitées par des guillemets simples dans export.js
+	// Note: Les chevrons < > ne sont PAS échappés avec \ car ce n'est pas
+	// valide en JSON5. Ils sont déjà échappés en HTML entities (&lt; &gt;)
+	// par md2html() avant d'appeler esc5().
 }
 
 module.exports = { Q_TYPES, loadReact, _setIcon, _iconSpan, makeDefault, md2html, escHtml, esc5 };
