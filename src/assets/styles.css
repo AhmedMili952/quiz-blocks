@@ -5008,6 +5008,47 @@ body{
 
 .qb-section-box > * + * { margin-top: 0.5em; }
 
+	/* ─── Sections Collapsibles ─── */
+	.qb-section-collapsible {
+		border-radius: 6px;
+		border: 1px solid var(--background-modifier-border);
+		margin-bottom: 1em;
+		background: var(--background-secondary);
+	}
+
+	.qb-section-collapsible:last-child {
+		margin-bottom: 0;
+	}
+
+	.qb-section-header {
+		padding: 0.5em 0.75em;
+		font-weight: 600;
+		cursor: pointer;
+		user-select: none;
+		display: flex;
+		align-items: center;
+		gap: 0.5em;
+	}
+
+	.qb-section-header::before {
+		content: "▶";
+		transition: transform 0.2s ease;
+		font-size: 0.8em;
+	}
+
+	.qb-section-collapsible[open] .qb-section-header::before {
+		transform: rotate(90deg);
+	}
+
+	.qb-section-header:hover {
+		background: var(--background-primary-alt);
+	}
+
+	.qb-section-content {
+		padding: 0.75em;
+		border-top: 1px solid var(--background-modifier-border);
+	}
+
 /* ─── Type Badge ─── */
 .qb-type-badge {
 	display: flex;

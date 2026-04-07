@@ -24,8 +24,12 @@ module.exports = function createEditorFormHandlers(ctx) {
 		badgeText.createDiv({ cls: "qb-type-label", text: ti.label });
 		badgeText.createDiv({ cls: "qb-type-desc", text: ti.desc });
 
-		// Énoncé - garde les \n natifs, md2html convertira à l'affichage
-		_field(wrap, "Énoncé", (q._promptHtml || '').replace(/<br\s*\/?>/gi, '\n'), "Votre question...", true, v => {
+		// Section Énoncé (toujours déployée par défaut)
+		const promptSection = wrap.createEl("details", { cls: "qb-section-collapsible", attr: { open: "" } });
+		promptSection.createEl("summary", { cls: "qb-section-header", text: "📝 Énoncé" });
+		const promptContent = promptSection.createDiv({ cls: "qb-section-content" });
+
+		_field(promptContent, "", (q._promptHtml || '').replace(/<br\s*\/?>/gi, '\n'), "Votre question...", true, v => {
 			q._promptHtml = v; // Garde les \n tels quels
 			onEdit();
 		});
@@ -35,13 +39,22 @@ module.exports = function createEditorFormHandlers(ctx) {
 		const box = wrap.createDiv({ cls: "qb-section-box" });
 		_renderTypeFields(box, q);
 
-		// Indice - garde les \n natifs
-		_field(wrap, "Indice", (q.hint || '').replace(/<br\s*\/?>/gi, '\n'), "Un indice pour aider...", true, v => {
+		// Section Indice (optionnelle)
+		const hintSection = wrap.createEl("details", { cls: "qb-section-collapsible" });
+		hintSection.createEl("summary", { cls: "qb-section-header", text: "💡 Indice" });
+		const hintContent = hintSection.createDiv({ cls: "qb-section-content" });
+
+		_field(hintContent, "", (q.hint || '').replace(/<br\s*\/?>/gi, '\n'), "Un indice pour aider...", true, v => {
 			q.hint = v; // Garde les \n tels quels
 			onEdit();
 		});
-		// Explication (Markdown) - garde les \n natifs
-		_field(wrap, "Explication (Markdown)", (q.explain || '').replace(/<br\s*\/?>/gi, '\n'), "### Rappels\n- **Terme** — Définition", true, v => {
+
+		// Section Explication (optionnelle)
+		const explainSection = wrap.createEl("details", { cls: "qb-section-collapsible" });
+		explainSection.createEl("summary", { cls: "qb-section-header", text: "📘 Explication (Markdown)" });
+		const explainContent = explainSection.createDiv({ cls: "qb-section-content" });
+
+		_field(explainContent, "", (q.explain || '').replace(/<br\s*\/?>/gi, '\n'), "### Rappels\n- **Terme** — Définition", true, v => {
 			q.explain = v; // Garde les \n tels quels
 			delete q._explainHtml;
 			onEdit();
