@@ -26,7 +26,9 @@ module.exports = function createEditorFormHandlers(ctx) {
 
 		// Section Énoncé (toujours déployée par défaut)
 		const promptSection = wrap.createEl("details", { cls: "qb-section-collapsible", attr: { open: "" } });
-		promptSection.createEl("summary", { cls: "qb-section-header", text: "📝 Énoncé" });
+		const promptSummary = promptSection.createEl("summary", { cls: "qb-section-header" });
+		ctx._setIcon(promptSummary, "file-question");
+		promptSummary.createSpan({ text: "Énoncé" });
 		const promptContent = promptSection.createDiv({ cls: "qb-section-content" });
 
 		_field(promptContent, "", (q._promptHtml || '').replace(/<br\s*\/?>/gi, '\n'), "Votre question...", true, v => {
@@ -41,7 +43,9 @@ module.exports = function createEditorFormHandlers(ctx) {
 
 		// Section Indice (optionnelle)
 		const hintSection = wrap.createEl("details", { cls: "qb-section-collapsible" });
-		hintSection.createEl("summary", { cls: "qb-section-header", text: "💡 Indice" });
+		const hintSummary = hintSection.createEl("summary", { cls: "qb-section-header" });
+		ctx._setIcon(hintSummary, "lightbulb");
+		hintSummary.createSpan({ text: "Indice" });
 		const hintContent = hintSection.createDiv({ cls: "qb-section-content" });
 
 		_field(hintContent, "", (q.hint || '').replace(/<br\s*\/?>/gi, '\n'), "Un indice pour aider...", true, v => {
@@ -51,7 +55,9 @@ module.exports = function createEditorFormHandlers(ctx) {
 
 		// Section Explication (optionnelle)
 		const explainSection = wrap.createEl("details", { cls: "qb-section-collapsible" });
-		explainSection.createEl("summary", { cls: "qb-section-header", text: "📘 Explication (Markdown)" });
+		const explainSummary = explainSection.createEl("summary", { cls: "qb-section-header" });
+		ctx._setIcon(explainSummary, "book-open");
+		explainSummary.createSpan({ text: "Explication (Markdown)" });
 		const explainContent = explainSection.createDiv({ cls: "qb-section-content" });
 
 		_field(explainContent, "", (q.explain || '').replace(/<br\s*\/?>/gi, '\n'), "### Rappels\n- **Terme** — Définition", true, v => {

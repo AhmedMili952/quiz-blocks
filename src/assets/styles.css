@@ -5030,6 +5030,12 @@ body{
 		gap: 0.5em;
 	}
 
+	.qb-section-header svg {
+		width: 16px;
+		height: 16px;
+		flex-shrink: 0;
+	}
+
 	.qb-section-header::before {
 		content: "▶";
 		transition: transform 0.2s ease;
