@@ -3632,7 +3632,7 @@ body{
 }
 
 .qb-main .qb-editor {
-	width: var(--qb-editor-w, 352px);
+	width: var(--qb-editor-w, 480px);
 	min-width: 0;
 	max-width: none;
 	flex-shrink: 0;

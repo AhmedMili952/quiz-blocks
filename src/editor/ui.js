@@ -39,7 +39,7 @@ module.exports = function createEditorUIHandlers(ctx) {
 					const mainEl = view.contentEl.querySelector('.qb-main');
 					if (mainEl) {
 						mainEl.style.setProperty('--qb-sidebar-w', '320px');
-						mainEl.style.setProperty('--qb-editor-w', '352px');
+						mainEl.style.setProperty('--qb-editor-w', '480px');
 						mainEl.style.setProperty('--qb-code-w', '288px');
 					}
 				}
@@ -92,7 +92,7 @@ module.exports = function createEditorUIHandlers(ctx) {
 
 		if (!main.style.getPropertyValue('--qb-sidebar-w')) {
 			main.style.setProperty('--qb-sidebar-w', '320px');
-			main.style.setProperty('--qb-editor-w', '352px');
+			main.style.setProperty('--qb-editor-w', '480px');
 			main.style.setProperty('--qb-code-w', '288px');
 		}
 
@@ -271,7 +271,7 @@ module.exports = function createEditorUIHandlers(ctx) {
 				fixedWidthSum += sidebarWidth;
 			}
 			if (ctx.panels.editor) {
-				const editorWidth = parseFloat(mainEl.style.getPropertyValue('--qb-editor-w') || '352');
+				const editorWidth = parseFloat(mainEl.style.getPropertyValue('--qb-editor-w') || '480');
 				fixedWidthSum += editorWidth;
 			}
 			if (ctx.panels.code) {
@@ -280,7 +280,7 @@ module.exports = function createEditorUIHandlers(ctx) {
 			}
 			if (fixedWidthSum > mainRect.width * 0.7) {
 				mainEl.style.setProperty('--qb-sidebar-w', '320px');
-				mainEl.style.setProperty('--qb-editor-w', '352px');
+				mainEl.style.setProperty('--qb-editor-w', '480px');
 				mainEl.style.setProperty('--qb-code-w', '288px');
 			}
 		}
