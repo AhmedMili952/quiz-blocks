@@ -176,14 +176,50 @@ module.exports = function createEditorFormHandlers(ctx) {
 		const renderInner = () => {
 			body.empty();
 			const has = !!q.resourceButton;
-			const toggleWrap = body.createDiv({ cls: "qb-toggle-wrap" });
-			const track = toggleWrap.createDiv({ cls: `qb-toggle-track ${has ? "on" : ""}` });
-			track.createDiv({ cls: "qb-toggle-thumb" });
-			toggleWrap.appendChild(document.createTextNode("Activer le bouton ressource"));
-			toggleWrap.addEventListener("click", () => { q.resourceButton = q.resourceButton ? null : { label: "Activité PT", fileName: "" }; renderInner(); onEdit(); });
+
+			// Header avec toggle switch inspiré de l'interface fournie
+			const header = body.createDiv({ cls: "qb-resource-header" });
+			const labelGroup = header.createDiv({ cls: "qb-resource-label-group" });
+			ctx._setIcon(labelGroup, "paperclip");
+			labelGroup.createSpan({ text: "Bouton ressource" });
+			const optionalBadge = labelGroup.createSpan({ cls: "qb-resource-optional-badge", text: "optionnel" });
+
+			// Toggle switch amélioré
+			const toggleLabel = header.createEl("label", { cls: "qb-resource-toggle" });
+			const checkbox = toggleLabel.createEl("input", { type: "checkbox", cls: "qb-resource-toggle-input" });
+			checkbox.checked = has;
+			const track = toggleLabel.createEl("div", { cls: "qb-resource-toggle-track" });
+			const thumb = track.createEl("div", { cls: "qb-resource-toggle-thumb" });
+
+			// Mettre à jour l'état du toggle
 			if (has) {
-				_field(body, "Label", q.resourceButton.label, "Activité PT", false, v => { q.resourceButton.label = v; onEdit(); });
-				_field(body, "Nom du fichier", q.resourceButton.fileName, "fichier.pka", false, v => { q.resourceButton.fileName = v; onEdit(); });
+				track.classList.add("on");
+			}
+
+			// Gestionnaire d'événements pour le toggle
+			toggleLabel.addEventListener("click", (e) => {
+				e.preventDefault();
+				const isChecked = !checkbox.checked;
+				checkbox.checked = isChecked;
+				q.resourceButton = isChecked ? { label: "Activité PT", fileName: "" } : null;
+				if (isChecked) {
+					track.classList.add("on");
+				} else {
+					track.classList.remove("on");
+				}
+				renderInner();
+				onEdit();
+			});
+
+			// Champs du formulaire si activé
+			if (has) {
+				const fieldsContainer = body.createDiv({ cls: "qb-resource-fields" });
+				_field(fieldsContainer, "Label", q.resourceButton.label, "Activité PT", false, v => { q.resourceButton.label = v; onEdit(); });
+				_field(fieldsContainer, "Nom du fichier", q.resourceButton.fileName, "fichier.pka", false, v => { q.resourceButton.fileName = v; onEdit(); });
+
+				// Note d'aide
+				const helpNote = fieldsContainer.createEl("p", { cls: "qb-resource-help-note" });
+				helpNote.createSpan({ text: "Fichier placé dans le dossier du quiz" });
 			}
 		};
 		renderInner();

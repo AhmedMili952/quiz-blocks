@@ -4326,6 +4326,8 @@ body{
 .qb-chip-icon { font-size: 0.9em; }
 
 /* ─── Toggle Wrap ── */
+
+	/* ─── Resource Button Section ── */
 .qb-toggle-wrap {
 	display: flex;
 	align-items: center;
