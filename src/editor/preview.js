@@ -34,7 +34,10 @@ module.exports = function createPreviewHandlers(ctx) {
 
 		if (q._promptHtml) {
 			const promptEl = card.createDiv({ cls: "quiz-question" });
-			promptEl.innerHTML = q._promptHtml;
+			// Convertir les wiki-links en balises img, puis résoudre les chemins
+			let html = q._promptHtml.replace(/!\[\[([^\]]+)\]\]/g, '<img src="$1" class="qb-md-img" />');
+			html = _resolveImagesInHtml(html);
+			promptEl.innerHTML = html;
 		} else if (q.prompt) {
 			const promptEl = card.createDiv({ cls: "quiz-question" });
 			promptEl.innerHTML = md2html(q.prompt);
