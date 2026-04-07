@@ -1,0 +1,28 @@
+/* =========================================================
+   QUIZ BLOCKS - MAIN CSS ENTRY POINT
+   =========================================================
+
+   Ce fichier importe tous les styles nécessaires pour le plugin Quiz Blocks.
+   Les styles sont organisés en fichiers séparés pour une meilleure maintenabilité.
+
+   Structure :
+   - base.css : Variables CSS et styles de base
+   - tokens.css : Couleurs, espacements et autres tokens de design
+   - animations.css : Animations et transitions
+   - layout.css : Disposition principale de l'interface
+   - header.css : En-tête de l'éditeur
+   - panels.css : Panneaux de l'éditeur (sidebar, éditeur, aperçu, code)
+   - buttons.css : Styles des boutons
+   - forms.css : Éléments de formulaire
+   - editor.css : Styles spécifiques à l'éditeur
+   - sidebar.css : Styles de la barre latérale
+   - preview.css : Styles de l'aperçu
+   - code.css : Styles du panneau de code
+   - quiz-components.css : Composants spécifiques aux quiz
+   - modals.css : Styles des modales
+   - exam-mode.css : Styles du mode examen
+   - utilities.css : Classes utilitaires
+   - icons.css : Styles des icônes
+   ========================================================= */
+
+@import url('./css/index.css');

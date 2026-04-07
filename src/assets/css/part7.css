@@ -1,0 +1,92 @@
+}
+
+.qb-q-item.active .qb-q-type {
+  color: var(--interactive-accent);
+  font-weight: 500;
+  letter-spacing: 0.3px;
+}
+
+.qb-q-preview {
+  font-size: 12px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-style: italic;
+}
+
+/* Flash animations for cards */
+@keyframes qb-flash-green {
+  0%, 100% { background-color: transparent; }
+  50% { background-color: var(--quiz-success-ring-20); }
+}
+
+@keyframes qb-flash-red {
+  0%, 100% { background-color: transparent; }
+  50% { background-color: var(--quiz-danger-ring-20); }
+}
+
+.qb-answer-flash-green {
+  animation: qb-flash-green 0.5s ease;
+}
+
+.qb-answer-flash-red {
+  animation: qb-flash-red 0.5s ease;
+}
+
+/* Small button variant */
+.qb-btn-small {
+  padding: 6px 12px;
+  font-size: 12px;
+}
+
+/* ─── Save Indicator ─── */
+.qb-save-indicator {
+	display: flex;
+	align-items: center;
+	gap: 0.4em;
+	padding: 0.4em 0.8em;
+	border-radius: 6px;
+	background: rgba(var(--interactive-accent-rgb), 0.1);
+	color: var(--interactive-accent);
+	font-size: 0.8em;
+	font-weight: 600;
+	transition: all 0.2s ease;
+}
+
+.qb-save-indicator.is-saved {
+	background: rgba(var(--background-modifier-success-rgb, 0, 200, 0), 0.15);
+	color: var(--text-success);
+}
+
+.qb-save-indicator .qb-save-icon {
+	width: 1em;
+	height: 1em;
+}
+
+.qb-save-indicator.is-saved .qb-save-icon svg {
+	animation: qb-save-bounce 0.4s ease;
+}
+
+@keyframes qb-save-bounce {
+	0% { transform: scale(1); }
+	50% { transform: scale(1.2); }
+	100% { transform: scale(1); }
+}
+
+.qb-save-btn {
+	background: var(--interactive-accent) !important;
+	color: white !important;
+	transition: all 0.2s ease;
+}
+
+.qb-save-btn:hover:not(:disabled) {
+	filter: brightness(1.1);
+}
+
+.qb-save-btn:disabled {
+	background: var(--background-modifier-border) !important;
+	color: var(--text-muted) !important;
+	cursor: not-allowed !important;
+	opacity: 0.6;
+}

@@ -1,0 +1,1000 @@
+
+  display: block;
+  width: max-content;
+  min-width: 100%;
+  height: 1em;
+
+  white-space: pre;
+  pointer-events: none;
+
+  font-family: inherit;
+  font-size: inherit;
+  font-style: inherit;
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: 0;
+  text-rendering: optimizeSpeed;
+  font-kerning: none;
+  font-variant-ligatures: none;
+  font-feature-settings: "liga" 0, "calt" 0;
+  font-synthesis: none;
+
+  transform: translate3d(0, 0, 0);
+  opacity: 0;
+  visibility: hidden;
+}
+
+.quiz-command-shell.quiz-terminal-variant-powershell[data-ps-render="1"] .quiz-command-render,
+.quiz-command-shell[data-terminal-variant="powershell"][data-ps-render="1"] .quiz-command-render{
+  opacity: 1;
+  visibility: visible;
+}
+
+.quiz-command-shell.quiz-terminal-variant-powershell .quiz-command-render-leading,
+.quiz-command-shell.quiz-terminal-variant-powershell .quiz-command-render-command,
+.quiz-command-shell.quiz-terminal-variant-powershell .quiz-command-render-rest,
+.quiz-command-shell[data-terminal-variant="powershell"] .quiz-command-render-leading,
+.quiz-command-shell[data-terminal-variant="powershell"] .quiz-command-render-command,
+.quiz-command-shell[data-terminal-variant="powershell"] .quiz-command-render-rest{
+  display: inline;
+  white-space: pre;
+}
+
+.quiz-command-shell.quiz-terminal-variant-powershell .quiz-command-render-leading,
+.quiz-command-shell.quiz-terminal-variant-powershell .quiz-command-render-rest,
+.quiz-command-shell[data-terminal-variant="powershell"] .quiz-command-render-leading,
+.quiz-command-shell[data-terminal-variant="powershell"] .quiz-command-render-rest{
+  color: var(--cmd-fg-rest) !important;
+}
+
+.quiz-command-shell.quiz-terminal-variant-powershell .quiz-command-render-command,
+.quiz-command-shell[data-terminal-variant="powershell"] .quiz-command-render-command{
+  color: var(--cmd-fg-command) !important;
+}
+
+/* --- Textarea réelle : visible en fallback, masquée quand le rendu segmenté est prêt --- */
+.quiz-command-shell.quiz-terminal-variant-powershell .quiz-textarea.quiz-textarea-command,
+.quiz-command-shell[data-terminal-variant="powershell"] .quiz-textarea.quiz-textarea-command,
+.quiz-textarea.quiz-textarea-command[data-terminal-variant="powershell"]{
+  position: relative;
+  z-index: 2;
+  background: transparent !important;
+  color: var(--cmd-fg-rest) !important;
+  -webkit-text-fill-color: currentColor !important;
+  text-shadow: none !important;
+}
+
+/* Quand le rendu segmenté est prêt, on masque le texte brut du textarea */
+.quiz-command-shell.quiz-terminal-variant-powershell[data-ps-render="1"] .quiz-textarea.quiz-textarea-command,
+.quiz-command-shell[data-terminal-variant="powershell"][data-ps-render="1"] .quiz-textarea.quiz-textarea-command{
+  color: transparent !important;
+  -webkit-text-fill-color: transparent !important;
+  text-shadow: none !important;
+}
+
+.quiz-command-shell.quiz-terminal-variant-powershell .quiz-textarea.quiz-textarea-command::placeholder,
+.quiz-command-shell[data-terminal-variant="powershell"] .quiz-textarea.quiz-textarea-command::placeholder,
+.quiz-textarea.quiz-textarea-command[data-terminal-variant="powershell"]::placeholder{
+  color: rgba(242, 242, 242, 0.42);
+}
+
+/* --- Sélection & caret --- */
+.quiz-command-shell.quiz-terminal-variant-powershell .quiz-command-selection,
+.quiz-command-shell.quiz-terminal-variant-powershell .quiz-command-inline-char,
+.quiz-command-shell[data-terminal-variant="powershell"] .quiz-command-selection,
+.quiz-command-shell[data-terminal-variant="powershell"] .quiz-command-inline-char{
+  background: var(--cmd-caret-bg);
+  color: var(--cmd-caret-inline-fg);
+}
+
+.quiz-command-shell.quiz-terminal-variant-powershell .quiz-command-caret,
+.quiz-command-shell[data-terminal-variant="powershell"] .quiz-command-caret{
+  background: var(--cmd-caret-bg);
+}
+
+/* =========================================================
+   Thème clair — PowerShell reste identique
+   ========================================================= */
+.theme-light .quiz-command-shell.quiz-terminal-variant-powershell,
+.theme-light .quiz-command-shell[data-terminal-variant="powershell"]{
+  background: #012456 !important;
+  border-color: #11396f !important;
+  box-shadow: none !important;
+}
+
+.theme-light .quiz-command-shell.quiz-terminal-variant-powershell:hover,
+.theme-light .quiz-command-shell.quiz-terminal-variant-powershell:focus-within,
+.theme-light .quiz-command-shell[data-terminal-variant="powershell"]:hover,
+.theme-light .quiz-command-shell[data-terminal-variant="powershell"]:focus-within{
+  border-color: #1f4c88 !important;
+  box-shadow: none !important;
+}
+
+
+/* =========================================================
+   25) QUESTION TEXTE COMMANDE — BASH
+   Colorimétrie voulue :
+   - username@hostname : vert
+   - :                 : clair
+   - chemin (~ ou /)   : bleu
+   - $                 : clair
+   - texte tapé        : clair
+   - fond              : rgb(23, 20, 33)
+   ========================================================= */
+
+.quiz-command-shell.quiz-terminal-variant-bash,
+.quiz-command-shell[data-terminal-variant="bash"]{
+  --cmd-bg: rgb(23, 20, 33);                 /* fond du terminal bash */
+  --cmd-fg: #f3f3f3;                         /* couleur du texte tapé */
+
+  --cmd-fg-prompt-userhost: #258143;         /* couleur de username@hostname */
+  --cmd-fg-prompt-separator: #f3f3f3;        /* couleur du : */
+  --cmd-fg-prompt-path: #124788;             /* couleur du chemin (~) */
+  --cmd-fg-prompt-symbol: #f3f3f3;           /* couleur du $ */
+
+  --cmd-caret-bg: #f3f3f3;                   /* couleur du curseur bloc */
+  --cmd-caret-inline-fg: rgb(23, 20, 33);    /* couleur du caractère sous le curseur bloc */
+
+  --cmd-shell-radius: 0.533em;               /* arrondi des coins du terminal */
+  --cmd-shell-pad-top: 0.80em;               /* espace intérieur en haut */
+  --cmd-shell-pad-bottom: 0.82em;            /* espace intérieur en bas */
+  --cmd-shell-pad-left: 0.85em;              /* espace intérieur à gauche */
+  --cmd-shell-pad-right: 0.95em;             /* espace intérieur à droite */
+
+  --cmd-caret-width-end: 0.92ch;             /* largeur du curseur en fin de ligne */
+  --cmd-caret-height-end: 1.1em;             /* hauteur du curseur en fin de ligne */
+  --cmd-caret-bottom-end: 0em;               /* position verticale du curseur en fin de ligne */
+
+  --cmd-caret-width-inline: 0.92ch;          /* largeur du curseur au milieu du texte */
+  --cmd-caret-height-inline: 1.1em;          /* hauteur du curseur au milieu du texte */
+  --cmd-caret-bottom-inline: 0em;            /* position verticale du curseur au milieu du texte */
+
+  border: 1px solid #2b2740;               /* bordure du terminal */
+  background: var(--cmd-bg);                 /* applique la couleur de fond */
+  color: var(--cmd-fg);                      /* applique la couleur du texte */
+
+  box-shadow: none !important;               /* supprime les ombres */
+  transition: none !important;               /* supprime les transitions visuelles */
+}
+
+.quiz-command-shell.quiz-terminal-variant-bash:hover,
+.quiz-command-shell.quiz-terminal-variant-bash:focus-within,
+.quiz-command-shell[data-terminal-variant="bash"]:hover,
+.quiz-command-shell[data-terminal-variant="bash"]:focus-within{
+  border-color: #3a3348;
+  box-shadow: none !important;
+}
+
+/* États correct / wrong */
+.quiz-command-shell.quiz-terminal-variant-bash.correct,
+.quiz-command-shell[data-terminal-variant="bash"].correct{
+  border-color: var(--quiz-success) !important;
+  box-shadow:
+    0 0 0 1.5px var(--quiz-success-ring-20),
+    0 0 14px color-mix(in srgb, var(--quiz-success) 14%, transparent) !important;
+}
+
+.quiz-command-shell.quiz-terminal-variant-bash.wrong,
+.quiz-command-shell[data-terminal-variant="bash"].wrong{
+  border-color: var(--quiz-danger) !important;
+  box-shadow:
+    0 0 0 1.5px var(--quiz-danger-ring-20),
+    0 0 14px color-mix(in srgb, var(--quiz-danger) 14%, transparent) !important;
+}
+
+/* Préfixe bash découpé */
+.quiz-command-shell.quiz-terminal-variant-bash .quiz-command-prefix,
+.quiz-command-shell[data-terminal-variant="bash"] .quiz-command-prefix{
+  display: inline-flex;
+  align-items: baseline;
+  flex: 0 0 auto;
+  margin-right: 0;
+  white-space: pre;
+  user-select: none;
+  opacity: 1 !important;
+  color: inherit;
+  font: inherit;
+  line-height: 1;
+}
+
+.quiz-command-shell.quiz-terminal-variant-bash .quiz-bash-prefix-userhost,
+.quiz-command-shell[data-terminal-variant="bash"] .quiz-bash-prefix-userhost{
+  color: var(--cmd-fg-prompt-userhost) !important;
+}
+
+.quiz-command-shell.quiz-terminal-variant-bash .quiz-bash-prefix-colon,
+.quiz-command-shell[data-terminal-variant="bash"] .quiz-bash-prefix-colon{
+  color: var(--cmd-fg-prompt-separator) !important;
+}
+
+.quiz-command-shell.quiz-terminal-variant-bash .quiz-bash-prefix-path,
+.quiz-command-shell[data-terminal-variant="bash"] .quiz-bash-prefix-path{
+  color: var(--cmd-fg-prompt-path) !important;
+}
+
+.quiz-command-shell.quiz-terminal-variant-bash .quiz-bash-prefix-dollar,
+.quiz-command-shell[data-terminal-variant="bash"] .quiz-bash-prefix-dollar{
+  color: var(--cmd-fg-prompt-symbol) !important;
+}
+
+/* Texte tapé */
+.quiz-command-shell.quiz-terminal-variant-bash .quiz-textarea.quiz-textarea-command,
+.quiz-command-shell[data-terminal-variant="bash"] .quiz-textarea.quiz-textarea-command,
+.quiz-textarea.quiz-textarea-command[data-terminal-variant="bash"]{
+  background: transparent !important;
+  color: var(--cmd-fg) !important;
+  -webkit-text-fill-color: currentColor !important;
+  text-shadow: none !important;
+}
+
+/* Placeholder */
+.quiz-command-shell.quiz-terminal-variant-bash .quiz-textarea.quiz-textarea-command::placeholder,
+.quiz-command-shell[data-terminal-variant="bash"] .quiz-textarea.quiz-textarea-command::placeholder,
+.quiz-textarea.quiz-textarea-command[data-terminal-variant="bash"]::placeholder{
+  color: rgba(238, 238, 236, 0.42);
+}
+
+/* Sélection et caractère inline */
+.quiz-command-shell.quiz-terminal-variant-bash .quiz-command-selection,
+.quiz-command-shell.quiz-terminal-variant-bash .quiz-command-inline-char,
+.quiz-command-shell[data-terminal-variant="bash"] .quiz-command-selection,
+.quiz-command-shell[data-terminal-variant="bash"] .quiz-command-inline-char{
+  background: var(--cmd-caret-bg);
+  color: var(--cmd-caret-inline-fg);
+}
+
+/* Curseur */
+.quiz-command-shell.quiz-terminal-variant-bash .quiz-command-caret,
+.quiz-command-shell[data-terminal-variant="bash"] .quiz-command-caret{
+  background: var(--cmd-caret-bg);
+  border-radius: 0 !important;
+}
+
+/* Thème clair : on garde exactement le même rendu terminal */
+.theme-light .quiz-command-shell.quiz-terminal-variant-bash,
+.theme-light .quiz-command-shell[data-terminal-variant="bash"]{
+  background: rgb(23, 20, 33) !important;
+  border-color: #2f2a3a !important;
+  box-shadow: none !important;
+}
+
+.theme-light .quiz-command-shell.quiz-terminal-variant-bash:hover,
+.theme-light .quiz-command-shell.quiz-terminal-variant-bash:focus-within,
+.theme-light .quiz-command-shell[data-terminal-variant="bash"]:hover,
+.theme-light .quiz-command-shell[data-terminal-variant="bash"]:focus-within{
+  border-color: #3a3348 !important;
+  box-shadow: none !important;
+}
+
+/* BASH — harmoniser l'épaisseur visuelle prompt vs texte saisi */
+.quiz-command-shell.quiz-terminal-variant-bash,
+.quiz-command-shell[data-terminal-variant="bash"]{
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Option A (recommandé) : léger boost pour que le vert paraisse "aussi épais" */
+.quiz-command-shell.quiz-terminal-variant-bash .quiz-command-prefix,
+.quiz-command-shell[data-terminal-variant="bash"] .quiz-command-prefix{
+  font-weight: 500;
+}
+
+/* On aligne aussi la saisie sur le même poids, pour qu'il n'y ait aucune différence */
+.quiz-command-shell.quiz-terminal-variant-bash .quiz-textarea.quiz-textarea-command,
+.quiz-command-shell[data-terminal-variant="bash"] .quiz-textarea.quiz-textarea-command{
+  font-weight: 500;
+}
+
+/* Police + poids unifiés (bash) */
+.quiz-command-shell.quiz-terminal-variant-bash,
+.quiz-command-shell[data-terminal-variant="bash"]{
+  /* Police “terminal-like” (Ubuntu en 1er si dispo) */
+  font-family:
+    "Ubuntu Mono",
+    "DejaVu Sans Mono",
+    "JetBrains Mono",
+    "Cascadia Mono",
+    "Liberation Mono",
+    "Consolas",
+    "Courier New",
+    monospace;
+
+  /* Poids unifié pour que le prompt ne paraisse pas plus fin */
+  font-weight: 500;
+
+  /* Rendu stable (évite certaines différences visuelles prompt vs textarea) */
+  font-variant-ligatures: none;
+  font-feature-settings: "liga" 0, "calt" 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Force le prompt et la saisie à hériter EXACTEMENT la même typo/poids */
+.quiz-command-shell.quiz-terminal-variant-bash .quiz-command-prefix,
+.quiz-command-shell[data-terminal-variant="bash"] .quiz-command-prefix,
+.quiz-command-shell.quiz-terminal-variant-bash .quiz-textarea.quiz-textarea-command,
+.quiz-command-shell[data-terminal-variant="bash"] .quiz-textarea.quiz-textarea-command{
+  font: inherit;
+  font-weight: inherit;
+}
+
+/* =========================================================
+   QUIZ-BLOCKS
+   ========================================================= */
+
+
+.quiz-blocks-settings-code-block {
+	margin-top: 8px;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 12px;
+	background: var(--code-background);
+	overflow: hidden;
+}
+
+.quiz-blocks-settings-code-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 8px 10px;
+	border-bottom: 1px solid var(--background-modifier-border);
+	background: color-mix(in srgb, var(--code-background) 88%, black 12%);
+}
+
+.quiz-blocks-settings-code-lang {
+	font-size: 12px;
+	font-weight: 600;
+	color: var(--text-muted);
+	letter-spacing: 0.02em;
+	text-transform: lowercase;
+}
+
+.quiz-blocks-settings-copy-btn {
+	flex-shrink: 0;
+	width: 28px;
+	height: 28px;
+	padding: 0;
+	color: var(--text-muted);
+}
+
+.quiz-blocks-settings-copy-btn:hover {
+	color: var(--text-normal);
+	background: var(--background-modifier-hover);
+}
+
+.quiz-blocks-settings-code-pre {
+	margin: 0;
+	padding: 14px 16px 16px 16px;
+	overflow-x: auto;
+	background: var(--code-background);
+	font-family: var(--font-monospace);
+	font-size: 13px;
+	line-height: 1.6;
+	white-space: pre;
+}
+
+.quiz-blocks-settings-code-pre code {
+	display: block;
+	font-family: inherit;
+	font-size: inherit;
+	line-height: inherit;
+	color: var(--text-normal);
+	background: transparent;
+	padding: 0;
+	white-space: pre;
+}
+
+/* =========================================================
+   QUIZ BUILDER — GUI
+   ========================================================= */
+
+/* ─── Root ─── */
+.qb-root {
+	--qb-header-pad: 0.75em;
+	--qb-gap: 0.75em;
+	--qb-radius: 0.5em;
+	--qb-sidebar-w: 14em;
+	--qb-editor-w: 22em;
+	--qb-code-w: 18em;
+
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+	overflow: hidden;
+	font-family: var(--font-interface);
+	background: var(--background-primary);
+	color: var(--text-normal);
+	font-size: 14px;
+}
+
+/* ─── Header ─── */
+.qb-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: var(--qb-header-pad);
+	border-bottom: 1px solid var(--background-modifier-border);
+	background: var(--background-secondary);
+	flex-shrink: 0;
+	gap: var(--qb-gap);
+}
+
+.qb-brand {
+	display: flex;
+	align-items: center;
+	gap: 0.75em;
+	min-width: 0;
+}
+
+.qb-logo {
+	width: 2em;
+	height: 2em;
+	border-radius: var(--qb-radius);
+	background: linear-gradient(135deg, var(--interactive-accent), var(--interactive-accent-hover));
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	color: #fff;
+	font-weight: 800;
+	font-size: 0.9em;
+	flex-shrink: 0;
+	box-shadow: 0 0.125em 0.5em rgba(0,0,0,0.15);
+}
+
+.qb-title-group {
+	display: flex;
+	flex-direction: column;
+	gap: 0.1em;
+	min-width: 0;
+}
+
+.qb-title { font-size: 0.95em; font-weight: 700; line-height: 1.2; }
+.qb-sub { font-size: 0.7em; color: var(--text-muted); line-height: 1.2; }
+
+/* File name display - highlighted when imported */
+.qb-file-name.has-file {
+	color: var(--interactive-accent);
+	font-weight: 600;
+	font-size: 0.85em;
+	letter-spacing: -0.3px;
+	display: flex;
+	align-items: center;
+	gap: 0.3em;
+}
+
+.qb-file-name.has-file::before {
+	content: "";
+	width: 0.5em;
+	height: 0.5em;
+	background: var(--interactive-accent);
+	border-radius: 50%;
+	display: inline-block;
+	box-shadow: 0 0 0 2px rgba(var(--interactive-accent-rgb), 0.2);
+}
+
+/* ─── Panel Toggles ─── */
+.qb-toggles {
+	display: flex;
+	gap: 0.25em;
+	background: var(--background-primary-alt);
+	border-radius: var(--qb-radius);
+	padding: 0.2em;
+}
+
+.qb-toggle {
+	display: flex;
+	align-items: center;
+	gap: 0.5em;
+	padding: 0.35em 0.6em;
+	border-radius: calc(var(--qb-radius) - 0.1em);
+	border: none;
+	font-size: 0.8em;
+	font-weight: 600;
+	cursor: pointer;
+	background: transparent;
+	color: var(--text-muted);
+	transition: all .15s;
+	white-space: nowrap;
+}
+
+.qb-toggle:hover { color: var(--text-normal); background: rgba(255,255,255,0.05); }
+.qb-toggle.active { background: var(--interactive-accent); color: #fff; box-shadow: 0 0.0625em 0.1875em rgba(0,0,0,0.2); }
+.qb-toggle-icon {
+	font-size: 1em;
+	margin-right: 0.3em;
+}
+
+.qb-actions { display: flex; gap: 0.4em; }
+
+/* ─── Buttons ─── */
+.qb-btn {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.4em;
+	padding: 0.35em 0.65em;
+	border: none;
+	border-radius: var(--qb-radius);
+	font-size: 0.8em;
+	font-weight: 600;
+	cursor: pointer;
+	transition: all .15s;
+	font-family: var(--font-interface);
+}
+
+.qb-btn-accent { background: var(--interactive-accent); color: #fff; border-radius: 10px; padding: 8px 20px; }
+.qb-btn-accent:hover { filter: brightness(1.15); }
+.qb-btn-ok { background: #22c55e !important; color: #fff; }
+.qb-btn-sm { padding: 0.25em 0.5em; font-size: 0.75em; }
+
+.qb-btn-icon {
+	width: 1.75em;
+	height: 1.75em;
+	padding: 0;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	background: transparent;
+	color: var(--text-muted);
+	border: none;
+	border-radius: calc(var(--qb-radius) - 0.1em);
+	cursor: pointer;
+	transition: all .12s;
+	font-family: var(--font-interface);
+}
+
+.qb-btn-icon:hover { color: var(--text-normal); background: var(--background-primary-alt); }
+.qb-btn-danger:hover { color: #ef4444; }
+
+/* ─── Main Layout ─── */
+.qb-main {
+	flex: 1;
+	display: flex;
+	flex-direction: row;
+	overflow: hidden;
+	min-height: 0;
+}
+
+/* ─── Resizers (VS Code style) ─── */
+.qb-resizer {
+	width: 6px;
+	background: transparent;
+	cursor: ew-resize;
+	flex-shrink: 0;
+	position: relative;
+	z-index: 100;
+	pointer-events: auto;
+}
+
+/* La ligne visible au centre - ultra smooth */
+.qb-resizer::before {
+	content: '';
+	position: absolute;
+	top: 0;
+	left: 50%;
+	transform: translateX(-50%);
+	width: 1px;
+	height: 100%;
+	background: var(--background-modifier-border);
+	transition:
+		background-color 80ms cubic-bezier(0.4, 0, 0.2, 1),
+		box-shadow 80ms cubic-bezier(0.4, 0, 0.2, 1),
+		width 60ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Hover state - immediate visual feedback */
+.qb-resizer:hover::before {
+	background: var(--interactive-accent, #0ea5e9);
+	box-shadow:
+		0 0 0 1px var(--interactive-accent, #0ea5e9),
+		0 0 8px color-mix(in srgb, var(--interactive-accent, #0ea5e9) 60%, transparent);
+	width: 2px;
+}
+
+/* Active/Dragging state */
+.qb-resizer.resizing::before,
+.qb-resizer:active::before {
+	background: var(--interactive-accent, #0ea5e9);
+	box-shadow:
+		0 0 0 1.5px var(--interactive-accent, #0ea5e9),
+		0 0 12px color-mix(in srgb, var(--interactive-accent, #0ea5e9) 80%, transparent);
+	width: 2px;
+}
+
+.qb-resizer.resizing {
+	cursor: ew-resize;
+	user-select: none;
+	/* Ensure smooth cursor during drag */
+	pointer-events: auto;
+}
+
+.qb-resizer.qb-hidden { display: none !important; }
+
+/* Panel widths controlled by CSS variables - scoped to qb-main for per-instance values */
+/* VS Code style: completely free resizing, no min/max constraints */
+/* Smooth transitions for panel width changes */
+.qb-main .qb-sidebar,
+.qb-main .qb-editor,
+.qb-main .qb-code {
+	transition: width 120ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Disable transitions during active drag for 60fps performance */
+.qb-main.is-resizing .qb-sidebar,
+.qb-main.is-resizing .qb-editor,
+.qb-main.is-resizing .qb-code {
+	transition: none !important;
+}
+
+.qb-main .qb-sidebar {
+	width: var(--qb-sidebar-w, 320px);
+	min-width: 0;
+	max-width: none;
+	flex-shrink: 0;
+}
+
+.qb-main .qb-editor {
+	width: var(--qb-editor-w, 480px);
+	min-width: 0;
+	max-width: none;
+	flex-shrink: 0;
+}
+
+.qb-main .qb-preview {
+	flex: 1;
+	min-width: 0;
+	/* Preview shrinks when editor grows */
+	flex-shrink: 1;
+}
+
+.qb-main .qb-code {
+	width: var(--qb-code-w, 288px);
+	min-width: 0;
+	max-width: none;
+	flex-shrink: 0;
+}
+
+/* Hide panels when width is 0 (VS Code style collapse) - use classes set by syncPanels */
+.qb-main .qb-sidebar.qb-hidden,
+.qb-main .qb-editor.qb-hidden,
+.qb-main .qb-code.qb-hidden {
+	width: 0 !important;
+	overflow: hidden;
+}
+
+/* Also handle inline 0px width set by resize handlers */
+.qb-main .qb-sidebar[style*="--qb-sidebar-w: 0px"],
+.qb-main .qb-sidebar[style*="--qb-sidebar-w:0px"] {
+	width: 0 !important;
+	overflow: hidden;
+}
+
+.qb-main .qb-editor[style*="--qb-editor-w: 0px"],
+.qb-main .qb-editor[style*="--qb-editor-w:0px"] {
+	width: 0 !important;
+	overflow: hidden;
+}
+
+.qb-main .qb-code[style*="--qb-code-w: 0px"],
+.qb-main .qb-code[style*="--qb-code-w:0px"] {
+	width: 0 !important;
+	overflow: hidden;
+}
+
+/* Hide resizers when adjacent panel is hidden */
+.qb-panel.qb-hidden + .qb-resizer,
+.qb-resizer:has(+ .qb-panel.qb-hidden) {
+	display: none;
+}
+
+/* ─── Legacy grid layout (kept for reference, overridden by flex above) ─── */
+/* .qb-main {
+	flex: 1;
+	display: grid;
+	grid-template-columns: var(--qb-sidebar-w) 1fr var(--qb-code-w);
+	grid-template-rows: 1fr;
+	gap: 0;
+	overflow: hidden;
+	min-height: 0;
+} */
+
+/* ─── Improved Layout Containers ─── */
+.qb-editor-container {
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+}
+
+.qb-editor-content {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	overflow: hidden;
+}
+
+.qb-preview-container {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	min-height: 0;
+	border-left: 1px solid var(--background-modifier-border);
+	border-right: 1px solid var(--background-modifier-border);
+	background: var(--background-primary);
+}
+
+.qb-preview-wrapper {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	overflow: hidden;
+	min-height: 0;
+}
+
+.qb-panel-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 0.5em 0.75em;
+	border-bottom: 1px solid var(--background-modifier-border);
+	background: var(--background-secondary);
+	flex-shrink: 0;
+	font-weight: 600;
+	font-size: 0.85em;
+	color: var(--text-normal);
+}
+
+.qb-panel-head-icon {
+	font-size: 1em;
+	margin-right: 0.5em;
+	color: var(--interactive-accent);
+}
+
+.qb-panel-actions {
+	display: flex;
+	gap: 0.25em;
+}
+
+.qb-panel { display: flex; flex-direction: column; overflow: hidden; min-width: 0; min-height: 0; }
+.qb-panel.qb-hidden { display: none !important; }
+
+/* ─── Sidebar ─── */
+.qb-sidebar {
+	background: var(--background-secondary);
+	display: flex;
+	flex-direction: column;
+}
+
+.qb-sidebar-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 0.5em 0.6em;
+	border-bottom: 1px solid var(--background-modifier-border);
+	font-size: 0.8em;
+	font-weight: 700;
+	color: var(--text-normal);
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+}
+
+.qb-sidebar-list { flex: 1; overflow-y: auto; }
+
+.qb-q-item {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	padding: 12px;
+	cursor: pointer;
+	background: var(--background-secondary);
+	border-radius: 10px;
+	border: 2px solid transparent;
+	margin: 4px 8px;
+	transition: all .12s;
+	font-size: 0.9em;
+}
+
+.qb-q-item:hover:not(.active) { background: var(--background-primary-alt); }
+.qb-q-item.active { background: rgba(var(--interactive-accent-rgb), 0.06); border-color: var(--interactive-accent); }
+
+.qb-q-icon {
+	width: 1.6em;
+	height: 1.6em;
+	border-radius: 0.25em;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 0.7em;
+	font-weight: 700;
+	background: var(--background-primary-alt);
+	color: var(--text-muted);
+	flex-shrink: 0;
+}
+
+.qb-q-item.active .qb-q-icon { background: rgba(var(--interactive-accent-rgb), 0.15); color: var(--interactive-accent); }
+.qb-q-text { flex: 1; min-width: 0; }
+.qb-q-title { font-size: 0.85em; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.qb-q-type { font-size: 0.85em; color: var(--text-muted); }
+.qb-q-preview { font-size: 0.75em; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+.qb-q-actions { display: none; gap: 0.125em; }
+.qb-q-item:hover .qb-q-actions { display: flex; }
+
+/* ─── Editor ─── */
+.qb-editor {
+	overflow-y: auto;
+}
+
+.qb-editor-inner {
+	margin: 0;
+	padding: 0.75em 0.9em 1.5em;
+}
+
+.qb-editor-inner > * + * { margin-top: 0.75em; }
+
+/* ─── Preview ─ */
+.qb-preview {
+	overflow-y: auto;
+	min-width: 0;
+}
+
+.qb-preview-body {
+	padding: 1em;
+	display: flex;
+	flex-direction: column;
+	gap: 1em;
+}
+
+/* ─── Code ── */
+.qb-code {
+	background: var(--background-secondary);
+	flex-shrink: 0;
+	display: flex;
+	flex-direction: column;
+}
+
+.qb-code-output {
+	flex: 1;
+	overflow: auto;
+	padding: 0.625em;
+	font-family: var(--font-monospace);
+	font-size: 0.75em;
+	line-height: 1.55;
+	white-space: pre-wrap;
+	word-break: break-all;
+	user-select: all;
+	tab-size: 2;
+}
+
+/* ─── Form Elements ─── */
+.qb-field-label {
+	display: block;
+	font-size: 0.75em;
+	font-weight: 700;
+	color: var(--text-muted);
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	margin-bottom: 0.3em;
+}
+
+.qb-field-input,
+.qb-field-textarea,
+.qb-field-select {
+	width: 100%;
+	background: var(--background-primary);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 8px;
+	padding: 10px 14px;
+	color: var(--text-normal);
+	font-size: 0.9em;
+	font-family: var(--font-interface);
+	transition: all .15s;
+	box-sizing: border-box;
+}
+
+.qb-field-input:focus,
+.qb-field-textarea:focus,
+.qb-field-select:focus {
+	outline: none;
+	border-color: var(--interactive-accent);
+	box-shadow: 0 0 0 0.1875em rgba(var(--interactive-accent-rgb), 0.12);
+}
+
+.qb-field-input::placeholder,
+.qb-field-textarea::placeholder { color: var(--text-faint); }
+
+.qb-field-textarea { min-height: 4em; resize: vertical; }
+.qb-field-sm { padding: 0.3em 0.5em; font-size: 0.8em; }
+
+/* ─── Section Box ── */
+.qb-section-box {
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 10px;
+	background: var(--background-secondary);
+	padding: 0.75em;
+}
+
+.qb-section-box > * + * { margin-top: 0.625em; }
+
+/* ─── Type Badge ── */
+.qb-type-badge {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.4em;
+	padding: 0.4em 0.6em;
+	border-radius: 10px;
+	background: var(--background-secondary);
+	border: 1px solid var(--background-modifier-border);
+}
+
+.qb-type-icon {
+	width: 1.4em;
+	height: 1.4em;
+	border-radius: 0.25em;
+	background: var(--background-primary-alt);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	color: var(--text-muted);
+	font-size: 0.8em;
+}
+
+.qb-type-label { font-size: 0.75em; font-weight: 600; }
+.qb-type-desc { font-size: 0.65em; color: var(--text-muted); line-height: 1.3; }
+
+/* ─── Array Editor ── */
+.qb-arr-row {
+	display: flex;
+	align-items: center;
+	gap: 0.4em;
+	margin-bottom: 6px;
+	padding: 8px 12px;
+	background: var(--background-secondary);
+	border: 1.5px solid var(--background-modifier-border);
+	border-radius: 8px;
+}
+
+.qb-arr-row .qb-field-input { flex: 1; padding: 0.3em 0.5em; font-size: 0.8em; }
+
+.qb-arr-idx {
+	font-size: 0.7em;
+	color: var(--text-muted);
+	font-weight: 600;
+	min-width: 3em;
+}
+
+.qb-arr-add {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.3em;
+	padding: 8px 14px;
+	border: 1.5px dashed var(--background-modifier-border);
+	border-radius: 8px;
+	background: transparent;
+	color: var(--text-muted);
+	font-size: 0.75em;
+	font-weight: 600;
+	cursor: pointer;
+	transition: all .15s;
+	width: 100%;
+	margin-top: 4px;
+}
+
+.qb-arr-add:hover { border-color: var(--interactive-accent); color: var(--interactive-accent); }
+.qb-arr-add-icon { font-size: 1em; }
+
+/* ─── Answer Cards (StudySmarter style) ── */
+.qb-answer-cards {
+	display: flex;
+	flex-direction: column;
+	margin-top: 16px;
+}
+
+.qb-answer-card {
+	width: 100%;
+	box-sizing: border-box;
+	border-radius: 12px;
+	padding: 18px 22px;
+	margin-bottom: 14px;
+	position: relative;
+	transition: all 0.15s;
+}
+
+.qb-answer-correct {

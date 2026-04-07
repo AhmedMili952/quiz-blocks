@@ -3,26 +3,22 @@
    =========================================================
 
    Ce fichier importe tous les styles nécessaires pour le plugin Quiz Blocks.
-   Les styles sont organisés en fichiers séparés pour une meilleure maintenabilité.
+   Les styles sont organisés en 7 fichiers séparés pour une meilleure maintenabilité.
 
    Structure :
-   - base.css : Variables CSS et styles de base
-   - tokens.css : Couleurs, espacements et autres tokens de design
-   - animations.css : Animations et transitions
-   - layout.css : Disposition principale de l'interface
-   - header.css : En-tête de l'éditeur
-   - panels.css : Panneaux de l'éditeur (sidebar, éditeur, aperçu, code)
-   - buttons.css : Styles des boutons
-   - forms.css : Éléments de formulaire
-   - editor.css : Styles spécifiques à l'éditeur
-   - sidebar.css : Styles de la barre latérale
-   - preview.css : Styles de l'aperçu
-   - code.css : Styles du panneau de code
-   - quiz-components.css : Composants spécifiques aux quiz
-   - modals.css : Styles des modales
-   - exam-mode.css : Styles du mode examen
-   - utilities.css : Classes utilitaires
-   - icons.css : Styles des icônes
+   - part1.css : Lignes 1-1000
+   - part2.css : Lignes 1001-2000
+   - part3.css : Lignes 2001-3000
+   - part4.css : Lignes 3001-4000
+   - part5.css : Lignes 4001-5000
+   - part6.css : Lignes 5001-6000
+   - part7.css : Lignes 6001-fin
    ========================================================= */
 
-@import url('./css/index.css');
+@import url('./css/part1.css');
+@import url('./css/part2.css');
+@import url('./css/part3.css');
+@import url('./css/part4.css');
+@import url('./css/part5.css');
+@import url('./css/part6.css');
+@import url('./css/part7.css');
