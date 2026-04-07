@@ -9,7 +9,9 @@
       "Bash(\"/c/Program Files/Oracle/VirtualBox/VBoxManage.exe\" guestproperty enumerate \"CLI-LINUX-01\")",
       "WebFetch(domain:github.com)",
       "WebSearch",
-      "Bash(wc -l \"c:/Obsidian/Fichiers/Quiz Blocks Dev/src/engine/\"*.js)"
+      "Bash(wc -l \"c:/Obsidian/Fichiers/Quiz Blocks Dev/src/engine/\"*.js)",
+      "Bash(node esbuild.config.mjs production)",
+      "Read(//c/Obsidian/.obsidian/plugins/quiz-blocks/**)"
     ]
   }
 }

@@ -1,27 +1,31 @@
 import esbuild from "esbuild";
 import fs from "fs";
-import path from "path"; 
+import path from "path";
 
 const production = process.argv.includes("production");
 const watch = !production;
 
 const vaultPluginDir = "C:/Obsidian/.obsidian/plugins/quiz-blocks";
 
-const copyStaticFiles = () => {
+function copyManifest() {
 	fs.mkdirSync(vaultPluginDir, { recursive: true });
-
 	fs.copyFileSync(
 		path.resolve("src/assets/manifest.json"),
 		path.join(vaultPluginDir, "manifest.json")
 	);
+	console.log("manifest.json copié.");
+}
 
-	fs.copyFileSync(
-		path.resolve("src/assets/styles.css"),
-		path.join(vaultPluginDir, "styles.css")
-	);
-
-	console.log("manifest.json et styles.css copiés.");
-};
+async function bundleCSS() {
+	await esbuild.build({
+		entryPoints: ["src/assets/css/index.css"],
+		outfile: path.join(vaultPluginDir, "styles.css"),
+		bundle: true,
+		minify: production,
+		logLevel: "info",
+	});
+	console.log("styles.css bundlé (tous les @import inlinés).");
+}
 
 const ctx = await esbuild.context({
 	entryPoints: ["src/main.js"],
@@ -41,24 +45,38 @@ const ctx = await esbuild.context({
 if (watch) {
 	await ctx.watch();
 
-	copyStaticFiles();
+	copyManifest();
+	await bundleCSS();
 
-	fs.watch(path.resolve("src/assets"), { persistent: true }, (_eventType, filename) => {
+	let cssRebuildTimer = null;
+
+	fs.watch(path.resolve("src/assets"), { recursive: true, persistent: true }, (_eventType, filename) => {
 		if (!filename) return;
 
-		if (filename === "manifest.json" || filename === "styles.css") {
+		if (filename === "manifest.json") {
 			try {
-				copyStaticFiles();
+				copyManifest();
 			} catch (error) {
-				console.error("Erreur pendant la copie des fichiers statiques :", error);
+				console.error("Erreur copie manifest :", error);
 			}
+		} else if (filename.endsWith(".css")) {
+			// Debounce : éviter les rebuilds multiples sur des saves rapides
+			if (cssRebuildTimer) clearTimeout(cssRebuildTimer);
+			cssRebuildTimer = setTimeout(async () => {
+				try {
+					await bundleCSS();
+				} catch (error) {
+					console.error("Erreur bundle CSS :", error);
+				}
+			}, 80);
 		}
 	});
 
 	console.log("Build en mode watch démarré.");
 } else {
 	await ctx.rebuild();
-	copyStaticFiles();
+	copyManifest();
+	await bundleCSS();
 	await ctx.dispose();
 	console.log("Build terminé.");
 }
