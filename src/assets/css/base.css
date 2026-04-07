@@ -1,0 +1,107 @@
+/* =========================================================
+   0) TOKENS
+   ========================================================= */
+
+body{
+  --quiz-primary: #0ea5e9;
+  --quiz-primary-hover: #0284c7;
+
+  --quiz-success: #16a34a;
+  --quiz-success-hover: #15803d;
+
+  --quiz-danger: #dc2626;
+  --quiz-danger-hover: #b91c1c;
+
+  --quiz-hint: #f59e0b;
+  --quiz-hint-hover: #d97706;
+  --quiz-hint-text: #b45309;
+  --quiz-hint-text-hover: #92400e;
+
+  --quiz-accent-text: #ffffff;
+
+  --quiz-max-width: 9000px;
+  --quiz-side-gap: clamp(8px, 2.5vw, 18px);
+  --quiz-option-side-gap: clamp(2px, 1vw, 8px);
+
+  --quiz-tab-radius: 9px;
+  --quiz-btn-radius: 11px;
+  --quiz-btn-radius-sm: 9px;
+  --quiz-btn-radius-icon: 9px;
+  --quiz-card-radius: 10px;
+
+  --quiz-ease-smooth: cubic-bezier(0.20, 0.90, 0.24, 1);
+  --quiz-dur-fast: 180ms;
+  --quiz-dur-mid: 260ms;
+  --quiz-dur-slow: 340ms;
+  --quiz-nav-state-dur: 180ms;
+  --quiz-nav-transform-dur: 170ms;
+
+  --quiz-primary-ring-10: color-mix(in srgb, var(--quiz-primary) 8%, transparent);
+  --quiz-primary-ring-12: color-mix(in srgb, var(--quiz-primary) 12%, transparent);
+  --quiz-primary-ring-16: color-mix(in srgb, var(--quiz-primary) 18%, transparent);
+  --quiz-primary-ring-20: color-mix(in srgb, var(--quiz-primary) 24%, transparent);
+  --quiz-primary-ring-22: color-mix(in srgb, var(--quiz-primary) 28%, transparent);
+  --quiz-primary-ring-25: color-mix(in srgb, var(--quiz-primary) 32%, transparent);
+  --quiz-primary-glow-35: color-mix(in srgb, var(--quiz-primary) 20%, transparent);
+  --quiz-primary-glow-40: color-mix(in srgb, var(--quiz-primary) 24%, transparent);
+
+  --quiz-success-ring-14: color-mix(in srgb, var(--quiz-success) 10%, transparent);
+  --quiz-success-ring-20: color-mix(in srgb, var(--quiz-success) 22%, transparent);
+  --quiz-success-ring-22: color-mix(in srgb, var(--quiz-success) 26%, transparent);
+  --quiz-success-glow-38: color-mix(in srgb, var(--quiz-success) 20%, transparent);
+
+  --quiz-danger-ring-14: color-mix(in srgb, var(--quiz-danger) 10%, transparent);
+  --quiz-danger-ring-20: color-mix(in srgb, var(--quiz-danger) 22%, transparent);
+  --quiz-danger-ring-22: color-mix(in srgb, var(--quiz-danger) 26%, transparent);
+  --quiz-danger-glow-38: color-mix(in srgb, var(--quiz-danger) 20%, transparent);
+
+  --quiz-hint-ring-14: color-mix(in srgb, var(--quiz-hint) 10%, transparent);
+  --quiz-hint-ring-20: color-mix(in srgb, var(--quiz-hint) 22%, transparent);
+  --quiz-hint-glow-28: color-mix(in srgb, var(--quiz-hint) 18%, transparent);
+
+  --quiz-hint-hover-shadow:
+    0 0 0 1.5px var(--quiz-hint-ring-20),
+    0 0 22px var(--quiz-hint-glow-28);
+  --quiz-hint-active-shadow:
+    0 0 0 1.5px var(--quiz-hint-ring-14),
+    0 0 10px var(--quiz-hint-glow-28);
+
+  --quiz-nav-hover-shadow:
+    0 0 0 1.5px rgba(99,102,241,0.22),
+    0 0 22px rgba(99,102,241,0.16);
+  --quiz-nav-active-shadow:
+    0 0 0 1.5px rgba(99,102,241,0.16),
+    0 0 10px rgba(99,102,241,0.10);
+
+  --quiz-results-hover-shadow:
+    0 0 0 1.5px var(--quiz-success-ring-20),
+    0 0 22px var(--quiz-success-glow-38);
+  --quiz-results-active-shadow:
+    0 0 0 1.5px var(--quiz-success-ring-14),
+    0 0 10px var(--quiz-success-glow-38);
+}
+
+.theme-light{
+  --quiz-hint-hover-shadow:
+    0 0 0 1.5px var(--quiz-hint-ring-20),
+    0 0 18px color-mix(in srgb, var(--quiz-hint) 14%, transparent);
+  --quiz-hint-active-shadow:
+    0 0 0 1.5px var(--quiz-hint-ring-14),
+    0 0 8px color-mix(in srgb, var(--quiz-hint) 8%, transparent);
+
+  --quiz-nav-hover-shadow:
+    0 0 0 1.5px rgba(99,102,241,0.18),
+    0 0 18px rgba(99,102,241,0.12);
+  --quiz-nav-active-shadow:
+    0 0 0 1.5px rgba(99,102,241,0.12),
+    0 0 8px rgba(99,102,241,0.06);
+
+  --quiz-results-hover-shadow:
+    0 0 0 1.5px var(--quiz-success-ring-20),
+    0 0 18px color-mix(in srgb, var(--quiz-success) 14%, transparent);
+  --quiz-results-active-shadow:
+    0 0 0 1.5px var(--quiz-success-ring-14),
+    0 0 8px color-mix(in srgb, var(--quiz-success) 8%, transparent);
+}
+
+

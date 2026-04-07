@@ -1,0 +1,30 @@
+/* =========================================================
+   STYLES.CSS SPLIT - INDEX FILE
+   ========================================================= */
+
+/* Base styles and tokens */
+@import url('./base.css');
+@import url('./tokens.css');
+@import url('./animations.css');
+
+/* Core components */
+@import url('./layout.css');
+@import url('./header.css');
+@import url('./panels.css');
+@import url('./buttons.css');
+@import url('./forms.css');
+
+/* Editor components */
+@import url('./editor.css');
+@import url('./sidebar.css');
+@import url('./preview.css');
+@import url('./code.css');
+
+/* Quiz components */
+@import url('./quiz-components.css');
+@import url('./modals.css');
+@import url('./exam-mode.css');
+
+/* Utility styles */
+@import url('./utilities.css');
+@import url('./icons.css');

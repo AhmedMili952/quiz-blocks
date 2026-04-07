@@ -1,0 +1,65 @@
+/* ─── Header ─── */
+.qb-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: var(--qb-header-pad);
+	border-bottom: 1px solid var(--background-modifier-border);
+	background: var(--background-secondary);
+	flex-shrink: 0;
+	gap: var(--qb-gap);
+}
+
+.qb-brand {
+	display: flex;
+	align-items: center;
+	gap: 0.75em;
+	min-width: 0;
+}
+
+.qb-logo {
+	width: 2em;
+	height: 2em;
+	border-radius: var(--qb-radius);
+	background: linear-gradient(135deg, var(--interactive-accent), var(--interactive-accent-hover));
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	color: #fff;
+	font-weight: 800;
+	font-size: 0.9em;
+	flex-shrink: 0;
+	box-shadow: 0 0.125em 0.5em rgba(0,0,0,0.15);
+}
+
+.qb-title-group {
+	display: flex;
+	flex-direction: column;
+	gap: 0.1em;
+	min-width: 0;
+}
+
+.qb-title { font-size: 0.95em; font-weight: 700; line-height: 1.2; }
+.qb-sub { font-size: 0.7em; color: var(--text-muted); line-height: 1.2; }
+
+/* File name display - highlighted when imported */
+.qb-file-name.has-file {
+	color: var(--interactive-accent);
+	font-weight: 600;
+	font-size: 0.85em;
+	letter-spacing: -0.3px;
+	display: flex;
+	align-items: center;
+	gap: 0.3em;
+}
+
+.qb-file-name.has-file::before {
+	content: "";
+	width: 0.5em;
+	height: 0.5em;
+	background: var(--interactive-accent);
+	border-radius: 50%;
+	display: inline-block;
+	box-shadow: 0 0 0 2px rgba(var(--interactive-accent-rgb), 0.2);
+}
+

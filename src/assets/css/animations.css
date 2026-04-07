@@ -1,0 +1,25 @@
+/* =========================================================
+   2) LARGEUR / layout
+   ========================================================= */
+
+.quiz-nav,
+.quiz-card,
+.quiz-submit-wrap,
+.quiz-actions{
+  width: min(var(--quiz-max-width), calc(100% - (var(--quiz-side-gap) * 2)));
+  margin-left: auto;
+  margin-right: auto;
+  box-sizing: border-box;
+}
+
+.quiz-submit-card,
+.quiz-nav,
+.quiz-card,
+.quiz-result,
+.quiz-submit-wrap,
+.quiz-actions,
+.quiz-option{
+  max-width: 100%;
+}
+
+
