@@ -159,6 +159,8 @@ module.exports = function createEditorUIHandlers(ctx) {
 			durationInput.disabled = !ctx.examOptions.enabled;
 			autoSubmitCb.disabled = !ctx.examOptions.enabled;
 			showTimerCb.disabled = !ctx.examOptions.enabled;
+			// Mettre à jour la classe disabled sur le conteneur
+			examOptionsContainer.classList.toggle("qb-exam-disabled", !ctx.examOptions.enabled);
 			// Mettre à jour les valeurs aussi
 			durationInput.value = String(ctx.examOptions.durationMinutes);
 			autoSubmitCb.checked = ctx.examOptions.autoSubmit;
@@ -205,9 +207,7 @@ module.exports = function createEditorUIHandlers(ctx) {
 		showTimerCb.addEventListener("change", () => {
 			ctx.examOptions.showTimer = showTimerCb.checked;
 			view.renderCode();
-		});
 
-		examOptionsContainer.classList.toggle("qb-exam-disabled", !ctx.examOptions.enabled);
 
 		view.renderSidebar();
 
