@@ -359,3 +359,33 @@
 .qb-resource-help-note {
     color: var(--text-muted) !important;
 }
+
+.qb-section-content {
+    padding: 1.25em 1em !important;
+}
+
+.qb-resource-group {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25em !important;
+    background: var(--background-secondary);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 6px;
+    padding: 12px;
+    margin-bottom: 12px;
+    transition: background 0.2s ease;
+}
+
+.qb-field-label {
+    margin-bottom: 0.6em !important;
+}
+
+.qb-resource-help-note {
+    margin-top: 1.5em !important;
+    padding: 8px 0;
+    font-size: 0.7em;
+    color: var(--text-muted);
+    font-style: italic;
+    border-top: 1px solid var(--background-modifier-border);
+    opacity: 0.7;
+}
