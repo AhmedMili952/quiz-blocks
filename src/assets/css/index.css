@@ -11,11 +11,27 @@
 @import url('./components/nav-tabs.css');
 @import url('./components/quiz-card.css');
 @import url('./components/quiz-options.css');
+@import url('./components/ordering.css');
 @import url('./components/action-buttons.css');
+@import url('./components/button-press.css');
 @import url('./components/hint-modal.css');
 @import url('./components/explanations.css');
+@import url('./components/embeds.css');
 @import url('./components/inputs.css');
+@import url('./components/terminal-extras.css');
+@import url('./components/resource-btn.css');
+@import url('./components/settings-code.css');
+@import url('./components/mobile.css');
 
 /* Pages */
 @import url('./pages/results.css');
 @import url('./pages/exam.css');
+
+/* Editor */
+@import url('./editor/editor-base.css');
+@import url('./editor/editor-layout.css');
+@import url('./editor/editor-forms.css');
+@import url('./editor/editor-answers.css');
+@import url('./editor/editor-wysiwyg.css');
+@import url('./editor/editor-exam.css');
+@import url('./editor/editor-icons.css');

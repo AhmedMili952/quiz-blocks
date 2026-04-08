@@ -1,0 +1,217 @@
+/* =========================================================
+   EDITOR — BASE (Root, Header, Toggles, Buttons)
+   ========================================================= */
+
+/* ─── Root ─── */
+.qb-root {
+	--qb-header-pad: 0.75em;
+	--qb-gap: 0.75em;
+	--qb-radius: 0.5em;
+	--qb-sidebar-w: 14em;
+	--qb-editor-w: 22em;
+	--qb-code-w: 18em;
+
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+	overflow: hidden;
+	font-family: var(--font-interface);
+	background: var(--background-primary);
+	color: var(--text-normal);
+	font-size: 14px;
+}
+
+/* ─── Header ─── */
+.qb-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: var(--qb-header-pad);
+	border-bottom: 1px solid var(--background-modifier-border);
+	background: var(--background-secondary);
+	flex-shrink: 0;
+	gap: var(--qb-gap);
+}
+
+.qb-brand {
+	display: flex;
+	align-items: center;
+	gap: 0.75em;
+	min-width: 0;
+}
+
+.qb-logo {
+	width: 2em;
+	height: 2em;
+	border-radius: var(--qb-radius);
+	background: linear-gradient(135deg, var(--interactive-accent), var(--interactive-accent-hover));
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	color: #fff;
+	font-weight: 800;
+	font-size: 0.9em;
+	flex-shrink: 0;
+	box-shadow: 0 0.125em 0.5em rgba(0,0,0,0.15);
+}
+
+.qb-title-group {
+	display: flex;
+	flex-direction: column;
+	gap: 0.1em;
+	min-width: 0;
+}
+
+.qb-title { font-size: 0.95em; font-weight: 700; line-height: 1.2; }
+.qb-sub { font-size: 0.7em; color: var(--text-muted); line-height: 1.2; }
+
+/* File name display - highlighted when imported */
+.qb-file-name.has-file {
+	color: var(--interactive-accent);
+	font-weight: 600;
+	font-size: 0.85em;
+	letter-spacing: -0.3px;
+	display: flex;
+	align-items: center;
+	gap: 0.3em;
+}
+
+.qb-file-name.has-file::before {
+	content: "";
+	width: 0.5em;
+	height: 0.5em;
+	background: var(--interactive-accent);
+	border-radius: 50%;
+	display: inline-block;
+	box-shadow: 0 0 0 2px rgba(var(--interactive-accent-rgb), 0.2);
+}
+
+/* ─── Panel Toggles ─── */
+.qb-toggles {
+	display: flex;
+	gap: 0.25em;
+	background: var(--background-primary-alt);
+	border-radius: var(--qb-radius);
+	padding: 0.2em;
+}
+
+.qb-toggle {
+	display: flex;
+	align-items: center;
+	gap: 0.5em;
+	padding: 0.35em 0.6em;
+	border-radius: calc(var(--qb-radius) - 0.1em);
+	border: none;
+	font-size: 0.8em;
+	font-weight: 600;
+	cursor: pointer;
+	background: transparent;
+	color: var(--text-muted);
+	transition: all .15s;
+	white-space: nowrap;
+}
+
+.qb-toggle:hover { color: var(--text-normal); background: rgba(255,255,255,0.05); }
+.qb-toggle.active { background: var(--interactive-accent); color: #fff; box-shadow: 0 0.0625em 0.1875em rgba(0,0,0,0.2); }
+.qb-toggle-icon {
+	font-size: 1em;
+	margin-right: 0.3em;
+}
+
+.qb-actions { display: flex; gap: 0.4em; }
+
+/* ─── Buttons ─── */
+.qb-btn {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.4em;
+	padding: 0.35em 0.65em;
+	border: none;
+	border-radius: var(--qb-radius);
+	font-size: 0.8em;
+	font-weight: 600;
+	cursor: pointer;
+	transition: all .15s;
+	font-family: var(--font-interface);
+}
+
+.qb-btn-accent { background: var(--interactive-accent); color: #fff; border-radius: 10px; padding: 8px 20px; }
+.qb-btn-accent:hover { filter: brightness(1.15); }
+.qb-btn-ok { background: #22c55e !important; color: #fff; }
+.qb-btn-sm { padding: 0.25em 0.5em; font-size: 0.75em; }
+
+.qb-btn-icon {
+	width: 1.75em;
+	height: 1.75em;
+	padding: 0;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	background: transparent;
+	color: var(--text-muted);
+	border: none;
+	border-radius: calc(var(--qb-radius) - 0.1em);
+	cursor: pointer;
+	transition: all .12s;
+	font-family: var(--font-interface);
+}
+
+.qb-btn-icon:hover { color: var(--text-normal); background: var(--background-primary-alt); }
+.qb-btn-danger:hover { color: #ef4444; }
+
+/* Small button variant */
+.qb-btn-small {
+	padding: 6px 12px;
+	font-size: 12px;
+}
+
+/* ─── Save Indicator ─── */
+.qb-save-indicator {
+	display: flex;
+	align-items: center;
+	gap: 0.4em;
+	padding: 0.4em 0.8em;
+	border-radius: 6px;
+	background: rgba(var(--interactive-accent-rgb), 0.1);
+	color: var(--interactive-accent);
+	font-size: 0.8em;
+	font-weight: 600;
+	transition: all 0.2s ease;
+}
+
+.qb-save-indicator.is-saved {
+	background: rgba(var(--background-modifier-success-rgb, 0, 200, 0), 0.15);
+	color: var(--text-success);
+}
+
+.qb-save-indicator .qb-save-icon {
+	width: 1em;
+	height: 1em;
+}
+
+.qb-save-indicator.is-saved .qb-save-icon svg {
+	animation: qb-save-bounce 0.4s ease;
+}
+
+@keyframes qb-save-bounce {
+	0% { transform: scale(1); }
+	50% { transform: scale(1.2); }
+	100% { transform: scale(1); }
+}
+
+.qb-save-btn {
+	background: var(--interactive-accent) !important;
+	color: white !important;
+	transition: all 0.2s ease;
+}
+
+.qb-save-btn:hover:not(:disabled) {
+	filter: brightness(1.1);
+}
+
+.qb-save-btn:disabled {
+	background: var(--background-modifier-border) !important;
+	color: var(--text-muted) !important;
+	cursor: not-allowed !important;
+	opacity: 0.6;
+}

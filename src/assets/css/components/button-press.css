@@ -1,0 +1,57 @@
+/* =========================================================
+   COMPONENTS: UNIFIED BUTTON PRESS EFFECTS
+   ========================================================= */
+
+.quiz-action-btn,
+.quiz-chip,
+.quiz-hint-btn,
+.quiz-hint-modal-close{
+  transform-origin: center;
+}
+
+/* Hover/focus unified */
+.quiz-action-btn:hover:not(:disabled),
+.quiz-action-btn:focus-visible:not(:disabled),
+.quiz-action-btn.success:hover:not(:disabled),
+.quiz-action-btn.success:focus-visible:not(:disabled),
+.quiz-action-btn.quiz-prev-btn:hover:not(:disabled),
+.quiz-action-btn.quiz-prev-btn:focus-visible:not(:disabled),
+.quiz-action-btn.quiz-next-btn:hover:not(:disabled),
+.quiz-action-btn.quiz-next-btn:focus-visible:not(:disabled),
+.quiz-action-btn.quiz-results-btn:hover:not(:disabled),
+.quiz-action-btn.quiz-results-btn:focus-visible:not(:disabled),
+.quiz-chip:hover,
+.quiz-chip:focus-visible,
+.quiz-hint-btn:hover,
+.quiz-hint-btn:focus-visible,
+.quiz-hint-modal-close:hover,
+.quiz-hint-modal-close:focus-visible{
+  transform: translate3d(0,-1px,0) scale(1.015) !important;
+}
+
+/* Press / active unified */
+.quiz-action-btn:active:not(:disabled),
+.quiz-action-btn.success:active:not(:disabled),
+.quiz-action-btn.quiz-prev-btn:active:not(:disabled),
+.quiz-action-btn.quiz-next-btn:active:not(:disabled),
+.quiz-action-btn.quiz-results-btn:active:not(:disabled),
+.quiz-chip:active,
+.quiz-hint-btn:active,
+.quiz-hint-modal-close:active{
+  transform: translate3d(0,3px,0) scale(0.955) !important;
+  box-shadow:
+    0 0 0 1.5px color-mix(in srgb, var(--background-modifier-border) 70%, transparent),
+    inset 0 4px 14px rgba(0,0,0,0.18),
+    inset 0 1px 0 rgba(255,255,255,0.10),
+    0 2px 6px rgba(0,0,0,0.10) !important;
+  filter: brightness(0.98) saturate(1.08) !important;
+  transition-duration: 90ms !important;
+}
+
+/* Disabled intact */
+.quiz-action-btn:disabled,
+.quiz-action-btn.quiz-prev-btn:disabled,
+.quiz-action-btn.quiz-next-btn:disabled{
+  transform: none !important;
+  filter: none !important;
+}

@@ -1,0 +1,532 @@
+/* =========================================================
+   EDITOR — EXAM MODE (Timer, Exam Section, Start Screen)
+   ========================================================= */
+
+/* ─── Mode Examen Section ── */
+.qb-exam-section {
+	margin-top: auto;
+	border-top: 1px solid var(--background-modifier-border);
+	background: var(--background-secondary);
+}
+
+.qb-exam-summary {
+	padding: 0.625em 0.75em;
+	font-size: 0.7em;
+	font-weight: 700;
+	color: var(--text-normal);
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	gap: 0.6em;
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+}
+
+.qb-exam-summary:hover { background: var(--background-primary-alt); }
+
+.qb-exam-summary-icon {
+	width: 1.2em;
+	height: 1.2em;
+	color: var(--text-muted);
+	margin-right: 0.4em;
+}
+
+.qb-exam-body {
+	padding: 0.75em;
+	background: var(--background-primary);
+	border-top: 1px solid var(--background-modifier-border);
+}
+
+.qb-exam-body > * + * { margin-top: 0.625em; }
+
+/* Exam mode disabled state */
+.qb-exam-disabled .qb-field,
+.qb-exam-disabled .qb-checkbox-wrap {
+	opacity: 0.5;
+	pointer-events: none;
+}
+
+.qb-exam-disabled .qb-field-input:disabled,
+.qb-exam-disabled input[type="checkbox"]:disabled {
+	cursor: not-allowed;
+}
+
+/* Exam mode spacing improvements */
+.qb-exam-options {
+	margin-top: 12px;
+}
+
+.qb-exam-options > .qb-toggle-wrap {
+	margin-bottom: 16px;
+	padding-bottom: 12px;
+	border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.qb-exam-options > .qb-field {
+	margin-bottom: 16px;
+}
+
+.qb-exam-options > .qb-field > .qb-field-label {
+	margin-bottom: 8px;
+	display: block;
+}
+
+.qb-exam-options > .qb-checkbox-wrap {
+	margin-bottom: 10px;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.qb-exam-options > .qb-checkbox-wrap input[type="checkbox"] {
+	width: 18px;
+	height: 18px;
+	margin: 0;
+}
+
+/* ─── Exam Mode Active State ── */
+.qb-exam-section.qb-exam-active {
+	border: 2px solid var(--interactive-accent);
+	border-radius: 10px;
+	box-shadow: 0 0 0 1px var(--quiz-primary-ring-25), 0 4px 12px rgba(var(--interactive-accent-rgb), 0.15);
+	margin: 8px;
+}
+
+.qb-exam-section.qb-exam-active .qb-exam-summary {
+	background: rgba(var(--interactive-accent-rgb), 0.08);
+	border-radius: 8px 8px 0 0;
+}
+
+.qb-exam-section.qb-exam-active .qb-exam-summary-icon {
+	color: var(--interactive-accent);
+}
+
+/* Enhanced Exam Toggle - Blue styled like answer toggles */
+.qb-exam-section .qb-toggle-wrap {
+	cursor: pointer;
+	user-select: none;
+}
+
+.qb-exam-section .qb-toggle-track {
+	width: 2.8em;
+	height: 1.6em;
+	background: var(--background-modifier-border);
+	border-radius: 0.8em;
+	position: relative;
+	transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+	box-shadow: inset 0 1px 2px rgba(0,0,0,0.1);
+}
+
+.qb-exam-section .qb-toggle-track.on {
+	background: var(--interactive-accent);
+	box-shadow: inset 0 1px 2px rgba(0,0,0,0.15), 0 0 0 1px rgba(var(--interactive-accent-rgb), 0.3);
+}
+
+.qb-exam-section .qb-toggle-thumb {
+	width: 1.3em;
+	height: 1.3em;
+	background: white;
+	border-radius: 50%;
+	position: absolute;
+	top: 0.15em;
+	left: 0.15em;
+	transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+	box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.qb-exam-section .qb-toggle-track.on .qb-toggle-thumb {
+	transform: translateX(1.2em);
+}
+
+.qb-exam-section .qb-toggle-thumb::before {
+	content: "";
+	width: 0.5em;
+	height: 0.5em;
+	background: var(--text-muted);
+	border-radius: 50%;
+	transition: all 0.2s ease;
+}
+
+.qb-exam-section .qb-toggle-track.on .qb-toggle-thumb::before {
+	background: var(--interactive-accent);
+	transform: scale(0.8);
+}
+
+/* Toggle label styling */
+.qb-exam-section .qb-toggle-wrap > span:last-child {
+	font-weight: 600;
+	font-size: 0.9em;
+	margin-left: 0.5em;
+	color: var(--text-normal);
+	transition: color 0.2s ease;
+}
+
+.qb-exam-section.qb-exam-active .qb-toggle-wrap > span:last-child {
+	color: var(--interactive-accent);
+}
+
+/* QUIZ BUILDER — SECTION MODE EXAMEN (additional) */
+.qb-exam-section {
+	margin-top: auto;
+	border-top: 1px solid var(--background-modifier-border);
+	background: var(--background-secondary);
+}
+
+.qb-exam-summary {
+	padding: 10px 12px;
+	font-size: 12px;
+	font-weight: 700;
+	color: var(--text-normal);
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+}
+
+.qb-exam-summary:hover {
+	background: var(--background-primary-alt);
+}
+
+.qb-exam-body {
+	padding: 12px;
+	background: var(--background-primary);
+	border-top: 1px solid var(--background-modifier-border);
+}
+
+.qb-exam-body > * + * {
+	margin-top: 10px;
+}
+
+/* Checkbox style */
+.qb-checkbox-wrap {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	font-size: 11px;
+	color: var(--text-muted);
+	cursor: pointer;
+}
+
+.qb-checkbox-wrap input[type="checkbox"] {
+	width: 14px;
+	height: 14px;
+	margin: 0;
+	cursor: pointer;
+}
+
+/* Field dans exam body */
+.qb-exam-body .qb-field {
+	margin-bottom: 4px;
+}
+
+.qb-exam-body .qb-field-label {
+	font-size: 10px;
+	font-weight: 600;
+	color: var(--text-muted);
+	margin-bottom: 3px;
+}
+
+.qb-exam-body .qb-field-input {
+	width: 100%;
+	padding: 5px 8px;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 5px;
+	background: var(--background-primary);
+	color: var(--text-normal);
+	font-size: 12px;
+}
+
+.qb-exam-body .qb-field-input:focus {
+	outline: none;
+	border-color: var(--interactive-accent);
+	box-shadow: 0 0 0 2px rgba(var(--interactive-accent-rgb), 0.15);
+}
+
+/* =========================================================
+   MODE EXAMEN — TIMER
+   ========================================================= */
+
+/* Timer container */
+.quiz-exam-timer {
+	position: sticky;
+	top: 0;
+	z-index: 100;
+	background: var(--background-primary);
+	border-bottom: 1px solid var(--background-modifier-border);
+	padding: 8px 12px;
+	margin: 0 auto;
+	width: min(var(--quiz-max-width), calc(100% - (var(--quiz-side-gap) * 2)));
+	box-sizing: border-box;
+	display: flex;
+	align-items: center;
+	gap: 12px;
+}
+
+/* Barre de progression */
+.quiz-exam-timer-bar {
+	flex: 1;
+	height: 6px;
+	background: var(--background-modifier-border);
+	border-radius: 3px;
+	overflow: hidden;
+	position: relative;
+}
+
+.quiz-exam-timer-progress {
+	height: 100%;
+	width: 100%;
+	background: var(--quiz-success);
+	border-radius: 3px;
+	transition: width 1s linear, background-color 0.3s ease;
+}
+
+/* Texte du timer */
+.quiz-exam-timer-text {
+	font-size: 14px;
+	font-weight: 700;
+	font-variant-numeric: tabular-nums;
+	color: var(--text-normal);
+	min-width: 45px;
+	text-align: right;
+}
+
+/* États de couleur du timer */
+.quiz-exam-timer-warning .quiz-exam-timer-progress {
+	background: #f59e0b;
+}
+
+.quiz-exam-timer-warning .quiz-exam-timer-text {
+	color: #f59e0b;
+}
+
+.quiz-exam-timer-danger .quiz-exam-timer-progress {
+	background: var(--quiz-danger);
+}
+
+.quiz-exam-timer-danger .quiz-exam-timer-text {
+	color: var(--quiz-danger);
+}
+
+/* Animation pulse pour danger */
+@keyframes quiz-timer-pulse {
+	0%, 100% { opacity: 1; }
+	50% { opacity: 0.7; }
+}
+
+.quiz-exam-timer-danger .quiz-exam-timer-text {
+	animation: quiz-timer-pulse 1s ease-in-out infinite;
+}
+
+/* Theme light */
+.theme-light .quiz-exam-timer {
+	background: var(--background-primary);
+}
+
+/* Écran de démarrage de l'examen */
+.quiz-exam-start-screen {
+	position: sticky;
+	top: 0;
+	z-index: 100;
+	background: var(--background-primary);
+	border-bottom: 1px solid var(--background-modifier-border);
+	padding: 24px 12px;
+	margin: 0 auto;
+	width: min(var(--quiz-max-width), calc(100% - (var(--quiz-side-gap) * 2)));
+	box-sizing: border-box;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+}
+
+.quiz-exam-start-content {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 16px;
+	text-align: center;
+}
+
+.quiz-exam-start-icon {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	margin-bottom: 8px;
+}
+
+.quiz-exam-start-icon svg {
+	width: 48px;
+	height: 48px;
+	color: var(--quiz-primary);
+}
+
+.quiz-exam-start-title {
+	font-size: 20px;
+	font-weight: 700;
+	color: var(--text-normal);
+}
+
+.quiz-exam-start-duration {
+	font-size: 14px;
+	color: var(--text-muted);
+}
+
+.quiz-exam-start-btn {
+	background: var(--quiz-primary);
+	color: var(--text-on-accent);
+	border: none;
+	border-radius: var(--quiz-btn-radius);
+	padding: 10px 24px;
+	font-size: 15px;
+	font-weight: 600;
+	cursor: pointer;
+	transition: all 0.2s ease;
+	box-shadow: 0 2px 8px rgba(14, 165, 233, 0.3);
+}
+
+.quiz-exam-start-btn:hover {
+	background: var(--quiz-primary-hover);
+	transform: translateY(-1px);
+	box-shadow: 0 4px 12px rgba(14, 165, 233, 0.4);
+}
+
+.quiz-exam-start-btn:active {
+	transform: translateY(0);
+}
+
+/* Cacher tout le quiz tant que l'examen n'a pas commencé */
+.quiz-exam-not-started .quiz-track-viewport,
+.quiz-exam-not-started .quiz-nav {
+	opacity: 0;
+	pointer-events: none;
+	user-select: none;
+}
+
+.quiz-exam-not-started .quiz-track-viewport {
+	position: absolute;
+	visibility: hidden;
+}
+
+/* Une fois l'examen commencé, tout est visible */
+.quiz-exam-started .quiz-track-viewport,
+.quiz-exam-started .quiz-nav {
+	opacity: 1;
+	pointer-events: auto;
+	user-select: auto;
+}
+
+/* Placeholder quand l'examen n'a pas commencé */
+.quiz-exam-placeholder {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	padding: 40px 20px;
+	color: var(--text-muted);
+	font-size: 14px;
+}
+
+/* Cacher tout le quiz tant que l'examen n'a pas commencé */
+.quiz-exam-not-started .quiz-track-viewport,
+.quiz-exam-not-started .quiz-nav {
+	display: none !important;
+}
+
+/* =========================================================
+   IMPORT & SUGGEST MODALS
+   ========================================================= */
+
+.qb-import-modal h2 {
+	margin-bottom: 16px;
+	font-size: 1.3em;
+}
+
+.qb-import-textarea {
+	width: 100%;
+	min-height: 200px;
+	background: var(--background-primary);
+	border: 1.5px solid var(--background-modifier-border);
+	border-radius: 10px;
+	padding: 14px;
+	font-family: var(--font-monospace);
+	font-size: 0.85em;
+	color: var(--text-normal);
+	resize: vertical;
+	box-sizing: border-box;
+}
+
+.qb-import-textarea:focus {
+	border-color: var(--interactive-accent);
+	outline: none;
+}
+
+.qb-import-btn {
+	margin-top: 12px;
+	padding: 10px 24px;
+	border-radius: 10px;
+	background: var(--interactive-accent);
+	color: white;
+	border: none;
+	font-weight: 600;
+	font-size: 0.9em;
+	cursor: pointer;
+	width: 100%;
+}
+
+.qb-import-btn:hover {
+	filter: brightness(1.1);
+}
+
+.qb-import-from-note {
+	margin-top: 8px;
+	padding: 10px 24px;
+	border-radius: 10px;
+	background: transparent;
+	border: 1.5px solid var(--background-modifier-border);
+	color: var(--text-normal);
+	font-weight: 600;
+	font-size: 0.9em;
+	cursor: pointer;
+	width: 100%;
+}
+
+.qb-import-from-note:hover {
+	border-color: var(--interactive-accent);
+}
+
+/* Quiz File Suggest Modal styles */
+.qb-suggest-item {
+	display: flex;
+	flex-direction: column;
+	padding: 8px 12px;
+}
+
+.qb-suggest-main {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.qb-suggest-name {
+	font-weight: 600;
+	font-size: 0.95em;
+	color: var(--text-normal);
+}
+
+.qb-suggest-badge {
+	background: rgba(var(--interactive-accent-rgb), 0.15);
+	color: var(--interactive-accent);
+	padding: 2px 8px;
+	border-radius: 10px;
+	font-size: 0.7em;
+	font-weight: 600;
+}
+
+.qb-suggest-path {
+	font-size: 0.8em;
+	color: var(--text-muted);
+	margin-top: 2px;
+}

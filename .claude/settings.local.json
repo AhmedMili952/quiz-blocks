@@ -11,7 +11,11 @@
       "WebSearch",
       "Bash(wc -l \"c:/Obsidian/Fichiers/Quiz Blocks Dev/src/engine/\"*.js)",
       "Bash(node esbuild.config.mjs production)",
-      "Read(//c/Obsidian/.obsidian/plugins/quiz-blocks/**)"
+      "Read(//c/Obsidian/.obsidian/plugins/quiz-blocks/**)",
+      "Read(//tmp/**)",
+      "Bash(python3 -c ':*)",
+      "Bash(rm:*)",
+      "Bash(mkdir:*)"
     ]
   }
 }

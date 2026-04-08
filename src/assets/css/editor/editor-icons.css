@@ -1,0 +1,84 @@
+/* =========================================================
+   EDITOR — ICONS (Unified Icon System)
+   ========================================================= */
+
+/* Base icon container - all icons use this as base */
+.qb-icon,
+.qb-toggle-icon,
+.qb-btn-leading-icon,
+.qb-panel-head-icon,
+.qb-summary-icon,
+.qb-arr-add-icon,
+.qb-chip-icon,
+.qb-match-arrow,
+.qb-error-icon,
+.qb-q-icon,
+.qb-type-icon,
+.qb-type-card-icon,
+.qb-exam-summary-icon,
+.qb-save-icon {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	flex-shrink: 0;
+}
+
+/* Standard icon sizes */
+.qb-root svg {
+	stroke-width: 2;
+}
+
+/* Size: Small (12px) - chips, compact elements */
+.qb-chip-icon svg,
+.qb-arr-row .qb-btn-icon svg {
+	width: 12px;
+	height: 12px;
+}
+
+/* Size: Medium (14px) - default for most icons */
+.qb-icon svg,
+.qb-toggle-icon svg,
+.qb-panel-head-icon svg,
+.qb-summary-icon svg,
+.qb-arr-add-icon svg,
+.qb-match-arrow svg,
+.qb-q-icon svg,
+.qb-type-icon svg,
+.qb-q-actions .qb-btn-icon svg,
+.qb-exam-summary-icon svg,
+.qb-save-icon svg {
+	width: 14px;
+	height: 14px;
+}
+
+/* Size: Large (16px) - buttons, logo */
+.qb-btn-leading-icon svg,
+.qb-type-card-icon svg,
+.qb-logo svg,
+.qb-sidebar-head .qb-btn-icon svg {
+	width: 16px;
+	height: 16px;
+}
+
+/* Size: Extra Large (18px) - special emphasis */
+.qb-error-icon svg {
+	width: 18px;
+	height: 18px;
+	color: #ef4444;
+}
+
+/* Icon spacing - unified margins */
+.qb-btn-leading-icon { margin-right: 6px; }
+.qb-panel-head-icon { margin-right: 6px; }
+.qb-summary-icon { margin-right: 6px; }
+.qb-arr-add-icon { margin-right: 4px; }
+.qb-chip-icon { margin-right: 4px; font-size: 0.9em; }
+.qb-error-icon { margin-right: 6px; }
+.qb-match-arrow { margin: 0 4px; color: var(--text-muted); }
+.qb-exam-summary-icon { margin-right: 6px; color: var(--text-muted); }
+
+/* Logo special styling */
+.qb-logo svg { color: #fff; }
+
+/* Panel head icon opacity */
+.qb-panel-head-icon svg { opacity: 0.8; }

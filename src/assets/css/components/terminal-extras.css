@@ -1,0 +1,142 @@
+/* =========================================================
+   COMPONENTS: TERMINAL EXTRAS
+   Cursor overrides, light theme terminal, text-wrap-command
+   ========================================================= */
+
+.qcm-options.quiz-text-wrap{
+  margin: 10px var(--quiz-option-side-gap) 0;
+}
+
+.quiz-text-wrap-command{
+  margin: 10px var(--quiz-option-side-gap) 0;
+}
+
+.quiz-command-shell,
+.quiz-command-prefix,
+.quiz-command-input-wrap,
+.quiz-command-measure,
+.quiz-command-selection,
+.quiz-command-inline-char,
+.quiz-command-caret,
+.quiz-textarea.quiz-textarea-command{
+  cursor: default !important;
+}
+
+.quiz-textarea.quiz-textarea-command,
+.quiz-textarea.quiz-textarea-command.filled,
+.quiz-textarea.quiz-textarea-command.correct,
+.quiz-textarea.quiz-textarea-command.wrong,
+.quiz-textarea.quiz-textarea-command:hover,
+.quiz-textarea.quiz-textarea-command:focus{
+  border: 0 !important;
+  outline: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+
+/* ---------------------------------------------------------
+   Light theme: same terminal rendering
+   --------------------------------------------------------- */
+
+.theme-light .quiz-command-shell{
+  --cmd-bg: #0d0c0d;
+  --cmd-fg: #cccccc;
+  --cmd-caret-bg: #cccccc;
+  --cmd-caret-inline-fg: #333333;
+
+  border-color: #2f2f2f;
+  background: var(--cmd-bg);
+  color: var(--cmd-fg);
+
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.03),
+    0 1px 2px rgba(0,0,0,0.16);
+}
+
+.theme-light .quiz-command-shell:hover,
+.theme-light .quiz-command-shell:focus-within{
+  border-color: #2f2f2f;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.03),
+    0 1px 2px rgba(0,0,0,0.16);
+}
+
+.theme-light .quiz-command-prefix{
+  color: var(--cmd-fg);
+  opacity: 1;
+}
+
+.theme-light .quiz-textarea.quiz-textarea-command{
+  color: var(--cmd-fg);
+}
+
+.theme-light .quiz-textarea.quiz-textarea-command::placeholder{
+  color: rgba(255,255,255,0.42);
+}
+
+.theme-light .quiz-command-caret{
+  background: var(--cmd-caret-bg);
+}
+
+.theme-light .quiz-command-shell.correct{
+  box-shadow:
+    0 0 0 1.5px var(--quiz-success-ring-20),
+    0 0 12px var(--quiz-success-ring-14),
+    inset 0 1px 0 rgba(255,255,255,0.03);
+}
+
+.theme-light .quiz-command-shell.wrong{
+  box-shadow:
+    0 0 0 1.5px var(--quiz-danger-ring-20),
+    0 0 12px var(--quiz-danger-ring-14),
+    inset 0 1px 0 rgba(255,255,255,0.03);
+}
+
+/* ---------------------------------------------------------
+   PowerShell — extra overrides
+   --------------------------------------------------------- */
+
+.quiz-command-shell.quiz-terminal-variant-powershell .quiz-command-input-wrap,
+.quiz-command-shell[data-terminal-variant="powershell"] .quiz-command-input-wrap{
+  position: relative;
+  overflow: visible;
+  isolation: isolate;
+}
+
+.quiz-command-shell.quiz-terminal-variant-powershell .quiz-command-selection,
+.quiz-command-shell.quiz-terminal-variant-powershell .quiz-command-inline-char,
+.quiz-command-shell[data-terminal-variant="powershell"] .quiz-command-selection,
+.quiz-command-shell[data-terminal-variant="powershell"] .quiz-command-inline-char{
+  background: var(--cmd-caret-bg);
+  color: var(--cmd-caret-inline-fg);
+}
+
+.quiz-command-shell.quiz-terminal-variant-powershell .quiz-command-caret,
+.quiz-command-shell[data-terminal-variant="powershell"] .quiz-command-caret{
+  background: var(--cmd-caret-bg);
+}
+
+/* Light theme — PowerShell stays identical */
+.theme-light .quiz-command-shell.quiz-terminal-variant-powershell,
+.theme-light .quiz-command-shell[data-terminal-variant="powershell"]{
+  background: #012456 !important;
+  border-color: #11396f !important;
+  box-shadow: none !important;
+}
+
+.theme-light .quiz-command-shell.quiz-terminal-variant-powershell:hover,
+.theme-light .quiz-command-shell.quiz-terminal-variant-powershell:focus-within,
+.theme-light .quiz-command-shell[data-terminal-variant="powershell"]:hover,
+.theme-light .quiz-command-shell[data-terminal-variant="powershell"]:focus-within{
+  border-color: #1f4c88 !important;
+  box-shadow: none !important;
+}
+
+/* ---------------------------------------------------------
+   Bash — extra overrides
+   --------------------------------------------------------- */
+
+.quiz-command-shell.quiz-terminal-variant-bash .quiz-textarea.quiz-textarea-command,
+.quiz-command-shell[data-terminal-variant="bash"] .quiz-textarea.quiz-textarea-command{
+  font-weight: 500;
+}

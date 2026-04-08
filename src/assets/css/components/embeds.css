@@ -1,0 +1,72 @@
+/* =========================================================
+   COMPONENTS: EMBEDS / IMAGES
+   ========================================================= */
+
+.quiz-question-embed-wrap,
+.quiz-option-embed-wrap,
+.quiz-hint-embed-wrap,
+.quiz-explain-embed-wrap{
+  display: block;
+  width: 100%;
+  text-align: center;
+  margin: 0.75rem 0;
+}
+
+.quiz-question-embed,
+.quiz-option-embed,
+.quiz-hint-embed,
+.quiz-explain-embed,
+.quiz-card .quiz-question img,
+.quiz-card .quiz-question .internal-embed img,
+.quiz-card .quiz-question .image-embed img{
+  display: block !important;
+  margin: 0.75rem auto !important;
+  width: auto !important;
+  height: auto !important;
+  max-width: min(90%, 720px) !important;
+  max-height: 320px !important;
+  object-fit: contain !important;
+  border-radius: 12px;
+  border: 1px solid var(--background-modifier-border);
+}
+
+.quiz-option .quiz-option-embed{
+  max-width: min(100%, 520px) !important;
+  max-height: 220px !important;
+}
+
+.quiz-hint-modal-body .quiz-hint-embed{
+  max-width: min(100%, 680px) !important;
+}
+
+.quiz-explain .quiz-explain-embed{
+  max-width: min(100%, 680px) !important;
+}
+
+.quiz-card .quiz-question .internal-embed,
+.quiz-card .quiz-question .image-embed{
+  display: block !important;
+  text-align: center;
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+/* =========================================================
+   CORRECTIONS EMBEDS — alignement gauche pour question
+   ========================================================= */
+
+.quiz-question-embed-wrap{
+  text-align: left !important;
+}
+
+.quiz-question-embed,
+.quiz-card .quiz-question img,
+.quiz-card .quiz-question .internal-embed img,
+.quiz-card .quiz-question .image-embed img{
+  margin: 0.75rem 0 !important;
+}
+
+.quiz-card .quiz-question .internal-embed,
+.quiz-card .quiz-question .image-embed{
+  text-align: left !important;
+}

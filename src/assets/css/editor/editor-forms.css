@@ -1,0 +1,340 @@
+/* =========================================================
+   EDITOR — FORMS (Form Elements, Section Box, Type Badge, Array)
+   ========================================================= */
+
+/* ─── Form Elements ─── */
+.qb-field-label {
+	display: block;
+	font-size: 0.75em;
+	font-weight: 700;
+	color: var(--text-muted);
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	margin-bottom: 0.3em;
+}
+
+.qb-field-input,
+.qb-field-textarea,
+.qb-field-select {
+	width: 100%;
+	background: var(--background-primary);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 8px;
+	padding: 10px 14px;
+	color: var(--text-normal);
+	font-size: 0.9em;
+	font-family: var(--font-interface);
+	transition: all .15s;
+	box-sizing: border-box;
+}
+
+.qb-field-input:focus,
+.qb-field-textarea:focus,
+.qb-field-select:focus {
+	outline: none;
+	border-color: var(--interactive-accent);
+	box-shadow: 0 0 0 0.1875em rgba(var(--interactive-accent-rgb), 0.12);
+}
+
+.qb-field-input::placeholder,
+.qb-field-textarea::placeholder { color: var(--text-faint); }
+
+.qb-field-textarea { min-height: 4em; resize: vertical; }
+.qb-field-sm { padding: 0.3em 0.5em; font-size: 0.8em; }
+
+/* ─── Section Box ── */
+.qb-section-box {
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 10px;
+	background: var(--background-secondary);
+	padding: 0.75em;
+}
+
+.qb-section-box > * + * { margin-top: 0.625em; }
+
+/* ─── Type Badge ── */
+.qb-type-badge {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.4em;
+	padding: 0.4em 0.6em;
+	border-radius: 10px;
+	background: var(--background-secondary);
+	border: 1px solid var(--background-modifier-border);
+}
+
+.qb-type-icon {
+	width: 1.4em;
+	height: 1.4em;
+	border-radius: 0.25em;
+	background: var(--background-primary-alt);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	color: var(--text-muted);
+	font-size: 0.8em;
+}
+
+.qb-type-label { font-size: 0.75em; font-weight: 600; }
+.qb-type-desc { font-size: 0.65em; color: var(--text-muted); line-height: 1.3; }
+
+/* ─── Array Editor ── */
+.qb-arr-row {
+	display: flex;
+	align-items: center;
+	gap: 0.4em;
+	margin-bottom: 6px;
+	padding: 8px 12px;
+	background: var(--background-secondary);
+	border: 1.5px solid var(--background-modifier-border);
+	border-radius: 8px;
+}
+
+.qb-arr-row .qb-field-input { flex: 1; padding: 0.3em 0.5em; font-size: 0.8em; }
+
+.qb-arr-idx {
+	font-size: 0.625em;
+	color: var(--text-muted);
+	min-width: 0.875em;
+	text-align: right;
+	flex-shrink: 0;
+}
+
+.qb-arr-add {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.25em;
+	margin-top: 0.25em;
+	font-size: 0.6875em;
+	font-weight: 600;
+	color: var(--interactive-accent);
+	background: none;
+	border: none;
+	cursor: pointer;
+	transition: all .15s;
+	font-family: var(--font-interface);
+}
+
+.qb-arr-add:hover { filter: brightness(1.2); }
+
+/* ─── Chip Row ── */
+.qb-chip-row {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.25em;
+}
+
+.qb-chip {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.25em;
+	padding: 0.25em 0.625em;
+	border-radius: 0.3125em;
+	border: 1px solid var(--background-modifier-border);
+	background: transparent;
+	color: var(--text-muted);
+	font-size: 0.6875em;
+	cursor: pointer;
+	transition: all .15s;
+	font-family: var(--font-interface);
+}
+
+.qb-chip:hover { border-color: var(--interactive-accent); color: var(--text-normal); }
+.qb-chip.correct {
+	background: rgba(34, 197, 94, .1);
+	border-color: #22c55e;
+	color: #22c55e;
+	font-weight: 600;
+}
+
+.qb-chip-remove {
+	background: none;
+	border: none;
+	color: var(--text-muted);
+	cursor: pointer;
+	font-size: 1em;
+	padding: 0 0.125em;
+	line-height: 1;
+}
+
+.qb-chip-remove:hover { color: #ef4444; }
+
+/* ─── Match Row ── */
+.qb-match-row {
+	display: flex;
+	align-items: center;
+	gap: 0.5em;
+	margin-bottom: 0.5em;
+}
+
+.qb-match-row .qb-field-input { flex: 1; }
+.qb-match-arrow { color: var(--text-muted); font-size: 0.8em; }
+
+/* ─── Matching Row ── */
+.qb-match-row {
+	display: flex;
+	align-items: center;
+	gap: 0.5em;
+	margin-bottom: 0.5em;
+}
+
+.qb-match-row .qb-field-input { flex: 1; }
+.qb-match-arrow { color: var(--text-muted); font-size: 0.8em; }
+
+/* ─── Collapsible ── */
+.qb-collapsible {
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 10px;
+	overflow: hidden;
+}
+
+.qb-collapsible-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 0.5em 0.75em;
+	background: var(--background-secondary);
+	cursor: pointer;
+	user-select: none;
+}
+
+.qb-collapsible-header:hover { background: var(--background-primary-alt); }
+
+.qb-collapsible-title {
+	font-size: 0.8em;
+	font-weight: 600;
+	color: var(--text-normal);
+}
+
+.qb-collapsible-body {
+	padding: 0.6em;
+	background: var(--background-primary);
+}
+
+/* ─── Error ── */
+.qb-error {
+	padding: 0.75em;
+	border-radius: var(--qb-radius);
+	background: rgba(220, 38, 38, 0.1);
+	border: 1px solid rgba(220, 38, 38, 0.2);
+	color: #ef4444;
+	font-size: 0.8em;
+}
+
+/* ─── Error ─── */
+.qb-error {
+	padding: 0.75em;
+	border-radius: var(--qb-radius);
+	background: rgba(220, 38, 38, 0.1);
+	border: 1px solid rgba(220, 38, 38, 0.2);
+	color: #ef4444;
+	font-size: 0.8em;
+}
+
+.qb-error-icon { margin-right: 6px; }
+
+/* ─── HTML Editor ── */
+.qb-html-editor-container {
+	display: flex;
+	flex-direction: column;
+	gap: 0.75em;
+}
+
+.qb-html-preview {
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 0.375em;
+	background: var(--background-primary);
+	padding: 0.75em;
+}
+
+.qb-html-preview-label {
+	display: block;
+	font-size: 0.75em;
+	font-weight: 700;
+	color: var(--text-muted);
+	text-transform: uppercase;
+	letter-spacing: 0.03125em;
+	margin-bottom: 0.1875em;
+}
+
+.qb-html-preview-content {
+	min-height: 2em;
+	border: 1px solid var(--background-modifier-border-hover);
+	border-radius: 0.25em;
+	padding: 0.5em;
+	background: var(--background-secondary);
+}
+
+.qb-html-preview-content img {
+	max-width: 100%;
+	height: auto;
+}
+
+.qb-html-preview-content pre {
+	background: var(--code-background);
+	border: 1px solid var(--code-border);
+	border-radius: 4px;
+	padding: 8px;
+	overflow-x: auto;
+}
+
+.qb-html-preview-content code {
+	font-family: var(--font-monospace);
+	font-size: 0.85em;
+	background: var(--code-background);
+	padding: 2px 4px;
+	border-radius: 3px;
+}
+
+.qb-html-textarea {
+	font-family: var(--font-monospace);
+	min-height: 8em;
+}
+
+.qb-prompt-editor {
+	font-family: var(--font-monospace);
+	min-height: 10em;
+	font-size: 0.8em;
+	line-height: 1.6;
+	tab-size: 4;
+}
+
+/* ─── Entity Toolbar ── */
+.qb-entity-toolbar {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.25em;
+	padding: 0.3em;
+	background: var(--background-secondary);
+	border: 1px solid var(--background-modifier-border);
+	border-bottom: none;
+	border-radius: 0.375em 0.375em 0 0;
+}
+
+.qb-entity-toolbar + .qb-prompt-editor {
+	border-radius: 0 0 0.375em 0.375em;
+}
+
+.qb-entity-btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 1.8em;
+	height: 1.8em;
+	padding: 0 0.4em;
+	font-family: var(--font-monospace);
+	font-size: 0.75em;
+	font-weight: 600;
+	background: var(--background-primary);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 0.25em;
+	color: var(--text-muted);
+	cursor: pointer;
+	transition: all 0.12s;
+}
+
+.qb-entity-btn:hover {
+	background: var(--interactive-accent);
+	color: #fff;
+	border-color: var(--interactive-accent);
+}

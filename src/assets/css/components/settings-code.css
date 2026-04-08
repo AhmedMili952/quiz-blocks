@@ -1,0 +1,63 @@
+/* =========================================================
+   COMPONENTS: SETTINGS CODE BLOCK
+   ========================================================= */
+
+.quiz-blocks-settings-code-block{
+  margin-top: 8px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 12px;
+  background: var(--code-background);
+  overflow: hidden;
+}
+
+.quiz-blocks-settings-code-header{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--background-modifier-border);
+  background: color-mix(in srgb, var(--code-background) 88%, black 12%);
+}
+
+.quiz-blocks-settings-code-lang{
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  letter-spacing: 0.02em;
+  text-transform: lowercase;
+}
+
+.quiz-blocks-settings-copy-btn{
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  color: var(--text-muted);
+}
+
+.quiz-blocks-settings-copy-btn:hover{
+  color: var(--text-normal);
+  background: var(--background-modifier-hover);
+}
+
+.quiz-blocks-settings-code-pre{
+  margin: 0;
+  padding: 14px 16px 16px 16px;
+  overflow-x: auto;
+  background: var(--code-background);
+  font-family: var(--font-monospace);
+  font-size: 13px;
+  line-height: 1.6;
+  white-space: pre;
+}
+
+.quiz-blocks-settings-code-pre code{
+  display: block;
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  color: var(--text-normal);
+  background: transparent;
+  padding: 0;
+  white-space: pre;
+}

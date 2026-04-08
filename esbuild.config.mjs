@@ -21,10 +21,13 @@ async function bundleCSS() {
 		entryPoints: ["src/assets/css/index.css"],
 		outfile: path.join(vaultPluginDir, "styles.css"),
 		bundle: true,
-		minify: production,
+		minify: false,		// Désactivé pour avoir du CSS lisible
 		logLevel: "info",
 	});
 	console.log("styles.css bundlé (tous les @import inlinés).");
+	if (!production) {
+		console.log("Mode dev: CSS non minifié pour faciliter le debug.");
+	}
 }
 
 const ctx = await esbuild.context({

@@ -1,0 +1,263 @@
+/* =========================================================
+   COMPONENTS: ORDERING / MATCH (layout + DnD)
+   ========================================================= */
+
+.quiz-ordering{
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin: 14px 0;
+}
+
+.quiz-ordering-slots{
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.quiz-slot{
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 48px;
+  padding: 12px 16px;
+  border-radius: var(--quiz-card-radius);
+  border: 2px dashed var(--background-modifier-border);
+  background: var(--background-secondary);
+  cursor: pointer;
+  transform-origin: center;
+}
+
+.quiz-slot:focus-visible,
+.quiz-possibility:focus-visible{
+  outline: none;
+  border-color: color-mix(in srgb, var(--quiz-primary) 36%, var(--background-modifier-border));
+  box-shadow:
+    0 0 0 1.5px color-mix(in srgb, var(--quiz-primary) 12%, transparent),
+    0 0 10px color-mix(in srgb, var(--quiz-primary) 8%, transparent);
+}
+
+.quiz-slot:hover{
+  border-color: color-mix(in srgb, var(--quiz-primary) 45%, var(--background-modifier-border));
+  background: color-mix(in srgb, var(--quiz-primary) 6%, var(--background-secondary));
+}
+
+.quiz-slot.can-place{
+  box-shadow: 0 0 0 2px var(--quiz-primary-ring-12);
+}
+
+.quiz-slot.filled:not(.correct):not(.wrong){
+  border-style: solid !important;
+  border-color: var(--quiz-primary) !important;
+  background: var(--quiz-primary) !important;
+  box-shadow:
+    0 0 0 1.5px var(--quiz-primary-ring-12),
+    0 0 14px color-mix(in srgb, var(--quiz-primary) 12%, transparent) !important;
+}
+
+.quiz-slot.filled:not(.correct):not(.wrong)::after{
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 0;
+  height: 0;
+  border-top: 38px solid rgba(255,255,255,0.18);
+  border-left: 38px solid transparent;
+  border-top-right-radius: var(--quiz-card-radius);
+  pointer-events: none;
+}
+
+.quiz-slot.correct{
+  border-color: var(--quiz-success) !important;
+  background: color-mix(in srgb, var(--quiz-success) 10%, var(--background-secondary)) !important;
+  box-shadow: none !important;
+}
+
+.quiz-slot.wrong{
+  border-color: var(--quiz-danger) !important;
+  background: color-mix(in srgb, var(--quiz-danger) 8%, var(--background-secondary)) !important;
+  box-shadow: none !important;
+}
+
+.quiz-slot-label{
+  min-width: 60px;
+  font-size: 0.8125em;
+  font-weight: 800;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.quiz-slot-value{
+  flex: 1;
+  font-size: 0.8125em;
+  font-weight: 600;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.quiz-slot.filled:not(.correct):not(.wrong) .quiz-slot-label,
+.quiz-slot.filled:not(.correct):not(.wrong) .quiz-slot-value{
+  color: var(--quiz-accent-text) !important;
+}
+
+.quiz-slot.correct .quiz-slot-label,
+.quiz-slot.wrong .quiz-slot-label{
+  color: var(--text-muted);
+}
+
+.quiz-ordering-label{
+  margin-top: 6px;
+  font-size: 0.75em;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.quiz-ordering-possibilities{
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.quiz-possibility{
+  padding: 10px 16px;
+  border-radius: var(--quiz-card-radius);
+  border: 1px solid var(--background-modifier-border);
+  background: var(--background-secondary);
+  color: var(--text-normal);
+  font-size: 0.8125em;
+  font-weight: 600;
+  cursor: pointer;
+  user-select: none;
+  transform-origin: center;
+}
+
+.quiz-possibility:not(.used):not(.selected-pick):hover,
+.quiz-possibility:not(.used):not(.selected-pick):focus-visible{
+  outline: none;
+  transform: translate3d(4px,0,0);
+  border-color: var(--quiz-primary);
+  background: var(--background-secondary);
+  box-shadow:
+    0 0 0 1.5px var(--quiz-primary-ring-20),
+    0 0 14px var(--quiz-primary-glow-35) !important;
+}
+
+.quiz-possibility.used{
+  opacity: 0.35;
+  pointer-events: none;
+  cursor: default;
+  text-decoration: line-through;
+}
+
+.quiz-possibility.selected-pick{
+  border-color: var(--quiz-primary) !important;
+  background: var(--quiz-primary) !important;
+  color: var(--quiz-accent-text) !important;
+  box-shadow:
+    0 0 0 1.5px var(--quiz-primary-ring-16),
+    0 0 14px color-mix(in srgb, var(--quiz-primary) 12%, transparent) !important;
+}
+
+.quiz-possibility.selected-pick::after{
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 0;
+  height: 0;
+  border-top: 34px solid rgba(255,255,255,0.18);
+  border-left: 34px solid transparent;
+  border-top-right-radius: var(--quiz-card-radius);
+  pointer-events: none;
+}
+
+.quiz-possibility:not(.used),
+.quiz-slot.filled:not(.correct):not(.wrong){
+  cursor: grab;
+}
+
+.quiz-possibility.dragging,
+.quiz-slot.dragging{
+  cursor: grabbing !important;
+}
+
+.quiz-possibility.dragging{
+  opacity: 0.58;
+  border-color: color-mix(in srgb, var(--quiz-primary) 36%, var(--background-modifier-border));
+  background: color-mix(in srgb, var(--quiz-primary) 8%, var(--background-secondary));
+  box-shadow:
+    0 0 0 1.5px color-mix(in srgb, var(--quiz-primary) 12%, transparent),
+    0 0 12px color-mix(in srgb, var(--quiz-primary) 10%, transparent);
+  transform: translate3d(0, -1px, 0);
+}
+
+.quiz-slot.dragging{
+  opacity: 0.68;
+  border-style: solid;
+  border-color: color-mix(in srgb, var(--quiz-primary) 40%, var(--background-modifier-border));
+  background: color-mix(in srgb, var(--quiz-primary) 8%, var(--background-secondary));
+  box-shadow:
+    0 0 0 1.5px color-mix(in srgb, var(--quiz-primary) 12%, transparent),
+    0 0 12px color-mix(in srgb, var(--quiz-primary) 10%, transparent);
+  transform: translate3d(0, -1px, 0);
+}
+
+.quiz-slot.drag-ready{
+  border-color: color-mix(in srgb, var(--quiz-primary) 24%, var(--background-modifier-border));
+  background: color-mix(in srgb, var(--quiz-primary) 3%, var(--background-secondary));
+}
+
+.quiz-slot.dragover{
+  border-color: color-mix(in srgb, var(--quiz-primary) 42%, var(--background-modifier-border)) !important;
+  border-style: solid !important;
+  background: color-mix(in srgb, var(--quiz-primary) 10%, var(--background-secondary)) !important;
+  box-shadow:
+    0 0 0 1.5px color-mix(in srgb, var(--quiz-primary) 14%, transparent),
+    0 0 18px color-mix(in srgb, var(--quiz-primary) 12%, transparent);
+  transform: translate3d(0, -2px, 0);
+}
+
+.quiz-slot.dragover.swap-target{
+  border-color: var(--quiz-primary) !important;
+  background: color-mix(in srgb, var(--quiz-primary) 12%, var(--background-secondary)) !important;
+  box-shadow:
+    0 0 0 1.5px color-mix(in srgb, var(--quiz-primary) 18%, transparent),
+    0 0 20px color-mix(in srgb, var(--quiz-primary) 16%, transparent);
+}
+
+.quiz-slot.dragover .quiz-slot-label,
+.quiz-slot.dragover .quiz-slot-value{
+  color: var(--text-normal);
+}
+
+.quiz-slot,
+.quiz-possibility{
+  position: relative;
+  overflow: hidden;
+  transform-origin: center;
+  transition:
+    transform 110ms var(--quiz-ease-smooth),
+    box-shadow 180ms var(--quiz-ease-smooth),
+    filter 110ms ease !important;
+}
+
+.quiz-slot:active{
+  transform: translate3d(0,1px,0) scale(0.965) !important;
+  filter: brightness(0.96) saturate(1.04);
+}
+
+.quiz-slot.filled:not(.correct):not(.wrong):active{
+  transform: translate3d(0,1px,0) scale(0.955) !important;
+  box-shadow:
+    0 0 0 1.5px var(--quiz-primary-ring-20),
+    inset 0 0 0 999px rgba(0,0,0,0.10) !important;
+}
+
+.quiz-possibility:not(.used):active{
+  transform: translate3d(2px,0,0) scale(0.965) !important;
+  filter: brightness(0.96) saturate(1.04);
+  box-shadow:
+    0 0 0 1.5px var(--quiz-primary-ring-16),
+    inset 0 0 0 999px rgba(0,0,0,0.08) !important;
+}
