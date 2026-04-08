@@ -204,9 +204,12 @@ module.exports = function createEditorUIHandlers(ctx) {
 			disabled: !ctx.examOptions.enabled
 		});
 		showTimerWrap.createSpan({ text: " Afficher le timer" });
-		showTimerCb.addEventListener("change", () => {
-			ctx.examOptions.showTimer = showTimerCb.checked;
-			view.renderCode();
+		showTimerCb.addEventListener("change", () => 
+  {
+              ctx.examOptions.showTimer =      
+  showTimerCb.checked;
+              view.renderCode();
+          });
 
 
 		view.renderSidebar();
