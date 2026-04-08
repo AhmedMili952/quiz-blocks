@@ -185,31 +185,29 @@ module.exports = function createEditorUIHandlers(ctx) {
 			view.renderCode();
 		});
 
-		const autoSubmitWrap = examOptionsContainer.createDiv({ cls: "qb-checkbox-wrap" });
-		const autoSubmitCb = autoSubmitWrap.createEl("input", {
-			type: "checkbox",
-			checked: ctx.examOptions.autoSubmit,
-			disabled: !ctx.examOptions.enabled
-		});
-		autoSubmitWrap.createSpan({ text: " Soumettre auto à la fin" });
-		autoSubmitCb.addEventListener("change", () => {
-			ctx.examOptions.autoSubmit = autoSubmitCb.checked;
-			view.renderCode();
-		});
+		const autoSubmitWrap = examOptionsContainer.createEl("label", { cls: "qb-checkbox-wrap" });
+                        const autoSubmitCb = autoSubmitWrap.createEl("input", {
+                                type: "checkbox",
+                                checked: ctx.examOptions.autoSubmit,
+                                disabled: !ctx.examOptions.enabled
+                        });
+                        autoSubmitWrap.createSpan({ text: " Soumettre auto à la fin", cls: "qb-checkbox-label" });
+                        autoSubmitCb.addEventListener("change", () => {
+                                ctx.examOptions.autoSubmit = autoSubmitCb.checked;
+                                view.renderCode();
+                        });
 
-		const showTimerWrap = examOptionsContainer.createDiv({ cls: "qb-checkbox-wrap" });
-		const showTimerCb = showTimerWrap.createEl("input", {
-			type: "checkbox",
-			checked: ctx.examOptions.showTimer,
-			disabled: !ctx.examOptions.enabled
-		});
-		showTimerWrap.createSpan({ text: " Afficher le timer" });
-		showTimerCb.addEventListener("change", () => 
-  {
-              ctx.examOptions.showTimer =      
-  showTimerCb.checked;
-              view.renderCode();
-          });
+                        const showTimerWrap = examOptionsContainer.createEl("label", { cls: "qb-checkbox-wrap" });
+                        const showTimerCb = showTimerWrap.createEl("input", {
+                                type: "checkbox",
+                                checked: ctx.examOptions.showTimer,
+                                disabled: !ctx.examOptions.enabled
+                        });
+                        showTimerWrap.createSpan({ text: " Afficher le timer", cls: "qb-checkbox-label" });
+                        showTimerCb.addEventListener("change", () => {
+                                ctx.examOptions.showTimer = showTimerCb.checked;
+                                view.renderCode();
+                        });
 
 
 		view.renderSidebar();
