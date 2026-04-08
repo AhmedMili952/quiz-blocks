@@ -34,32 +34,6 @@
 }
 
 /* Resource Section */
-.qb-resource-section {
-  margin: 12px 0;
-  border: 1px solid var(--background-modifier-border);
-  border-radius: var(--quiz-btn-radius);
-  overflow: hidden;
-}
-
-.qb-resource-section summary {
-  padding: 10px 14px;
-  cursor: pointer;
-  background: var(--background-modifier-form-field);
-  user-select: none;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.qb-resource-section summary:hover {
-  background: var(--background-modifier-form-field-highlighted);
-}
-
-.qb-resource-body {
-  padding: 14px;
-  border-top: 1px solid var(--background-modifier-border);
-}
-
 /* Section Box */
 .qb-section-box {
   margin: 16px 0;

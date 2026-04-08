@@ -168,61 +168,37 @@ module.exports = function createEditorFormHandlers(ctx) {
 	}
 
 	function _resourceSection(parent, q) {
-		const details = parent.createEl("details", { cls: "qb-collapsible" });
-		const summary = details.createEl("summary");
-		_iconSpan(summary, "paperclip", "qb-summary-icon");
-		summary.appendChild(document.createTextNode(" Bouton ressource (optionnel)"));
-		const body = details.createDiv({ cls: "qb-collapsible-body" });
-		const renderInner = () => {
-			body.empty();
-			const has = !!q.resourceButton;
+		const has = !!q.resourceButton;
+		const fileName = has && q.resourceButton.fileName ? q.resourceButton.fileName : "";
+		const summaryText = has && fileName ? `Ressource — ${fileName}` : "Ressource";
 
-			// Header avec toggle switch inspiré de l'interface fournie
-			const header = body.createDiv({ cls: "qb-resource-header" });
-			const labelGroup = header.createDiv({ cls: "qb-resource-label-group" });
-			ctx._setIcon(labelGroup, "paperclip");
-			labelGroup.createSpan({ text: "Bouton ressource" });
-			const optionalBadge = labelGroup.createSpan({ cls: "qb-resource-optional-badge", text: "optionnel" });
+		const details = parent.createEl("details", { cls: "qb-section-collapsible" + (has ? "" : " qb-section-locked"), attr: has ? { open: "" } : {} });
+		const summary = details.createEl("summary", { cls: "qb-section-header" });
+		ctx._setIcon(summary, "paperclip");
+		const summaryLabel = summary.createSpan({ text: summaryText, cls: "qb-resource-summary-text" });
 
-			// Toggle switch amélioré
-			const toggleLabel = header.createEl("label", { cls: "qb-resource-toggle" });
-			const checkbox = toggleLabel.createEl("input", { type: "checkbox", cls: "qb-resource-toggle-input" });
-			checkbox.checked = has;
-			const track = toggleLabel.createEl("div", { cls: "qb-resource-toggle-track" });
-			const thumb = track.createEl("div", { cls: "qb-resource-toggle-thumb" });
+		// Toggle dans le header pour activer/désactiver
+		const toggle = summary.createEl("button", { cls: "qb-resource-toggle-btn", attr: { type: "button", title: has ? "Désactiver" : "Activer" } });
+		toggle.createSpan({ cls: "qb-resource-toggle-dot" + (has ? " is-on" : "") });
+		toggle.addEventListener("click", (e) => {
+			e.preventDefault();
+			e.stopPropagation();
+			q.resourceButton = has ? null : { label: "Activité PT", fileName: "" };
+			onEdit();
+			renderEditor();
+		});
 
-			// Mettre à jour l'état du toggle
-			if (has) {
-				track.classList.add("on");
-			}
-
-			// Gestionnaire d'événements pour le toggle
-			toggleLabel.addEventListener("click", (e) => {
-				e.preventDefault();
-				const isChecked = !checkbox.checked;
-				checkbox.checked = isChecked;
-				q.resourceButton = isChecked ? { label: "Activité PT", fileName: "" } : null;
-				if (isChecked) {
-					track.classList.add("on");
-				} else {
-					track.classList.remove("on");
-				}
-				renderInner();
-				onEdit();
-			});
-
-			// Champs du formulaire si activé
-			if (has) {
-				const fieldsContainer = body.createDiv({ cls: "qb-resource-fields" });
-				_field(fieldsContainer, "Label", q.resourceButton.label, "Activité PT", false, v => { q.resourceButton.label = v; onEdit(); });
-				_field(fieldsContainer, "Nom du fichier", q.resourceButton.fileName, "fichier.pka", false, v => { q.resourceButton.fileName = v; onEdit(); });
-
-				// Note d'aide
-				const helpNote = fieldsContainer.createEl("p", { cls: "qb-resource-help-note" });
-				helpNote.createSpan({ text: "Fichier placé dans le dossier du quiz" });
-			}
+		if (!has) return;
+		const contentDiv = details.createDiv({ cls: "qb-section-content" });
+		const updateSummary = () => {
+			const fn = q.resourceButton?.fileName || "";
+			summaryLabel.textContent = fn ? `Ressource — ${fn}` : "Ressource";
 		};
-		renderInner();
+		_field(contentDiv, "Label", q.resourceButton.label, "Activité PT", false, v => { q.resourceButton.label = v; onEdit(); updateSummary(); });
+		_field(contentDiv, "Nom du fichier à ouvrir", q.resourceButton.fileName, "fichier.pka", false, v => { q.resourceButton.fileName = v; onEdit(); updateSummary(); });
+
+		const helpNote = contentDiv.createEl("p", { cls: "qb-resource-help-note" });
+		helpNote.createSpan({ text: "Le fichier doit être placé dans le coffre" });
 	}
 
 	function _renderTypeFields(box, q) {

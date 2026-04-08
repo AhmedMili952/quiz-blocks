@@ -216,6 +216,65 @@
 		border-top: 1px solid var(--background-modifier-border);
 	}
 
+	/* Resource Section */
+	.qb-resource-summary-text {
+		opacity: 0.85;
+	}
+
+	.qb-resource-help-note {
+		margin: 0.5em 0 0;
+		font-size: 0.75em;
+		color: var(--text-muted);
+	}
+
+	/* Resource toggle button in section header */
+	.qb-resource-toggle-btn {
+		margin-left: auto;
+		width: 36px;
+		height: 20px;
+		border-radius: 10px;
+		border: none;
+		background: var(--background-modifier-border);
+		position: relative;
+		cursor: pointer;
+		padding: 0;
+		flex-shrink: 0;
+		transition: background 0.2s ease;
+	}
+
+	.qb-resource-toggle-btn:hover {
+		background: color-mix(in srgb, var(--background-modifier-border) 80%, var(--interactive-accent) 20%);
+	}
+
+	.qb-resource-toggle-dot {
+		position: absolute;
+		top: 2px;
+		left: 2px;
+		width: 16px;
+		height: 16px;
+		border-radius: 50%;
+		background: var(--text-muted);
+		transition: transform 0.2s ease, background 0.2s ease;
+	}
+
+	.qb-resource-toggle-dot.is-on {
+		transform: translateX(16px);
+		background: var(--interactive-accent);
+	}
+
+	/* Locked section: no pointer events on summary, no toggle arrow */
+	.qb-section-locked > .qb-section-header {
+		pointer-events: none;
+	}
+
+	.qb-section-locked > .qb-section-header::before {
+		display: none;
+	}
+
+	.qb-section-locked .qb-resource-toggle-btn {
+		pointer-events: auto;
+	}
+
 /* ─── Type Badge ─── */
 .qb-type-badge {
 	display: flex;

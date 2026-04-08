@@ -26,7 +26,7 @@ module.exports = function createPreviewHandlers(ctx) {
 
 		card.createEl("h2", { text: q.title || `Question ${ctx.activeIdx + 1}` });
 
-		if (q.resourceButton && q.resourceButton.fileName) {
+		if (q.resourceButton) {
 			const rbtn = card.createEl("button", { cls: "quiz-resource-btn" });
 			rbtn.createSpan({ cls: "quiz-resource-btn-icon", text: "📎" });
 			rbtn.createSpan({ cls: "quiz-resource-btn-label", text: q.resourceButton.label || "Ressource" });
