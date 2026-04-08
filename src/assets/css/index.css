@@ -21,11 +21,13 @@
 @import url('./components/terminal-extras.css');
 @import url('./components/resource-btn.css');
 @import url('./components/settings-code.css');
-@import url('./components/mobile.css');
 
 /* Pages */
 @import url('./pages/results.css');
 @import url('./pages/exam.css');
+
+/* Mobile overrides — MUST come after components & pages for correct cascade */
+@import url('./components/mobile.css');
 
 /* Editor */
 @import url('./editor/editor-base.css');

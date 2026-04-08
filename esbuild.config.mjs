@@ -24,6 +24,12 @@ async function bundleCSS() {
 		minify: false,		// Désactivé pour avoir du CSS lisible
 		logLevel: "info",
 	});
+
+	// Supprimer le commentaire d'entry point laissé par esbuild
+	const outPath = path.join(vaultPluginDir, "styles.css");
+	let css = fs.readFileSync(outPath, "utf8");
+	css = css.replace(/\n\/\* src\/assets\/css\/index\.css \*\/\s*$/, "");
+	fs.writeFileSync(outPath, css);
 	console.log("styles.css bundlé (tous les @import inlinés).");
 	if (!production) {
 		console.log("Mode dev: CSS non minifié pour faciliter le debug.");
