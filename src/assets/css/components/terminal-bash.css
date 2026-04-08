@@ -1,0 +1,206 @@
+/* =========================================================
+   25) QUESTION TEXTE COMMANDE — BASH
+   Colorimétrie voulue :
+   - username@hostname : vert
+   - :                 : clair
+   - chemin (~ ou /)   : bleu
+   - $                 : clair
+   - texte tapé        : clair
+   - fond              : rgb(23, 20, 33)
+   ========================================================= */
+
+.quiz-command-shell.quiz-terminal-variant-bash,
+.quiz-command-shell[data-terminal-variant="bash"]{
+  --cmd-bg: rgb(23, 20, 33);                 /* fond du terminal bash */
+  --cmd-fg: #f3f3f3;                         /* couleur du texte tapé */
+
+  --cmd-fg-prompt-userhost: #258143;         /* couleur de username@hostname */
+  --cmd-fg-prompt-separator: #f3f3f3;        /* couleur du : */
+  --cmd-fg-prompt-path: #124788;             /* couleur du chemin (~) */
+  --cmd-fg-prompt-symbol: #f3f3f3;           /* couleur du $ */
+
+  --cmd-caret-bg: #f3f3f3;                   /* couleur du curseur bloc */
+  --cmd-caret-inline-fg: rgb(23, 20, 33);    /* couleur du caractère sous le curseur bloc */
+
+  --cmd-shell-radius: 0.533em;               /* arrondi des coins du terminal */
+  --cmd-shell-pad-top: 0.80em;               /* espace intérieur en haut */
+  --cmd-shell-pad-bottom: 0.82em;            /* espace intérieur en bas */
+  --cmd-shell-pad-left: 0.85em;              /* espace intérieur à gauche */
+  --cmd-shell-pad-right: 0.95em;             /* espace intérieur à droite */
+
+  --cmd-caret-width-end: 0.92ch;             /* largeur du curseur en fin de ligne */
+  --cmd-caret-height-end: 1.1em;             /* hauteur du curseur en fin de ligne */
+  --cmd-caret-bottom-end: 0em;               /* position verticale du curseur en fin de ligne */
+
+  --cmd-caret-width-inline: 0.92ch;          /* largeur du curseur au milieu du texte */
+  --cmd-caret-height-inline: 1.1em;          /* hauteur du curseur au milieu du texte */
+  --cmd-caret-bottom-inline: 0em;            /* position verticale du curseur au milieu du texte */
+
+  border: 1px solid #2b2740;               /* bordure du terminal */
+  background: var(--cmd-bg);                 /* applique la couleur de fond */
+  color: var(--cmd-fg);                      /* applique la couleur du texte */
+
+  box-shadow: none !important;               /* supprime les ombres */
+  transition: none !important;               /* supprime les transitions visuelles */
+}
+
+.quiz-command-shell.quiz-terminal-variant-bash:hover,
+.quiz-command-shell.quiz-terminal-variant-bash:focus-within,
+.quiz-command-shell[data-terminal-variant="bash"]:hover,
+.quiz-command-shell[data-terminal-variant="bash"]:focus-within{
+  border-color: #3a3348;
+  box-shadow: none !important;
+}
+
+/* États correct / wrong */
+.quiz-command-shell.quiz-terminal-variant-bash.correct,
+.quiz-command-shell[data-terminal-variant="bash"].correct{
+  border-color: var(--quiz-success) !important;
+  box-shadow:
+    0 0 0 1.5px var(--quiz-success-ring-20),
+    0 0 14px color-mix(in srgb, var(--quiz-success) 14%, transparent) !important;
+}
+
+.quiz-command-shell.quiz-terminal-variant-bash.wrong,
+.quiz-command-shell[data-terminal-variant="bash"].wrong{
+  border-color: var(--quiz-danger) !important;
+  box-shadow:
+    0 0 0 1.5px var(--quiz-danger-ring-20),
+    0 0 14px color-mix(in srgb, var(--quiz-danger) 14%, transparent) !important;
+}
+
+/* Préfixe bash découpé */
+.quiz-command-shell.quiz-terminal-variant-bash .quiz-command-prefix,
+.quiz-command-shell[data-terminal-variant="bash"] .quiz-command-prefix{
+  display: inline-flex;
+  align-items: baseline;
+  flex: 0 0 auto;
+  margin-right: 0;
+  white-space: pre;
+  user-select: none;
+  opacity: 1 !important;
+  color: inherit;
+  font: inherit;
+  line-height: 1;
+}
+
+.quiz-command-shell.quiz-terminal-variant-bash .quiz-bash-prefix-userhost,
+.quiz-command-shell[data-terminal-variant="bash"] .quiz-bash-prefix-userhost{
+  color: var(--cmd-fg-prompt-userhost) !important;
+}
+
+.quiz-command-shell.quiz-terminal-variant-bash .quiz-bash-prefix-colon,
+.quiz-command-shell[data-terminal-variant="bash"] .quiz-bash-prefix-colon{
+  color: var(--cmd-fg-prompt-separator) !important;
+}
+
+.quiz-command-shell.quiz-terminal-variant-bash .quiz-bash-prefix-path,
+.quiz-command-shell[data-terminal-variant="bash"] .quiz-bash-prefix-path{
+  color: var(--cmd-fg-prompt-path) !important;
+}
+
+.quiz-command-shell.quiz-terminal-variant-bash .quiz-bash-prefix-dollar,
+.quiz-command-shell[data-terminal-variant="bash"] .quiz-bash-prefix-dollar{
+  color: var(--cmd-fg-prompt-symbol) !important;
+}
+
+/* Texte tapé */
+.quiz-command-shell.quiz-terminal-variant-bash .quiz-textarea.quiz-textarea-command,
+.quiz-command-shell[data-terminal-variant="bash"] .quiz-textarea.quiz-textarea-command,
+.quiz-textarea.quiz-textarea-command[data-terminal-variant="bash"]{
+  background: transparent !important;
+  color: var(--cmd-fg) !important;
+  -webkit-text-fill-color: currentColor !important;
+  text-shadow: none !important;
+}
+
+/* Placeholder */
+.quiz-command-shell.quiz-terminal-variant-bash .quiz-textarea.quiz-textarea-command::placeholder,
+.quiz-command-shell[data-terminal-variant="bash"] .quiz-textarea.quiz-textarea-command::placeholder,
+.quiz-textarea.quiz-textarea-command[data-terminal-variant="bash"]::placeholder{
+  color: rgba(238, 238, 236, 0.42);
+}
+
+/* Sélection et caractère inline */
+.quiz-command-shell.quiz-terminal-variant-bash .quiz-command-selection,
+.quiz-command-shell.quiz-terminal-variant-bash .quiz-command-inline-char,
+.quiz-command-shell[data-terminal-variant="bash"] .quiz-command-selection,
+.quiz-command-shell[data-terminal-variant="bash"] .quiz-command-inline-char{
+  background: var(--cmd-caret-bg);
+  color: var(--cmd-caret-inline-fg);
+}
+
+/* Curseur */
+.quiz-command-shell.quiz-terminal-variant-bash .quiz-command-caret,
+.quiz-command-shell[data-terminal-variant="bash"] .quiz-command-caret{
+  background: var(--cmd-caret-bg);
+  border-radius: 0 !important;
+}
+
+/* Thème clair : on garde exactement le même rendu terminal */
+.theme-light .quiz-command-shell.quiz-terminal-variant-bash,
+.theme-light .quiz-command-shell[data-terminal-variant="bash"]{
+  background: rgb(23, 20, 33) !important;
+  border-color: #2f2a3a !important;
+  box-shadow: none !important;
+}
+
+.theme-light .quiz-command-shell.quiz-terminal-variant-bash:hover,
+.theme-light .quiz-command-shell.quiz-terminal-variant-bash:focus-within,
+.theme-light .quiz-command-shell[data-terminal-variant="bash"]:hover,
+.theme-light .quiz-command-shell[data-terminal-variant="bash"]:focus-within{
+  border-color: #3a3348 !important;
+  box-shadow: none !important;
+}
+
+/* BASH — harmoniser l'épaisseur visuelle prompt vs texte saisi */
+.quiz-command-shell.quiz-terminal-variant-bash,
+.quiz-command-shell[data-terminal-variant="bash"]{
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Option A (recommandé) : léger boost pour que le vert paraisse "aussi épais" */
+.quiz-command-shell.quiz-terminal-variant-bash .quiz-command-prefix,
+.quiz-command-shell[data-terminal-variant="bash"] .quiz-command-prefix{
+  font-weight: 500;
+}
+
+/* On aligne aussi la saisie sur le même poids, pour qu'il n'y ait aucune différence */
+.quiz-command-shell.quiz-terminal-variant-bash .quiz-textarea.quiz-textarea-command,
+.quiz-command-shell[data-terminal-variant="bash"] .quiz-textarea.quiz-textarea-command{
+  font-weight: 500;
+}
+
+/* Police + poids unifiés (bash) */
+.quiz-command-shell.quiz-terminal-variant-bash,
+.quiz-command-shell[data-terminal-variant="bash"]{
+  /* Police "terminal-like" (Ubuntu en 1er si dispo) */
+  font-family:
+    "Ubuntu Mono",
+    "DejaVu Sans Mono",
+    "JetBrains Mono",
+    "Cascadia Mono",
+    "Liberation Mono",
+    "Consolas",
+    "Courier New",
+    monospace;
+
+  /* Poids unifié pour que le prompt ne paraisse pas plus fin */
+  font-weight: 500;
+
+  /* Rendu stable (évite certaines différences visuelles prompt vs textarea) */
+  font-variant-ligatures: none;
+  font-feature-settings: "liga" 0, "calt" 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Force le prompt et la saisie à hériter EXACTEMENT la même typo/poids */
+.quiz-command-shell.quiz-terminal-variant-bash .quiz-command-prefix,
+.quiz-command-shell[data-terminal-variant="bash"] .quiz-command-prefix,
+.quiz-command-shell.quiz-terminal-variant-bash .quiz-textarea.quiz-textarea-command,
+.quiz-command-shell[data-terminal-variant="bash"] .quiz-textarea.quiz-textarea-command{
+  font: inherit;
+  font-weight: inherit;
+}

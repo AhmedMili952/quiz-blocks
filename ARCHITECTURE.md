@@ -9,7 +9,7 @@
 | Fichier | Lignes | Rôle |
 |---------|--------|------|
 | `main.js` | 2 | Point d'entrée, re-exporte `plugin.js` |
-| `esbuild.config.mjs` | 91 | Build esbuild (JS + CSS bundle, watch mode) |
+| `esbuild.config.mjs` | 95 | Build esbuild (JS + CSS bundle, watch mode) |
 | `package.json` | 16 | Dépendances : `json5`, `esbuild` |
 
 ---
@@ -111,7 +111,9 @@ index.css          ← Point d'entrée (@import de tous les modules)
 │   ├── explanations.css   Blocs d'explication
 │   ├── embeds.css         Intégrations externes (iframe, video)
 │   ├── inputs.css         Champs de saisie
-│   ├── terminal-extras.css   Extraits terminal (CMD/PS/Bash)
+│   ├── terminal-cmd.css       Terminal CMD Windows
+│   ├── terminal-powershell.css Terminal PowerShell 5.1
+│   ├── terminal-bash.css      Terminal Bash
 │   ├── resource-btn.css   Boutons de ressource + tooltips
 │   ├── settings-code.css  Blocs de code dans les settings
 │   └── mobile.css         Overrides mobile/tactile (@media)
@@ -119,13 +121,15 @@ index.css          ← Point d'entrée (@import de tous les modules)
 │   ├── results.css        Écran de résultats
 │   └── exam.css           Mode examen (timer, start screen)
 └── editor/
-    ├── editor-base.css      Racine, header, boutons généraux
-    ├── editor-layout.css    Panneaux, resizers, sidebar, responsive
-    ├── editor-forms.css     Éléments de formulaire, sections, badges
-    ├── editor-answers.css   Cartes de réponse, toggles, chips, match
-    ├── editor-wysiwyg.css   Éditeur HTML/WYSIWYG, toolbar entités
-    ├── editor-exam.css      Section exam, confirm modal, import
-    └── editor-icons.css     Système d'icônes
+    ├── editor-base.css          Racine, header, boutons généraux
+    ├── editor-layout.css        Panneaux, resizers, sidebar, responsive
+    ├── editor-forms.css         Éléments de formulaire, sections, badges
+    ├── editor-answers.css       Cartes de réponse, toggles, flash
+    ├── editor-ui-components.css Chips, toggles, modales, collapsibles
+    ├── editor-wysiwyg.css       Éditeur HTML/WYSIWYG, toolbar entités
+    ├── editor-exam.css          Section exam, toggle, import, suggest
+    ├── editor-forms-extra.css   Type badge, option cards, arrays, save
+    └── editor-icons.css         Système d'icônes
 ```
 
 > **Note** : `mobile.css` est importé **après** les pages pour respecter la cascade CSS (overrides `@media` doivent venir après les règles de base).
@@ -134,7 +138,7 @@ index.css          ← Point d'entrée (@import de tous les modules)
 
 | Fichier | Lignes | Contenu |
 |---------|--------|---------|
-| `index.css` | 39 | Point d'entrée — imports uniquement |
+| `index.css` | 40 | Point d'entrée — imports uniquement |
 | `tokens.css` | 106 | Custom properties, couleurs, espaces, ombres |
 | `base.css` | 71 | GPU perf + `prefers-reduced-motion` |
 | `layout.css` | 133 | Largeurs max, carousel/track, anti-coupure |
@@ -150,7 +154,9 @@ index.css          ← Point d'entrée (@import de tous les modules)
 | `explanations.css` | 77 | Blocs d'explication |
 | `embeds.css` | 73 | Iframes, vidéos |
 | `inputs.css` | 128 | Champs texte, textarea |
-| `terminal-extras.css` | 849 | Terminals CMD/PowerShell/Bash + thème clair |
+| `terminal-cmd.css` | 443 | Terminal CMD Windows + thème clair |
+| `terminal-powershell.css` | 194 | Terminal PowerShell 5.1 |
+| `terminal-bash.css` | 205 | Terminal Bash |
 | `resource-btn.css` | 174 | Boutons ressource + tooltips |
 | `settings-code.css` | 64 | Blocs de code settings |
 | `mobile.css` | 204 | Overrides mobile + anti-coupure |
@@ -161,9 +167,11 @@ index.css          ← Point d'entrée (@import de tous les modules)
 | `editor-base.css` | 160 | Racine, header |
 | `editor-layout.css` | 371 | Layout panneaux, resizers |
 | `editor-forms.css` | 278 | Formulaires |
-| `editor-answers.css` | 716 | Réponses, toggles, match |
+| `editor-answers.css` | 321 | Cartes de réponse, toggles, flash |
+| `editor-ui-components.css` | 392 | Chips, toggles, modales, collapsibles |
 | `editor-wysiwyg.css` | 203 | Éditeur WYSIWYG |
-| `editor-exam.css` | 704 | Section exam éditeur |
+| `editor-exam.css` | 340 | Section exam, toggle, import, suggest |
+| `editor-forms-extra.css` | 361 | Type badge, option cards, arrays, save |
 | `editor-icons.css` | 85 | Icônes |
 
 ---
@@ -173,7 +181,7 @@ index.css          ← Point d'entrée (@import de tous les modules)
 | Sortie | Origine | Rôle |
 |--------|---------|------|
 | `.obsidian/plugins/quiz-blocks/main.js` | `src/main.js` + tout `src/` | JS bundle (esbuild) |
-| `.obsidian/plugins/quiz-blocks/styles.css` | `src/assets/css/index.css` + imports | CSS bundle (esbuild, 5 169 lignes) |
+| `.obsidian/plugins/quiz-blocks/styles.css` | `src/assets/css/index.css` + imports | CSS bundle (esbuild, ~5 176 lignes) |
 | `.obsidian/plugins/quiz-blocks/manifest.json` | `src/assets/manifest.json` | Métadonnées plugin |
 
 ---
@@ -186,10 +194,10 @@ index.css          ← Point d'entrée (@import de tous les modules)
 | JS — Éditeur (`src/editor.js` + `src/editor/`) | 9 | 2 429 |
 | JS — Plugin | 2 | 336 |
 | **Total JS** | **27** | **7 262** |
-| CSS — Quiz (`tokens` → `mobile`) | 19 | 3 338 |
+| CSS — Quiz (`tokens` → `mobile`) | 21 | 3 326 |
 | CSS — Pages | 2 | 336 |
-| CSS — Éditeur | 7 | 2 517 |
-| CSS — Index | 1 | 39 |
-| **Total CSS split** | **29** | **6 230** |
+| CSS — Éditeur | 9 | 2 311 |
+| CSS — Index | 1 | 40 |
+| **Total CSS** | **33** | **6 013** |
 | Config racine | 3 | 109 |
-| **Total projet** | **59** | **13 715** |
+| **Total projet** | **63** | **13 384** |

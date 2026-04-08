@@ -18,7 +18,9 @@
 @import url('./components/explanations.css');
 @import url('./components/embeds.css');
 @import url('./components/inputs.css');
-@import url('./components/terminal-extras.css');
+@import url('./components/terminal-cmd.css');
+@import url('./components/terminal-powershell.css');
+@import url('./components/terminal-bash.css');
 @import url('./components/resource-btn.css');
 @import url('./components/settings-code.css');
 
@@ -34,6 +36,8 @@
 @import url('./editor/editor-layout.css');
 @import url('./editor/editor-forms.css');
 @import url('./editor/editor-answers.css');
+@import url('./editor/editor-ui-components.css');
 @import url('./editor/editor-wysiwyg.css');
 @import url('./editor/editor-exam.css');
+@import url('./editor/editor-forms-extra.css');
 @import url('./editor/editor-icons.css');
