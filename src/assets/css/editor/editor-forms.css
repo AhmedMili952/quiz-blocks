@@ -209,11 +209,15 @@
 
 /* ─── Section Box ─── */
 .qb-section-box {
-	border: 1px solid var(--background-modifier-border);
-	border-radius: 0.5em;
-	background: var(--background-secondary);
-	padding: 0.625em;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 0.5em;
+    background: var(--background-secondary);
+    padding: 1em;
+    margin-bottom: 1em;
 }
+
+.qb-section-box > * + * { margin-top: 0.75em; }
+
 
 .qb-section-box > * + * { margin-top: 0.5em; }
 
@@ -270,10 +274,13 @@
 	}
 
 	.qb-resource-help-note {
-		margin: 0.5em 0 0;
-		font-size: 0.75em;
-		color: var(--text-muted);
-	}
+    margin: 0 0 0 0.5em;
+    font-size: 0.75em;
+    color: var(--text-muted);
+    font-style: italic;
+    opacity: 0.8;
+}
+
 
 	/* Resource toggle button in section header */
 	.qb-resource-toggle-btn {

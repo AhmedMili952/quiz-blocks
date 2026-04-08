@@ -169,7 +169,7 @@ module.exports = function createSanitizer(ctx) {
 	function resourceButtonHtml(q) {
 		const rb = q?.resourceButton;
 		if (!rb || !rb.label || !rb.fileName) return "";
-		return `<button class="quiz-resource-btn" type="button" data-resource-file="${escapeHtmlAttr(rb.fileName)}"><span class="quiz-resource-btn-icon" aria-hidden="true">⬇</span><span class="quiz-resource-btn-label">${escapeHtmlText(rb.label)}</span></button>`;
+		return `<button class="quiz-resource-btn" type="button" data-resource-file="${escapeHtmlAttr(rb.fileName)}"><span class="quiz-resource-btn-icon" aria-hidden="true">${ctx.lucideIcons?.paperclip || "⬇" }</span><span class="quiz-resource-btn-label">${escapeHtmlText(rb.label)}</span></button>`;
 	}
 
 	function resolveObsidianEmbedFile(linkPath) {

@@ -27,10 +27,12 @@ module.exports = function createPreviewHandlers(ctx) {
 		card.createEl("h2", { text: q.title || `Question ${ctx.activeIdx + 1}` });
 
 		if (q.resourceButton) {
-			const rbtn = card.createEl("button", { cls: "quiz-resource-btn" });
-			rbtn.createSpan({ cls: "quiz-resource-btn-icon", text: "📎" });
-			rbtn.createSpan({ cls: "quiz-resource-btn-label", text: q.resourceButton.label || "Ressource" });
-		}
+    const rbtn = card.createEl("button", { cls: "quiz-resource-btn" });
+    const icon = rbtn.createSpan({ cls: "quiz-resource-btn-icon" });
+    ctx._setIcon(icon, "paperclip");
+    rbtn.createSpan({ cls: "quiz-resource-btn-label", text: q.resourceButton.label || "Ressource" });
+}
+
 
 		if (q._promptHtml) {
 			const promptEl = card.createDiv({ cls: "quiz-question" });
