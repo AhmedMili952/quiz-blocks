@@ -170,22 +170,24 @@ module.exports = function createEditorUIHandlers(ctx) {
 		// Stocker la référence pour pouvoir l'appeler depuis l'import
 		view.updateExamUIState = updateExamUIState;
 
-		const durationWrap = examOptionsContainer.createDiv({ cls: "qb-field" });
-		durationWrap.createEl("label", { cls: "qb-field-label", text: "Durée (minutes)" });
-		const durationInput = durationWrap.createEl("input", {
-			cls: "qb-field-input",
-			type: "number",
-			min: "1",
-			max: "180",
-			value: String(ctx.examOptions.durationMinutes),
-			disabled: !ctx.examOptions.enabled
-		});
-		durationInput.addEventListener("input", () => {
-			ctx.examOptions.durationMinutes = Math.max(1, Math.min(180, parseInt(durationInput.value) || 10));
-			view.renderCode();
-		});
+		const durationWrap = examOptionsContainer.createDiv({ cls: "qb-field qb-field-group" });
+                        durationWrap.createEl("label", { cls: "qb-field-label", text: "Durée" });
+                        const inputContainer = durationWrap.createDiv({ cls: "qb-input-group" });
+                        const durationInput = inputContainer.createEl("input", {
+                                cls: "qb-field-input",
+                                type: "number",
+                                min: "1",
+                                max: "180",
+                                value: String(ctx.examOptions.durationMinutes),
+                                disabled: !ctx.examOptions.enabled
+                        });
+                        inputContainer.createSpan({ text: "min", cls: "qb-field-unit" });
+                        durationInput.addEventListener("input", () => {
+                                ctx.examOptions.durationMinutes = Math.max(1, Math.min(180, parseInt(durationInput.value) || 10));
+                                view.renderCode();
+                        });
 
-		const autoSubmitWrap = examOptionsContainer.createEl("label", { cls: "qb-checkbox-wrap" });
+                        const autoSubmitWrap = examOptionsContainer.createEl("label", { cls: "qb-checkbox-wrap" });
                         const autoSubmitCb = autoSubmitWrap.createEl("input", {
                                 type: "checkbox",
                                 checked: ctx.examOptions.autoSubmit,

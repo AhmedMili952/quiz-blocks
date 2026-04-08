@@ -150,6 +150,25 @@
 	box-shadow: 0 0 0 0.125em rgba(var(--interactive-accent-rgb), 0.15);
 }
 
+.qb-input-group {
+	display: flex;
+	align-items: center;
+	position: relative;
+}
+
+.qb-input-group .qb-field-input {
+	padding-right: 40px;
+}
+
+.qb-field-unit {
+	position: absolute;
+	right: 10px;
+	font-size: 0.75em;
+	color: var(--text-muted);
+	pointer-events: none;
+	font-weight: 600;
+}
+
 .qb-field-input::placeholder,
 .qb-field-textarea::placeholder { color: var(--text-faint); }
 
