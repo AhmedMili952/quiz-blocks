@@ -4,7 +4,7 @@ const obsidian = require("obsidian");
 const { parseQuizSource } = require("./quiz-utils");
 const { Q_TYPES, loadReact, _setIcon, _iconSpan, makeDefault, md2html, escHtml, esc5 } = require("./editor/utils");
 const { exportQuestion, exportAll, exportAllWithFence } = require("./editor/export");
-const { ConfirmModal, TypePickerModal, ImportQuizModal, QuizFileSuggestModal, ImportFromNoteModal } = require("./editor/modals");
+const { ConfirmModal, TypePickerModal, ImportQuizModal, QuizFileSuggestModal, ImportFromNoteModal, _htmlToText } = require("./editor/modals");
 
 const createEditorUIHandlers = require("./editor/ui");
 const createResizeHandlers = require("./editor/resize");
@@ -133,6 +133,8 @@ class QuizBuilderView extends obsidian.ItemView {
 		this._applyHintTheme = hint._applyHintTheme.bind(hint);
 		this._openHint = hint._openHint.bind(hint);
 		this._closeHint = hint._closeHint.bind(hint);
+			this._addHintEscHandler = hint._addHintEscHandler.bind(hint);
+		this._removeHintEscHandler = hint._removeHintEscHandler.bind(hint);
 
 		// Sauvegarder ctx sur l'instance
 		this._ctx = ctx;
@@ -151,12 +153,9 @@ class QuizBuilderView extends obsidian.ItemView {
 
 	onClose() {
 		this._closeHint();
+		this._removeHintEscHandler();
 		const overlay = document.getElementById("qb-hint-overlay");
 		if (overlay) overlay.remove();
-		if (this._hintEscHandler) {
-			document.removeEventListener("keydown", this._hintEscHandler);
-			this._hintEscHandler = null;
-		}
 		// Cleanup any resize overlays that might be stuck
 		const resizeOverlays = document.querySelectorAll('div[style*="cursor:ew-resize"]');
 		resizeOverlays.forEach(el => el.remove());
@@ -296,12 +295,13 @@ class QuizBuilderView extends obsidian.ItemView {
 		const question = makeDefault(type);
 		question._id = q.id || Math.random().toString(36).slice(2, 10);
 		question.title = q.title || "";
+		question._userModifiedTitle = !/^Question \d+$/.test(question.title);
 		question.hint = q.hint || "";
 
 		if (q.prompt) {
 			question.prompt = q.prompt;
 		} else if (q.promptHtml) {
-			question.prompt = q.promptHtml.replace(/<[^>]+>/g, "").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&");
+			question.prompt = _htmlToText(q.promptHtml);
 		}
 		if (q.promptHtml) {
 			question._promptHtml = q.promptHtml;
@@ -311,7 +311,7 @@ class QuizBuilderView extends obsidian.ItemView {
 
 		if (q.explain) question.explain = q.explain;
 		else if (q.explainHtml) {
-			question.explain = q.explainHtml.replace(/<[^>]+>/g, "").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&");
+			question.explain = _htmlToText(q.explainHtml);
 		}
 		if (q.explainHtml) {
 			question._explainHtml = q.explainHtml;

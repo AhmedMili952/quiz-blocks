@@ -28,15 +28,25 @@ module.exports = function createHintHandlers(ctx) {
 
 		document.body.appendChild(overlay);
 
+		_applyHintTheme(overlay);
+		return overlay;
+	}
+
+	function _addHintEscHandler() {
+		if (view._hintEscHandler) return; // Already attached
 		view._hintEscHandler = e => {
 			const o = document.getElementById("qb-hint-overlay");
 			if (!o || !o.classList.contains("is-open")) return;
 			if (e.key === "Escape") _closeHint();
 		};
 		document.addEventListener("keydown", view._hintEscHandler);
+	}
 
-		_applyHintTheme(overlay);
-		return overlay;
+	function _removeHintEscHandler() {
+		if (view._hintEscHandler) {
+			document.removeEventListener("keydown", view._hintEscHandler);
+			view._hintEscHandler = null;
+		}
 	}
 
 	function _applyHintTheme(overlay) {
@@ -75,6 +85,7 @@ module.exports = function createHintHandlers(ctx) {
 		const modal = overlay.querySelector(".quiz-hint-modal");
 		if (body) body.innerHTML = view._resolveImagesInHtml(md2html(text));
 		_applyHintTheme(overlay);
+		_addHintEscHandler();
 
 		overlay.classList.add("is-open");
 		overlay.style.transition = "none";
@@ -101,6 +112,7 @@ module.exports = function createHintHandlers(ctx) {
 		const overlay = document.getElementById("qb-hint-overlay");
 		if (!overlay || !overlay.classList.contains("is-open")) return;
 		const modal = overlay.querySelector(".quiz-hint-modal");
+		_removeHintEscHandler();
 
 		overlay.style.transition = "opacity 240ms cubic-bezier(0.4, 0, 0.2, 1)";
 		overlay.style.opacity = "0";
@@ -120,6 +132,8 @@ module.exports = function createHintHandlers(ctx) {
 	return {
 		_ensureHintOverlay,
 		_applyHintTheme,
+		_addHintEscHandler,
+		_removeHintEscHandler,
 		_openHint,
 		_closeHint
 	};

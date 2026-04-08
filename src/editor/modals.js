@@ -4,6 +4,23 @@ const obsidian = require("obsidian");
 const { Q_TYPES, _setIcon, makeDefault } = require("./utils");
 const { parseQuizSource } = require("../quiz-utils");
 
+/**
+ * Convert HTML to plain text using the DOM, preserving inner text of
+ * structural elements like <pre>, <code>, <br> instead of stripping them.
+ * This avoids data loss that a regex (/<[^>]+>/g) would cause.
+ */
+function _htmlToText(html) {
+	const temp = document.createElement("div");
+	temp.innerHTML = html;
+	// Convert <br> to newlines before extracting text
+	temp.querySelectorAll("br").forEach(br => br.replaceWith("\n"));
+	// Convert block-level boundaries to newlines for readability
+	temp.querySelectorAll("p, div, li, tr, h1, h2, h3, h4, h5, h6").forEach(el => {
+		el.insertAdjacentText("beforeend", "\n");
+	});
+	return temp.textContent || "";
+}
+
 /* ════════════════════════════════════════════════════════
    CONFIRM MODAL
    ════════════════════════════════════════════════════════ */
@@ -190,12 +207,13 @@ class ImportQuizModal extends obsidian.Modal {
 		const question = makeDefault(type);
 		question._id = q.id || Math.random().toString(36).slice(2, 10);
 		question.title = q.title || "";
+		question._userModifiedTitle = !/^Question \d+$/.test(question.title);
 		question.hint = q.hint || "";
 
 		if (q.prompt) {
 			question.prompt = q.prompt;
 		} else if (q.promptHtml) {
-			question.prompt = q.promptHtml.replace(/<[^>]+>/g, "").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&");
+			question.prompt = _htmlToText(q.promptHtml);
 		}
 		if (q.promptHtml) {
 			question._promptHtml = q.promptHtml;
@@ -205,7 +223,7 @@ class ImportQuizModal extends obsidian.Modal {
 
 		if (q.explain) question.explain = q.explain;
 		else if (q.explainHtml) {
-			question.explain = q.explainHtml.replace(/<[^>]+>/g, "").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&");
+			question.explain = _htmlToText(q.explainHtml);
 		}
 		if (q.explainHtml) {
 			question._explainHtml = q.explainHtml;
@@ -353,4 +371,4 @@ class ImportFromNoteModal extends obsidian.Modal {
 	onClose() { this.contentEl.empty(); }
 }
 
-module.exports = { ConfirmModal, TypePickerModal, ImportQuizModal, QuizFileSuggestModal, ImportFromNoteModal };
+module.exports = { ConfirmModal, TypePickerModal, ImportQuizModal, QuizFileSuggestModal, ImportFromNoteModal, _htmlToText };

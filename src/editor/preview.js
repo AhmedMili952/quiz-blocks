@@ -6,7 +6,7 @@ module.exports = function createPreviewHandlers(ctx) {
 
 	function schedulePreview() {
 		if (view._previewDebounce) clearTimeout(view._previewDebounce);
-		view._previewDebounce = setTimeout(() => renderPreview(), 150);
+			view._previewDebounce = setTimeout(() => { if (view.previewBodyEl && view.previewBodyEl.isConnected) renderPreview(); }, 150);
 	}
 
 	function renderPreview() {
