@@ -15,7 +15,6 @@
 .qb-q-icon,
 .qb-type-icon,
 .qb-type-card-icon,
-.qb-exam-summary-icon,
 .qb-save-icon {
 	display: inline-flex;
 	align-items: center;
@@ -45,7 +44,6 @@
 .qb-q-icon svg,
 .qb-type-icon svg,
 .qb-q-actions .qb-btn-icon svg,
-.qb-exam-summary-icon svg,
 .qb-save-icon svg {
 	width: 14px;
 	height: 14px;
@@ -75,7 +73,6 @@
 .qb-chip-icon { margin-right: 4px; }
 .qb-error-icon { margin-right: 6px; }
 .qb-match-arrow { margin: 0 4px; color: var(--text-muted); }
-.qb-exam-summary-icon { margin-right: 6px; color: var(--text-muted); }
 
 /* Logo special styling */
 .qb-logo svg { color: #fff; }

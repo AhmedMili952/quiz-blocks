@@ -121,24 +121,41 @@ module.exports = function createEditorUIHandlers(ctx) {
 		addBtn.addEventListener("click", () => showTypeModal());
 		view.sidebarListEl = view.sidebarEl.createDiv({ cls: "qb-sidebar-list" });
 
-		const examSection = view.sidebarEl.createDiv({ cls: "qb-collapsible qb-exam-section" });
-		const examSummary = examSection.createEl("summary", { cls: "qb-exam-summary" });
-		_iconSpan(examSummary, "graduation-cap", "qb-exam-summary-icon");
-		examSummary.createSpan({ text: " Mode Examen" });
-		const examBody = examSection.createDiv({ cls: "qb-exam-body" });
+		const examSection = view.sidebarEl.createEl("details", { cls: "qb-section-collapsible" + (ctx.examOptions.enabled ? "" : " qb-section-locked"), attr: ctx.examOptions.enabled ? { open: "" } : {} });
+		const examSummary = examSection.createEl("summary", { cls: "qb-section-header" });
+		ctx._setIcon(examSummary, "graduation-cap", "qb-summary-icon");
+		const examSummaryText = examSummary.createSpan({ text: "Mode Examen", cls: "qb-resource-summary-text" });
 
+		// Toggle dans le header pour activer/désactiver
+		const examToggle = examSummary.createEl("button", { cls: "qb-resource-toggle-btn", attr: { type: "button", title: ctx.examOptions.enabled ? "Désactiver" : "Activer" } });
+		examToggle.createSpan({ cls: "qb-resource-toggle-dot" + (ctx.examOptions.enabled ? " is-on" : "") });
+		examToggle.addEventListener("click", (e) => {
+			e.preventDefault();
+			e.stopPropagation();
+			ctx.examOptions.enabled = !ctx.examOptions.enabled;
+			updateExamUIState();
+			view.renderCode();
+			// Mettre à jour l'état du details element
+			if (ctx.examOptions.enabled) {
+				examSection.setAttribute("open", "");
+				examSection.classList.remove("qb-section-locked");
+			} else {
+				examSection.removeAttribute("open");
+				examSection.classList.add("qb-section-locked");
+			}
+		});
+
+		const examBody = examSection.createDiv({ cls: "qb-section-content" });
 		const examOptionsContainer = examBody.createDiv({ cls: "qb-exam-options" });
-
-		const examToggleWrap = examOptionsContainer.createDiv({ cls: "qb-toggle-wrap" });
-		const examTrack = examToggleWrap.createDiv({ cls: `qb-toggle-track ${ctx.examOptions.enabled ? "on" : ""}` });
-		examTrack.createDiv({ cls: "qb-toggle-thumb" });
-		examToggleWrap.createSpan({ text: "Activer le mode examen" });
 
 		// Fonction pour mettre à jour l'état visuel de l'examen
 		function updateExamUIState() {
-			examTrack.classList.toggle("on", ctx.examOptions.enabled);
-			examSection.classList.toggle("qb-exam-active", ctx.examOptions.enabled);
-			examOptionsContainer.classList.toggle("qb-exam-disabled", !ctx.examOptions.enabled);
+			examToggle.title = ctx.examOptions.enabled ? "Désactiver" : "Activer";
+			const dot = examToggle.querySelector(".qb-resource-toggle-dot");
+			if (dot) {
+				dot.className = "qb-resource-toggle-dot" + (ctx.examOptions.enabled ? " is-on" : "");
+			}
+			examSummaryText.textContent = "Mode Examen";
 			durationInput.disabled = !ctx.examOptions.enabled;
 			autoSubmitCb.disabled = !ctx.examOptions.enabled;
 			showTimerCb.disabled = !ctx.examOptions.enabled;
@@ -150,12 +167,6 @@ module.exports = function createEditorUIHandlers(ctx) {
 
 		// Stocker la référence pour pouvoir l'appeler depuis l'import
 		view.updateExamUIState = updateExamUIState;
-
-		examToggleWrap.addEventListener("click", () => {
-			ctx.examOptions.enabled = !ctx.examOptions.enabled;
-			updateExamUIState();
-			view.renderCode();
-		});
 
 		const durationWrap = examOptionsContainer.createDiv({ cls: "qb-field" });
 		durationWrap.createEl("label", { cls: "qb-field-label", text: "Durée (minutes)" });

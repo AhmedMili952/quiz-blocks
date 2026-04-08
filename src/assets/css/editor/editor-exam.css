@@ -1,41 +1,8 @@
-/* ─── Mode Examen Section ── */
-.qb-exam-section {
-	margin-top: auto;
-	border-top: 1px solid var(--background-modifier-border);
-	background: var(--background-secondary);
-}
+/* =========================================================
+   QUIZ BUILDER — EXAM SECTION FORM STYLING
+   ========================================================= */
 
-.qb-exam-summary {
-	padding: 0.625em 0.75em;
-	font-size: 0.7em;
-	font-weight: 700;
-	color: var(--text-normal);
-	cursor: pointer;
-	display: flex;
-	align-items: center;
-	gap: 0.6em;
-	text-transform: uppercase;
-	letter-spacing: 0.05em;
-}
-
-.qb-exam-summary:hover { background: var(--background-primary-alt); }
-
-.qb-exam-summary-icon {
-	width: 1.2em;
-	height: 1.2em;
-	color: var(--text-muted);
-	margin-right: 0.4em;
-}
-
-.qb-exam-body {
-	padding: 0.75em;
-	background: var(--background-primary);
-	border-top: 1px solid var(--background-modifier-border);
-}
-
-.qb-exam-body > * + * { margin-top: 0.625em; }
-
-/* Exam mode disabled state */
+/* Disabled state for exam options */
 .qb-exam-disabled .qb-field,
 .qb-exam-disabled .qb-checkbox-wrap {
 	opacity: 0.5;
@@ -67,141 +34,6 @@
 	display: block;
 }
 
-.qb-exam-options > .qb-checkbox-wrap {
-	margin-bottom: 10px;
-	display: flex;
-	align-items: center;
-	gap: 8px;
-}
-
-.qb-exam-options > .qb-checkbox-wrap input[type="checkbox"] {
-	width: 18px;
-	height: 18px;
-	margin: 0;
-}
-
-
-/* ─── Exam Mode Active State ── */
-.qb-exam-section.qb-exam-active {
-	border: 2px solid var(--interactive-accent);
-	border-radius: 10px;
-	box-shadow: 0 0 0 1px var(--quiz-primary-ring-25), 0 4px 12px rgba(var(--interactive-accent-rgb), 0.15);
-	margin: 8px;
-}
-
-.qb-exam-section.qb-exam-active .qb-exam-summary {
-	background: rgba(var(--interactive-accent-rgb), 0.08);
-	border-radius: 8px 8px 0 0;
-}
-
-.qb-exam-section.qb-exam-active .qb-exam-summary-icon {
-	color: var(--interactive-accent);
-}
-
-/* Enhanced Exam Toggle - Blue styled like answer toggles */
-.qb-exam-section .qb-toggle-wrap {
-	cursor: pointer;
-	user-select: none;
-}
-
-.qb-exam-section .qb-toggle-track {
-	width: 2.8em;
-	height: 1.6em;
-	background: var(--background-modifier-border);
-	border-radius: 0.8em;
-	position: relative;
-	transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-	box-shadow: inset 0 1px 2px rgba(0,0,0,0.1);
-}
-
-.qb-exam-section .qb-toggle-track.on {
-	background: var(--interactive-accent);
-	box-shadow: inset 0 1px 2px rgba(0,0,0,0.15), 0 0 0 1px rgba(var(--interactive-accent-rgb), 0.3);
-}
-
-.qb-exam-section .qb-toggle-thumb {
-	width: 1.3em;
-	height: 1.3em;
-	background: white;
-	border-radius: 50%;
-	position: absolute;
-	top: 0.15em;
-	left: 0.15em;
-	transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-	box-shadow: 0 1px 3px rgba(0,0,0,0.2);
-	display: flex;
-	align-items: center;
-	justify-content: center;
-}
-
-.qb-exam-section .qb-toggle-track.on .qb-toggle-thumb {
-	transform: translateX(1.2em);
-}
-
-.qb-exam-section .qb-toggle-thumb::before {
-	content: "";
-	width: 0.5em;
-	height: 0.5em;
-	background: var(--text-muted);
-	border-radius: 50%;
-	transition: all 0.2s ease;
-}
-
-.qb-exam-section .qb-toggle-track.on .qb-toggle-thumb::before {
-	background: var(--interactive-accent);
-	transform: scale(0.8);
-}
-
-/* Toggle label styling */
-.qb-exam-section .qb-toggle-wrap > span:last-child {
-	font-weight: 600;
-	font-size: 0.9em;
-	margin-left: 0.5em;
-	color: var(--text-normal);
-	transition: color 0.2s ease;
-}
-
-.qb-exam-section.qb-exam-active .qb-toggle-wrap > span:last-child {
-	color: var(--interactive-accent);
-}
-
-/* =========================================================
-   QUIZ BUILDER — SECTION MODE EXAMEN
-   ========================================================= */
-
-.qb-exam-section {
-	margin-top: auto;
-	border-top: 1px solid var(--background-modifier-border);
-	background: var(--background-secondary);
-}
-
-.qb-exam-summary {
-	padding: 10px 12px;
-	font-size: 12px;
-	font-weight: 700;
-	color: var(--text-normal);
-	cursor: pointer;
-	display: flex;
-	align-items: center;
-	gap: 8px;
-	text-transform: uppercase;
-	letter-spacing: 0.5px;
-}
-
-.qb-exam-summary:hover {
-	background: var(--background-primary-alt);
-}
-
-.qb-exam-body {
-	padding: 12px;
-	background: var(--background-primary);
-	border-top: 1px solid var(--background-modifier-border);
-}
-
-.qb-exam-body > * + * {
-	margin-top: 10px;
-}
-
 /* Checkbox style */
 .qb-checkbox-wrap {
 	display: flex;
@@ -217,34 +49,6 @@
 	height: 14px;
 	margin: 0;
 	cursor: pointer;
-}
-
-/* Field dans exam body */
-.qb-exam-body .qb-field {
-	margin-bottom: 4px;
-}
-
-.qb-exam-body .qb-field-label {
-	font-size: 10px;
-	font-weight: 600;
-	color: var(--text-muted);
-	margin-bottom: 3px;
-}
-
-.qb-exam-body .qb-field-input {
-	width: 100%;
-	padding: 5px 8px;
-	border: 1px solid var(--background-modifier-border);
-	border-radius: 5px;
-	background: var(--background-primary);
-	color: var(--text-normal);
-	font-size: 12px;
-}
-
-.qb-exam-body .qb-field-input:focus {
-	outline: none;
-	border-color: var(--interactive-accent);
-	box-shadow: 0 0 0 2px rgba(var(--interactive-accent-rgb), 0.15);
 }
 
 /* Import modal styles */
