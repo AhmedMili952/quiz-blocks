@@ -1,5 +1,5 @@
 /* =========================================================
-   COMPONENTS: ACTION BUTTONS
+   11) ACTIONS / BOUTONS
    ========================================================= */
 
 .quiz-actions{
@@ -184,3 +184,4 @@
   box-shadow: var(--quiz-results-active-shadow) !important;
   filter: saturate(1.03);
 }
+

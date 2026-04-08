@@ -1,5 +1,5 @@
 /* =========================================================
-   COMPONENTS: QUIZ CARD & QUESTION
+   5) CARTE question
    ========================================================= */
 
 .quiz-card{
@@ -58,3 +58,4 @@
   background: color-mix(in srgb, var(--quiz-primary) 8%, var(--background-secondary));
   border: 1px solid color-mix(in srgb, var(--quiz-primary) 20%, var(--background-modifier-border));
 }
+

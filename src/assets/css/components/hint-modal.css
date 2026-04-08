@@ -1,5 +1,5 @@
 /* =========================================================
-   COMPONENTS: HINT BUTTON & MODAL
+   8) BOUTON INDICE
    ========================================================= */
 
 .quiz-hint-btn{
@@ -73,6 +73,11 @@
   box-shadow: var(--quiz-hint-active-shadow) !important;
   filter: saturate(1.03);
 }
+
+
+/* =========================================================
+   9) MODAL INDICE
+   ========================================================= */
 
 .quiz-hint-modal-overlay{
   position: fixed;
@@ -213,3 +218,4 @@
   background-clip: padding-box;
   background: color-mix(in srgb, var(--background-modifier-border) 70%, var(--quiz-primary) 30%);
 }
+

@@ -1,5 +1,5 @@
 /* =========================================================
-   LAYOUT STYLES
+   2) LARGEUR / layout
    ========================================================= */
 
 .quiz-nav,
@@ -22,19 +22,33 @@
   max-width: 100%;
 }
 
+
+/* =========================================================
+   3) TRACK / CAROUSEL
+   ========================================================= */
+
 .quiz-track-viewport{
   position: relative;
   box-sizing: border-box;
   isolation: isolate;
+
+  /* Important :
+     on garde le masquage horizontal, mais on retire
+     les règles de clipping trop agressives */
   overflow-x: hidden !important;
   overflow-y: hidden !important;
   -webkit-overflow-scrolling: touch;
+
   scrollbar-width: none;
   -ms-overflow-style: none;
+
   height: 1px;
   min-height: 1px;
+
   will-change: height;
   transition: none;
+
+  /* Correction principale */
   contain: layout style;
   clip-path: none !important;
 }
@@ -54,8 +68,10 @@
   align-items: flex-start;
   width: max-content;
   min-width: 100%;
+
   transform: translate3d(0,0,0);
   -webkit-transform: translate3d(0,0,0);
+
   will-change: transform;
   backface-visibility: hidden;
   transform-style: preserve-3d;
@@ -67,17 +83,31 @@
   min-width: 100%;
   max-width: 100%;
   box-sizing: border-box;
+
   margin: 0;
   padding: 0 0 40px 0;
+
   overflow: visible;
   contain: layout style;
+
+  /* Très important :
+     on enlève la couche GPU forcée qui peut créer
+     un clipping visuel pendant la translation */
   transform: none;
+
+  /* Slide mesurée comme une vraie colonne */
   display: flex;
   flex-direction: column;
   align-items: stretch;
   justify-content: flex-start;
+
   min-height: 1px;
 }
+
+
+/* =========================================================
+   19) CORRECTIF ANTI-COUPURE BAS PENDANT LE SLIDE
+   ========================================================= */
 
 .quiz-track-item > .quiz-card,
 .quiz-track-item > .quiz-submit-wrap,

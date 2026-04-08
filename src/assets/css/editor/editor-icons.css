@@ -1,5 +1,5 @@
 /* =========================================================
-   EDITOR — ICONS (Unified Icon System)
+   QUIZ BUILDER — ICON SYSTEM (Unified)
    ========================================================= */
 
 /* Base icon container - all icons use this as base */
@@ -72,7 +72,7 @@
 .qb-panel-head-icon { margin-right: 6px; }
 .qb-summary-icon { margin-right: 6px; }
 .qb-arr-add-icon { margin-right: 4px; }
-.qb-chip-icon { margin-right: 4px; font-size: 0.9em; }
+.qb-chip-icon { margin-right: 4px; }
 .qb-error-icon { margin-right: 6px; }
 .qb-match-arrow { margin: 0 4px; color: var(--text-muted); }
 .qb-exam-summary-icon { margin-right: 6px; color: var(--text-muted); }
@@ -82,3 +82,4 @@
 
 /* Panel head icon opacity */
 .qb-panel-head-icon svg { opacity: 0.8; }
+

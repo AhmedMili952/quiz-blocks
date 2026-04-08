@@ -1,5 +1,5 @@
 /* =========================================================
-   UTILITIES
+   17) THEME CLAIR — corrections
    ========================================================= */
 
 .theme-light .quiz-tab:not(:hover):not(:focus-visible),
@@ -60,20 +60,3 @@
     0 0 16px var(--quiz-primary-ring-12) !important;
 }
 
-@media (hover: none), (pointer: coarse), (max-width: 900px){
-  .quiz-tab,
-  .quiz-option,
-  .quiz-action-btn,
-  .quiz-chip,
-  .quiz-hint-btn,
-  .quiz-hint-modal-close,
-  .quiz-slot,
-  .quiz-possibility{
-    -webkit-tap-highlight-color: transparent;
-    touch-action: manipulation;
-  }
-
-  .quiz-track-viewport{
-    touch-action: pan-y;
-  }
-}

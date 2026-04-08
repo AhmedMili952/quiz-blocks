@@ -1,5 +1,5 @@
 /* =========================================================
-   DESIGN TOKENS & THEMES
+   0) TOKENS
    ========================================================= */
 
 body{
@@ -103,3 +103,4 @@ body{
     0 0 0 1.5px var(--quiz-success-ring-14),
     0 0 8px color-mix(in srgb, var(--quiz-success) 8%, transparent);
 }
+

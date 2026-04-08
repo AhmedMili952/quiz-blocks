@@ -1,5 +1,5 @@
 /* =========================================================
-   COMPONENTS: ORDERING / MATCH (layout + DnD)
+   7) ORDERING / MATCH (layout + DnD)
    ========================================================= */
 
 .quiz-ordering{
@@ -261,3 +261,4 @@
     0 0 0 1.5px var(--quiz-primary-ring-16),
     inset 0 0 0 999px rgba(0,0,0,0.08) !important;
 }
+

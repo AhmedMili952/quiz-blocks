@@ -1,5 +1,5 @@
 /* =========================================================
-   COMPONENTS: QUIZ OPTIONS
+   6) OPTIONS (single / multi)
    ========================================================= */
 
 .quiz-option{
@@ -137,7 +137,11 @@
     0 0 22px var(--quiz-danger-glow-38);
 }
 
-/* Options Grid (images) */
+
+/* =========================================================
+   6-b) OPTIONS GRID (images dans les options)
+   ========================================================= */
+
 .quiz-options-wrap{
   display: flex;
   flex-direction: column;
@@ -192,3 +196,4 @@
     width: clamp(120px, 45%, 180px) !important;
   }
 }
+

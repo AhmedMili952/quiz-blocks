@@ -1,5 +1,5 @@
 /* =========================================================
-   COMPONENTS: EMBEDS / IMAGES
+   14) EMBEDS / IMAGES
    ========================================================= */
 
 .quiz-question-embed-wrap,
@@ -51,8 +51,9 @@
   max-width: 100% !important;
 }
 
+
 /* =========================================================
-   CORRECTIONS EMBEDS — alignement gauche pour question
+   18) CORRECTIONS DIVERSES — EMBEDS, IMAGES, etc.
    ========================================================= */
 
 .quiz-question-embed-wrap{
