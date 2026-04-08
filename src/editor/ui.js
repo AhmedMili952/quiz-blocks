@@ -6,6 +6,7 @@ const { ConfirmModal, TypePickerModal, ImportQuizModal } = require('./modals');
 module.exports = function createEditorUIHandlers(ctx) {
 	const { _setIcon, _iconSpan, exportAllWithFence } = ctx;
 	const view = ctx.view;
+	view._isDirty = false;
 
 	function buildUI() {
 		const root = view.contentEl;
@@ -121,7 +122,10 @@ module.exports = function createEditorUIHandlers(ctx) {
 		addBtn.addEventListener("click", () => showTypeModal());
 		view.sidebarListEl = view.sidebarEl.createDiv({ cls: "qb-sidebar-list" });
 
-		const examSection = view.sidebarEl.createEl("details", { cls: "qb-section-collapsible" + (ctx.examOptions.enabled ? "" : " qb-section-locked"), attr: ctx.examOptions.enabled ? { open: "" } : {} });
+		const examSection = view.sidebarEl.createEl("details", {
+			cls: "qb-section-collapsible" + (ctx.examOptions.enabled ? "" : " qb-section-locked"),
+			attr: ctx.examOptions.enabled ? { open: "" } : {}
+		});
 		const examSummary = examSection.createEl("summary", { cls: "qb-section-header" });
 		ctx._setIcon(examSummary, "graduation-cap", "qb-summary-icon");
 		const examSummaryText = examSummary.createSpan({ text: "Mode Examen", cls: "qb-resource-summary-text" });
@@ -135,7 +139,10 @@ module.exports = function createEditorUIHandlers(ctx) {
 			ctx.examOptions.enabled = !ctx.examOptions.enabled;
 			updateExamUIState();
 			view.renderCode();
-			// Mettre à jour l'état du details element
+			if (view.updateSaveIndicator) view.updateSaveIndicator(false);
+			view._isDirty = true;
+
+			// IMPORTANT : Mise à jour immédiate de l'élément HTML
 			if (ctx.examOptions.enabled) {
 				examSection.setAttribute("open", "");
 				examSection.classList.remove("qb-section-locked");
@@ -165,51 +172,61 @@ module.exports = function createEditorUIHandlers(ctx) {
 			durationInput.value = String(ctx.examOptions.durationMinutes);
 			autoSubmitCb.checked = ctx.examOptions.autoSubmit;
 			showTimerCb.checked = ctx.examOptions.showTimer;
+			if (ctx.examOptions.enabled) {
+				examSection.setAttribute("open", "");
+				examSection.classList.remove("qb-section-locked");
+			} else {
+				examSection.removeAttribute("open");
+				examSection.classList.add("qb-section-locked");
+			}
 		}
 
 		// Stocker la référence pour pouvoir l'appeler depuis l'import
 		view.updateExamUIState = updateExamUIState;
 
 		const durationWrap = examOptionsContainer.createDiv({ cls: "qb-field qb-field-group" });
-                        durationWrap.createEl("label", { cls: "qb-field-label", text: "Durée" });
-                        const inputContainer = durationWrap.createDiv({ cls: "qb-input-group" });
-                        const durationInput = inputContainer.createEl("input", {
-                                cls: "qb-field-input",
-                                type: "number",
-                                min: "1",
-                                max: "180",
-                                value: String(ctx.examOptions.durationMinutes),
-                                disabled: !ctx.examOptions.enabled
-                        });
-                        inputContainer.createSpan({ text: "min", cls: "qb-field-unit" });
-                        durationInput.addEventListener("input", () => {
-                                ctx.examOptions.durationMinutes = Math.max(1, Math.min(180, parseInt(durationInput.value) || 10));
-                                view.renderCode();
-                        });
+		durationWrap.createEl("label", { cls: "qb-field-label", text: "Durée" });
+		const inputContainer = durationWrap.createDiv({ cls: "qb-input-group" });
+		const durationInput = inputContainer.createEl("input", {
+			cls: "qb-field-input",
+			type: "number",
+			min: "1",
+			max: "180",
+			value: String(ctx.examOptions.durationMinutes),
+			disabled: !ctx.examOptions.enabled
+		});
+		inputContainer.createSpan({ text: "min", cls: "qb-field-unit" });
+		durationInput.addEventListener("input", () => {
+			ctx.examOptions.durationMinutes = Math.max(1, Math.min(180, parseInt(durationInput.value) || 10));
+			view.renderCode();
+			view._isDirty = true;
+		});
 
-                        const autoSubmitWrap = examOptionsContainer.createEl("label", { cls: "qb-checkbox-wrap" });
-                        const autoSubmitCb = autoSubmitWrap.createEl("input", {
-                                type: "checkbox",
-                                checked: ctx.examOptions.autoSubmit,
-                                disabled: !ctx.examOptions.enabled
-                        });
-                        autoSubmitWrap.createSpan({ text: " Soumettre auto à la fin", cls: "qb-checkbox-label" });
-                        autoSubmitCb.addEventListener("change", () => {
-                                ctx.examOptions.autoSubmit = autoSubmitCb.checked;
-                                view.renderCode();
-                        });
+		const autoSubmitWrap = examOptionsContainer.createEl("label", { cls: "qb-checkbox-wrap" });
+		const autoSubmitCb = autoSubmitWrap.createEl("input", {
+			type: "checkbox",
+			checked: ctx.examOptions.autoSubmit,
+			disabled: !ctx.examOptions.enabled
+		});
+		autoSubmitWrap.createSpan({ text: " Soumettre auto à la fin", cls: "qb-checkbox-label" });
+		autoSubmitCb.addEventListener("change", () => {
+			ctx.examOptions.autoSubmit = autoSubmitCb.checked;
+			view.renderCode();
+			view._isDirty = true;
+		});
 
-                        const showTimerWrap = examOptionsContainer.createEl("label", { cls: "qb-checkbox-wrap" });
-                        const showTimerCb = showTimerWrap.createEl("input", {
-                                type: "checkbox",
-                                checked: ctx.examOptions.showTimer,
-                                disabled: !ctx.examOptions.enabled
-                        });
-                        showTimerWrap.createSpan({ text: " Afficher le timer", cls: "qb-checkbox-label" });
-                        showTimerCb.addEventListener("change", () => {
-                                ctx.examOptions.showTimer = showTimerCb.checked;
-                                view.renderCode();
-                        });
+		const showTimerWrap = examOptionsContainer.createEl("label", { cls: "qb-checkbox-wrap" });
+		const showTimerCb = showTimerWrap.createEl("input", {
+			type: "checkbox",
+			checked: ctx.examOptions.showTimer,
+			disabled: !ctx.examOptions.enabled
+		});
+		showTimerWrap.createSpan({ text: " Afficher le timer", cls: "qb-checkbox-label" });
+		showTimerCb.addEventListener("change", () => {
+			ctx.examOptions.showTimer = showTimerCb.checked;
+			view.renderCode();
+			view._isDirty = true;
+		});
 
 
 		view.renderSidebar();
@@ -246,13 +263,21 @@ module.exports = function createEditorUIHandlers(ctx) {
 				// Notification professionnelle
 				new obsidian.Notice("✓ Sauvegardé", 2000);
 			} else {
-				// Modifications en attente - bouton actif
+				// Modifications en attentes - bouton actif
 				view._saveBtn.disabled = false;
 				view._saveBtn.title = "Cliquez pour sauvegarder les modifications";
 			}
 		};
 
 		syncPanels();
+
+		// Autosave toutes les 1 seconde
+		setInterval(() => {
+			if (view._isDirty) {
+				view.saveToSourceFile?.();
+				view._isDirty = false;
+			}
+		}, 1000);
 	}
 
 	function syncPanels() {
