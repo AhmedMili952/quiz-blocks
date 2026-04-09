@@ -15,6 +15,8 @@ You describe a quiz using a JSON5 code block. The plugin transforms it into a ri
 ### Single Choice — one correct answer
 
 <img src=".github/demo-single-choice.png" width="430" alt="Single choice demo" />
+<img width="920" height="531" alt="image" src="https://github.com/user-attachments/assets/d68db69f-c856-4069-a55f-ae1eee4f540b" />
+
 
 ### Multiple Choice — several correct answers
 
