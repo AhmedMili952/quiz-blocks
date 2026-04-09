@@ -123,41 +123,22 @@ class QuizBlocksSettingTab extends obsidian.PluginSettingTab {
 		notesEl.createEl("li", { text: "Interactive rendering happens directly inside the note preview." });
 
 		// ─── Available Commands Section ───
-		containerEl.createEl("h3", { text: "Commandes et raccourcis clavier" });
+		containerEl.createEl("h3", { text: "Commandes et raccourcis clavier (par défaut)" });
 
 		const commandsInfo = [
 			{
 				id: "open-quiz-builder",
 				name: "Ouvrir le Quiz Editor",
+				hotkey: "Ctrl+Shift+E",
 				desc: "Ouvre un nouvel onglet avec le Quiz Editor vide"
 			},
 			{
 				id: "open-quiz-from-active-note",
 				name: "Ouvrir le quiz de la note active",
+				hotkey: "Ctrl+Shift+Q",
 				desc: "Ouvre l'éditeur et charge le quiz de la note active"
 			}
 		];
-
-		// Fonction pour récupérer les raccourcis actuels d'une commande
-		function getHotkeysForCommand(commandId) {
-			const command = this.app.commands.commands[commandId];
-			if (!command || !command.hotkeys || command.hotkeys.length === 0) {
-				return "Non défini";
-			}
-			// Formater le premier raccourci
-			const hk = command.hotkeys[0];
-			const modifiers = hk.modifiers || [];
-			const key = hk.key || "";
-			// Remplacer les modificateurs par des symboles
-			const modStr = modifiers.map(m => {
-				if (m === "Ctrl") return "Ctrl";
-				if (m === "Shift") return "Shift";
-				if (m === "Alt") return "Alt";
-				if (m === "Meta" || m === "Mod") return "Cmd";
-				return m;
-			}).join("+");
-			return modStr ? `${modStr}+${key}` : key;
-		}
 
 		// Tableau des commandes
 		const commandsTable = containerEl.createDiv({ cls: "qb-commands-table" });
@@ -175,9 +156,8 @@ class QuizBlocksSettingTab extends obsidian.PluginSettingTab {
 			const hotkeyDiv = row.createDiv({ cls: "qb-command-hotkey" });
 			hotkeyDiv.style.cssText = "display: flex; align-items: center; gap: 0.5em; margin-left: 1em;";
 
-			// Afficher la combinaison de touches (récupérée dynamiquement)
-			const hotkeyText = getHotkeysForCommand.call(this, cmd.id);
-			const hotkeyBadge = hotkeyDiv.createSpan({ cls: "qb-hotkey-badge", text: hotkeyText });
+			// Afficher le raccourci par défaut
+			const hotkeyBadge = hotkeyDiv.createSpan({ cls: "qb-hotkey-badge", text: cmd.hotkey });
 			hotkeyBadge.style.cssText = "font-family: var(--font-monospace); font-size: 0.75em; padding: 0.25em 0.5em; background: var(--interactive-accent); color: var(--text-on-accent); border-radius: 4px; white-space: nowrap;";
 		}
 
