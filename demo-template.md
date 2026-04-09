@@ -1,8 +1,8 @@
 # Quiz Blocks — Demo Template
 
-This note demonstrates all supported question types of the **quiz-blocks** plugin in a single block.
-Copy the entire code block below into any Obsidian note to run the full demo.
+Copy the entire block below (including the ` ```quiz-blocks ` and closing ` ``` `) into any Obsidian note to run the full demo.
 
+````md
 ```quiz-blocks
 [
   // ── 1. SINGLE CHOICE ──────────────────────────────────────────────────────
@@ -135,3 +135,4 @@ Copy the entire code block below into any Obsidian note to run the full demo.
   },
 ]
 ```
+````
