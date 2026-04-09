@@ -3,11 +3,14 @@ name: Release Quiz Blocks
 on:
   push:
     tags:
-      - '*'
+      - 'v*'
 
 jobs:
   build:
     runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout
@@ -21,9 +24,6 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build
-        run: npm run build
-
       - name: Get version from tag
         id: version
         run: echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
@@ -34,21 +34,12 @@ jobs:
             const fs = require('fs');
             const m = JSON.parse(fs.readFileSync('src/assets/manifest.json', 'utf8'));
             m.version = '${{ steps.version.outputs.tag }}'.replace(/^v/, '');
-            fs.writeFileSync('src/assets/manifest.json', JSON.stringify(m, null, 2));
+            fs.writeFileSync('src/assets/manifest.json', JSON.stringify(m, null, 2) + '\n');
+            console.log('Manifest version updated to:', m.version);
           "
 
-      - name: Collect release files
+      - name: Build main.js
         run: |
-          mkdir release
-          cp src/assets/manifest.json release/manifest.json
-          cp src/assets/styles.css release/styles.css
-
-      - name: Find built main.js
-        id: find_main
-        run: |
-          # esbuild outputs to the vault path in config, but in CI there's no vault
-          # So we modify the build to output locally
-          echo "Rebuilding for CI output..."
           node -e "
             const esbuild = require('esbuild');
             esbuild.buildSync({
@@ -61,7 +52,35 @@ jobs:
               sourcemap: false,
               external: ['obsidian', 'electron'],
             });
+            console.log('main.js built successfully');
           "
+        env:
+          NODE_ENV: production
+
+      - name: Bundle CSS
+        run: |
+          mkdir -p release
+          node -e "
+            const esbuild = require('esbuild');
+            const fs = require('fs');
+            esbuild.buildSync({
+              entryPoints: ['src/assets/css/index.css'],
+              outfile: 'release/styles.css',
+              bundle: true,
+              minify: false,
+            });
+            // Remove esbuild entry point comment
+            let css = fs.readFileSync('release/styles.css', 'utf8');
+            css = css.replace(/\n\/\* src\/assets\/css\/index\.css \*\/\s*$/, '');
+            fs.writeFileSync('release/styles.css', css);
+            console.log('styles.css bundled successfully');
+          "
+
+      - name: Copy manifest
+        run: cp src/assets/manifest.json release/manifest.json
+
+      - name: List release files
+        run: ls -lh release/
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
