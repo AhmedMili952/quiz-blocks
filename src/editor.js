@@ -220,35 +220,16 @@ class QuizBuilderView extends obsidian.ItemView {
 
 			// Rafraîchir le titre de l'onglet
 			if (this.leaf && this.sourceFile) {
-				// Utiliser la méthode setDisplayText de la feuille pour mettre à jour le titre
-				if (this.leaf.setDisplayText) {
-					this.leaf.setDisplayText(this.sourceFile.basename);
+				// Mettre à jour getDisplayText pour retourner le nom du fichier
+				this.getDisplayText = () => this.sourceFile.basename;
+
+				// Forcer le rafraîchissement via updateHeader (méthode interne)
+				if (this.leaf.updateHeader) {
+					this.leaf.updateHeader();
 				}
 
-				// Forcer également la mise à jour de la méthode getDisplayText
-				if (this.leaf.view) {
-					this.leaf.view.getDisplayText = () => this.sourceFile.basename;
-				}
-
-				// Déclencher un événement pour forcer le rafraîchissement de l'interface
+				// Déclencher un événement pour forcer le rafraîchissement
 				this.app.workspace.trigger('layout-change');
-
-				// Mise à jour directe du DOM si nécessaire
-				setTimeout(() => {
-					const tabHeader = this.leaf.tabHeaderEl;
-					if (tabHeader) {
-						const innerTextEl = tabHeader.querySelector('.workspace-tab-header-inner-text');
-						if (innerTextEl) {
-							innerTextEl.textContent = this.sourceFile.basename;
-						}
-
-						// Mettre à jour l'attribut title
-						const titleContainer = tabHeader.querySelector('.workspace-tab-header-inner-title-container');
-						if (titleContainer) {
-							titleContainer.setAttribute('title', this.sourceFile.basename);
-						}
-					}
-				}, 0);
 			}
 
 			this.render();
