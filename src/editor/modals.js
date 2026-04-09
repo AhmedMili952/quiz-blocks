@@ -378,16 +378,16 @@ class OpenQuizFromNoteModal extends obsidian.FuzzySuggestModal {
 	constructor(app, builderView) {
 		super(app);
 		this.builderView = builderView;
-		this.setPlaceholder("Choisir une note contenant un quiz...");
 		this.openFiles = new Set();
-		this.filesWithQuiz = [];
-		this.loading = true;
+		this.resultItems = [];
+		this.isReady = false;
 	}
 
-	onOpen() {
+	async onOpen() {
 		super.onOpen();
-		// Charger les fichiers dès l'ouverture
-		this.loadFilesWithQuiz();
+
+		// Charger les fichiers en arrière-plan
+		await this.loadFilesWithQuiz();
 	}
 
 	async loadFilesWithQuiz() {
@@ -438,69 +438,41 @@ class OpenQuizFromNoteModal extends obsidian.FuzzySuggestModal {
 			return b.mtime - a.mtime;
 		});
 
-		// Créer une Map pour retrouver les fichiers par leur nom
-		this.fileMap = new Map();
-		filesWithQuiz.forEach(f => {
-			this.fileMap.set(f.file.basename, f);
-		});
-
-		// Stocker juste les noms pour FuzzySuggestModal
-		this.filesWithQuiz = filesWithQuiz.map(f => f.file.basename);
-		this.loading = false;
+		this.resultItems = filesWithQuiz.map(item => item.file);
+		this.isReady = true;
 
 		// Rafraîchir la modale avec les résultats
-		this.updateSuggestions();
+		// La méthode recommandée par l'API Obsidian
+		this.inputEl.value = this.inputEl.value || "";
+		this.inputEl.dispatchEvent(new Event("input"));
 	}
 
 	getItems() {
-		if (this.loading) {
-			return ["Chargement..."];
-		}
-		return this.filesWithQuiz;
+		return this.resultItems;
 	}
 
-	getItemText(item) {
-		return item;
+	getItemText(file) {
+		return file.path;
 	}
 
-	renderSuggestion(item, el) {
-		// Récupérer les métadonnées du fichier
-		const fileData = this.fileMap.get(item);
-		const isOpen = fileData?.isOpen || false;
-		const filePath = fileData?.file?.path || "";
+	renderSuggestion(file, el) {
+		const filePath = file?.path || "";
+		const fileName = file?.basename || "";
+		const isOpen = this.openFiles.has(filePath);
 
-		// Vider l'élément existant
-		el.empty();
-
-		// Créer la structure d'affichage
-		const container = el.createDiv({ cls: "suggestion-item" });
-		container.style.cssText = "display: flex; flex-direction: column; padding: 6px 8px;";
-
-		// Ligne principale : nom du fichier + badge
-		const titleRow = container.createDiv();
-		titleRow.style.cssText = "display: flex; align-items: center; gap: 6px;";
-
-		// Nom du fichier
-		titleRow.createSpan({ text: item });
-
-		// Badge "Ouvert"
-		if (isOpen) {
-			const badge = titleRow.createSpan({ text: "Ouvert" });
-			badge.style.cssText = "font-size: 10px; padding: 2px 6px; background: var(--interactive-accent); color: var(--text-on-accent); border-radius: 4px; flex-shrink: 0;";
-		}
-
-		// Chemin
-		if (filePath) {
-			const pathDiv = container.createDiv({ text: filePath });
-			pathDiv.style.cssText = "font-size: 12px; color: var(--text-muted); margin-top: 2px; opacity: 0.8;";
-		}
+		el.createDiv({ cls: "qb-suggest-item" }, div => {
+			div.createDiv({ cls: "qb-suggest-main" }, main => {
+				main.createEl("span", { cls: "qb-suggest-name", text: fileName });
+				if (isOpen) {
+					main.createEl("span", { cls: "qb-suggest-badge", text: "Ouvert" });
+				}
+			});
+			div.createEl("span", { cls: "qb-suggest-path", text: filePath });
+		});
 	}
 
-	async onChooseItem(item) {
+	async onChooseItem(file) {
 		try {
-			const fileData = this.fileMap.get(item);
-			if (!fileData) return;
-			const file = fileData.file;
 			const content = await this.app.vault.read(file);
 			const match = content.match(/```quiz-blocks\n([\s\S]*?)\n```/);
 			if (!match) {
