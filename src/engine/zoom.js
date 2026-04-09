@@ -52,6 +52,94 @@ module.exports = function createZoomHandlers(ctx) {
 		return waiter.promise;
 	}
 
+	async function applyOutFocusTransition(element, options = {}) {
+		const {
+			duration = 500,
+			easing = "ease-out",
+			scale = 0.95,
+			blur = 10,
+			onComplete = null
+		} = options;
+
+		return new Promise(resolve => {
+			if (!element) {
+				resolve();
+				return;
+			}
+
+			Object.assign(element.style, {
+				willChange: "transform, opacity, filter",
+				transition: `transform ${duration}ms ${easing}, opacity ${duration}ms ${easing}, filter ${duration}ms ${easing}`,
+				transform: `scale(${scale})`,
+				opacity: "0",
+				filter: `blur(${blur}px)`
+			});
+
+			const onTransitionEnd = () => {
+				element.removeEventListener("transitionend", onTransitionEnd);
+				if (onComplete) onComplete();
+				resolve();
+			};
+
+			element.addEventListener("transitionend", onTransitionEnd);
+		});
+	}
+
+	async function applyInFocusTransition(element, options = {}) {
+		const {
+			duration = 600,
+			easing = "cubic-bezier(0.16, 1, 0.3, 1)",
+			scaleStart = 1.05,
+			scaleEnd = 1,
+			blurStart = 10,
+			blurEnd = 0,
+			opacityStart = 0,
+			opacityEnd = 1,
+			onComplete = null
+		} = options;
+
+		return new Promise(resolve => {
+			if (!element) {
+				resolve();
+				return;
+			}
+
+			Object.assign(element.style, {
+				willChange: "transform, opacity, filter",
+				animation: `quiz-focus-in-animation ${duration}ms ${easing} forwards`
+			});
+
+			const styleSheet = document.styleSheets[0] || document.head.appendChild(document.createElement("style")).sheet;
+			try {
+				styleSheet.insertRule(`
+					@keyframes quiz-focus-in-animation {
+						0% {
+							transform: scale(${scaleStart});
+							opacity: ${opacityStart};
+							filter: blur(${blurStart}px);
+						}
+						100% {
+							transform: scale(${scaleEnd});
+							opacity: ${opacityEnd};
+							filter: blur(${blurEnd}px);
+						}
+					}
+				`, styleSheet.cssRules.length);
+			} catch (e) {
+				// Keyframes might already exist, ignore
+			}
+
+			const onAnimationEnd = () => {
+				element.removeEventListener("animationend", onAnimationEnd);
+				element.style.animation = "";
+				if (onComplete) onComplete();
+				resolve();
+			};
+
+			element.addEventListener("animationend", onAnimationEnd);
+		});
+	}
+
 	async function restartQuizWithZoomBlurTransition() {
 		// Forcer le reset de isSliding si on est sur la page de résultats
 		// car la transition précédente peut ne pas avoir terminée correctement
@@ -356,7 +444,9 @@ module.exports = function createZoomHandlers(ctx) {
 	}
 
 	return {
-		waitForManagedTransitions,
-		restartQuizWithZoomBlurTransition
-	};
+    waitForManagedTransitions,
+    restartQuizWithZoomBlurTransition,
+    applyOutFocusTransition,
+    applyInFocusTransition
+};
 };

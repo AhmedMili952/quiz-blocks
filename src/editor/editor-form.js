@@ -190,12 +190,14 @@ module.exports = function createEditorFormHandlers(ctx) {
 
 		if (!has) return;
 		const contentDiv = details.createDiv({ cls: "qb-section-content" });
-		const updateSummary = () => {
-			const fn = q.resourceButton?.fileName || "";
-			summaryLabel.textContent = fn ? `Ressource — ${fn}` : "Ressource";
-		};
-		_field(contentDiv, "Label", q.resourceButton.label, "Activité PT", false, v => { q.resourceButton.label = v; onEdit(); updateSummary(); });
-		_field(contentDiv, "Nom du fichier à ouvrir", q.resourceButton.fileName, "fichier.pka", false, v => { q.resourceButton.fileName = v; onEdit(); updateSummary(); });
+const group = contentDiv.createDiv({ cls: "qb-resource-group" });
+const updateSummary = () => {
+    const fn = q.resourceButton?.fileName || "";
+    summaryLabel.textContent = fn ? `Ressource — ${fn}` : "Ressource";
+};
+_field(group, "Label", q.resourceButton.label, "Activité PT", false, v => { q.resourceButton.label = v; onEdit(); updateSummary(); });
+_field(group, "Nom du fichier à ouvrir", q.resourceButton.fileName, "fichier.pka", false, v => { q.resourceButton.fileName = v; onEdit(); updateSummary(); });
+
 
 		const helpNote = contentDiv.createEl("p", { cls: "qb-resource-help-note" });
 		helpNote.createSpan({ text: "Le fichier doit être placé dans le coffre" });

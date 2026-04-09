@@ -186,3 +186,101 @@
 	display: none !important;
 }
 
+.quiz-card-zoom-out {
+    will-change: transform, opacity, filter;
+    transform: scale(0.95);
+    opacity: 0;
+    filter: blur(10px);
+    transition: transform 0.5s ease-out, opacity 0.5s ease-out, filter 0.5s ease-out;
+}
+
+.quiz-card-zoom-in {
+    will-change: transform, opacity, filter;
+    animation: quiz-zoom-in-animation 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes quiz-zoom-in-animation {
+    0% {
+        transform: scale(1.05);
+        opacity: 0;
+        filter: blur(10px);
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+        filter: blur(0px);
+    }
+}
+
+/* =========================================================
+   TRANSITION EFFECTS — NEW
+   ========================================================= */
+
+/* Out-Focus effect - zoom out, blur, fade */
+.quiz-transition-out {
+    will-change: transform, opacity, filter;
+    transform: scale(0.95);
+    opacity: 0;
+    filter: blur(10px);
+    transition: transform 0.5s ease-out, opacity 0.5s ease-out, filter 0.5s ease-out;
+}
+
+/* In-Focus effect - zoom in, de-blur, appear */
+.quiz-transition-in {
+    will-change: transform, opacity, filter;
+    animation: quiz-focus-in-animation 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes quiz-focus-in-animation {
+    0% {
+        transform: scale(1.05);
+        opacity: 0;
+        filter: blur(10px);
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+        filter: blur(0px);
+    }
+}
+
+/* Information supplémentaire dans le timer */
+.quiz-exam-timer-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+}
+
+.quiz-exam-question-count {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-muted);
+    background: var(--background-secondary);
+    padding: 2px 8px;
+    border-radius: 12px;
+    white-space: nowrap;
+}
+
+/* Nombre de questions sur l'écran de démarrage */
+.quiz-exam-start-questions {
+    font-size: 14px;
+    color: var(--text-muted);
+    margin-top: 8px;
+    padding: 6px 12px;
+    background: var(--background-secondary);
+    border-radius: 8px;
+    font-weight: 500;
+}
+
+/* Nombre de questions sur l'écran de démarrage */
+.quiz-exam-start-question-count {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-normal);
+    margin-top: 4px;
+    padding: 8px 16px;
+    background: var(--background-secondary);
+    border-radius: 20px;
+    display: inline-block;
+}
