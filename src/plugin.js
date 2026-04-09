@@ -232,6 +232,17 @@ module.exports = class InteractiveQuizPlugin extends obsidian.Plugin {
 			},
 		});
 
+		/* ─── Ribbon Icon ─── */
+		this.addRibbonIcon("graduation-cap", "Ouvrir le Quiz Editor", async () => {
+			const existing = this.app.workspace.getLeavesOfType(VIEW_TYPE);
+			if (existing.length > 0) {
+				this.app.workspace.revealLeaf(existing[0]);
+				return;
+			}
+			const leaf = this.app.workspace.getLeaf("tab");
+			await leaf.setViewState({ type: VIEW_TYPE, active: true });
+			this.app.workspace.revealLeaf(leaf);
+		});
 
 		/* ─── Code Block Processor ─── */
 		this.registerMarkdownCodeBlockProcessor(
