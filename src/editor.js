@@ -141,7 +141,12 @@ class QuizBuilderView extends obsidian.ItemView {
 	}
 
 	getViewType() { return VIEW_TYPE; }
-	getDisplayText() { return "Quiz Editor"; }
+	getDisplayText() {
+		if (this.sourceFile) {
+			return this.sourceFile.basename || "Quiz Editor";
+		}
+		return "Quiz Editor";
+	}
 	getIcon() { return "graduation-cap"; }
 
 	async onOpen() {
@@ -212,6 +217,9 @@ class QuizBuilderView extends obsidian.ItemView {
 				this._fileNameEl.textContent = fileName || "quiz-blocks";
 				this._fileNameEl.classList.toggle("has-file", !!fileName);
 			}
+
+			// Rafraîchir le titre de l'onglet
+			this.app.workspace.requestSaveLayout();
 
 			this.render();
 			new obsidian.Notice(`${questions.length} question(s) importée(s)${fileName ? " depuis " + fileName : ""}`);
