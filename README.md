@@ -16,8 +16,6 @@ You describe a quiz using a JSON5 code block. The plugin transforms it into a ri
 
 <img src=".github/demo-single-choice.png" width="430" alt="Single choice demo" />
 
-> **`demo-single-choice.png`** — Screenshot of a rendered single choice question in Obsidian with one option selected and the Check button visible.
-
 <details><summary>show code</summary>
 
 ````
@@ -41,8 +39,6 @@ You describe a quiz using a JSON5 code block. The plugin transforms it into a ri
 ### Multiple Choice — several correct answers
 
 <img src=".github/demo-multiple-choice.png" width="430" alt="Multiple choice demo" />
-
-> **`demo-multiple-choice.png`** — Screenshot showing a multiple choice question with checkboxes, some correct and some wrong answers highlighted after clicking Check.
 
 <details><summary>show code</summary>
 
@@ -69,8 +65,6 @@ You describe a quiz using a JSON5 code block. The plugin transforms it into a ri
 
 <img src=".github/demo-text-input.png" width="430" alt="Text input demo" />
 
-> **`demo-text-input.png`** — Screenshot of a text input question with a text field, showing a correct answer highlighted in green after validation.
-
 <details><summary>show code</summary>
 
 ````
@@ -95,8 +89,6 @@ You describe a quiz using a JSON5 code block. The plugin transforms it into a ri
 ### Command Line — terminal simulation (CMD / PowerShell / Bash)
 
 <img src=".github/demo-command-line.png" width="430" alt="Command line demo" />
-
-> **`demo-command-line.png`** — Screenshot of a PowerShell-style terminal input question with the `PS>` prefix, showing a correct command typed and validated.
 
 <details><summary>show code</summary>
 
@@ -125,8 +117,6 @@ You describe a quiz using a JSON5 code block. The plugin transforms it into a ri
 
 <img src=".github/demo-ordering.png" width="430" alt="Ordering demo" />
 
-> **`demo-ordering.png`** — Screenshot of an ordering question with draggable items being reordered into the correct sequence.
-
 <details><summary>show code</summary>
 
 ````
@@ -152,8 +142,6 @@ You describe a quiz using a JSON5 code block. The plugin transforms it into a ri
 
 <img src=".github/demo-matching.png" width="430" alt="Matching demo" />
 
-> **`demo-matching.png`** — Screenshot of a matching question with two columns of items connected by lines, showing correct and incorrect pairings highlighted.
-
 <details><summary>show code</summary>
 
 ````
@@ -178,8 +166,6 @@ You describe a quiz using a JSON5 code block. The plugin transforms it into a ri
 ## Exam Mode
 
 <img src=".github/demo-exam-mode.png" width="430" alt="Exam mode demo" />
-
-> **`demo-exam-mode.png`** — Screenshot of a quiz running in exam mode with a visible countdown timer in the top right corner and an auto-submit warning.
 
 Add an exam configuration object anywhere in your quiz array to enable timed sessions:
 
@@ -211,8 +197,6 @@ Add an exam configuration object anywhere in your quiz array to enable timed ses
 ## Visual Editor
 
 <img src=".github/demo-editor.png" width="430" alt="Visual editor demo" />
-
-> **`demo-editor.png`** — Screenshot of the Quiz Editor panel open in Obsidian, showing a list of questions on the left and the edit form on the right with a live preview.
 
 Press `Ctrl+Shift+E` (or click the 🎓 icon in the ribbon) to open the **Quiz Editor** — build and edit quizzes without writing any code.
 
@@ -263,6 +247,14 @@ This plugin is in active beta development — bugs are possible. Feel free to [o
 - Answers are not persisted between sessions
 - The visual editor requires the note to be in edit mode
 - The `esbuild.config.mjs` build path is configured for a local Obsidian vault — adjust it for your setup
+
+---
+
+## Try it yourself
+
+Want to test all question types at once in your vault?
+
+👉 **[Copy the demo template](https://github.com/AhmedMili952/quiz-blocks/blob/main/demo-template.md)** — open the file, click the **Copy** button, paste it into a new Obsidian note, and the quiz is ready to run.
 
 ---
 
