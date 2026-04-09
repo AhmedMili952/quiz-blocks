@@ -15,8 +15,6 @@ You describe a quiz using a JSON5 code block. The plugin transforms it into a ri
 ### Single Choice — one correct answer
 
 <img src=".github/demo-single-choice.png" width="430" alt="Single choice demo" />
-<img width="920" height="531" alt="image" src="https://github.com/user-attachments/assets/d68db69f-c856-4069-a55f-ae1eee4f540b" />
-
 
 ### Multiple Choice — several correct answers
 
@@ -26,9 +24,13 @@ You describe a quiz using a JSON5 code block. The plugin transforms it into a ri
 
 <img src=".github/demo-text-input.png" width="430" alt="Text input demo" />
 
-### Command Line — terminal simulation (CMD / PowerShell / Bash)
+### Command Line — terminal simulation
 
-<img src=".github/demo-command-line.png" width="430" alt="Command line demo" />
+Three variants available: **CMD**, **PowerShell**, and **Bash**.
+
+<img src=".github/demo-cmd.png" width="430" alt="CMD demo" />
+<img src=".github/demo-powershell.png" width="430" alt="PowerShell demo" />
+<img src=".github/demo-bash.png" width="430" alt="Bash demo" />
 
 ### Ordering — drag & drop to arrange items
 
@@ -64,20 +66,18 @@ Press `Ctrl+Shift+E` (or click the 🎓 icon in the ribbon) to open the **Quiz E
 
 ## Installation
 
-**Quiz Blocks** can be installed manually from GitHub.
+The recommended way to install **Quiz Blocks** is via **BRAT** (Beta Reviewers Auto-update Tool), which handles installation and automatic updates directly from GitHub.
 
-<details><summary>Show steps</summary>
-
-1. Go to the [Releases](https://github.com/AhmedMili952/quiz-blocks/releases) page and download the latest release.
-2. Extract the ZIP file.
-3. Copy the extracted folder into your vault's plugin directory:
+1. Install the [BRAT plugin](https://obsidian.md/plugins?id=obsidian42-brat) from the Obsidian Community Plugins.
+2. Open BRAT settings and click **Add Beta Plugin**.
+3. Paste the repository URL:
    ```
-   YOUR_VAULT/.obsidian/plugins/quiz-blocks/
+   https://github.com/AhmedMili952/quiz-blocks
    ```
-4. Restart Obsidian or go to **Settings → Community plugins** and click **Reload plugins**.
-5. Enable **Quiz Blocks** from the list.
+4. Click **Add Plugin** — BRAT will install it automatically.
+5. Go to **Settings → Community plugins** and enable **Quiz Blocks**.
 
-</details>
+BRAT will notify you whenever a new version is available and update with one click.
 
 ---
 
