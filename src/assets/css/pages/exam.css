@@ -579,11 +579,10 @@
     background: var(--background-primary);
     border: 2px solid var(--interactive-accent);
     border-radius: 12px;
-    padding: 24px 300px;
+    padding: 24px 40px;
     margin: 16px auto;
-    width: fit-content;
-    min-width: 300px;
-    max-width: 90%;
+    width: 100%;
+    max-width: min(800px, calc(100% - 32px));
     box-sizing: border-box;
     display: flex;
     justify-content: center;
@@ -628,9 +627,11 @@
     font-size: 15px;
     color: var(--text-muted);
     background: var(--background-secondary);
-    padding: 6px 14px;
+    padding: 6px 24px;
     border-radius: 16px;
     font-weight: 500;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .quiz-exam-start-question-count {
@@ -638,9 +639,11 @@
     font-weight: 600;
     color: var(--text-normal);
     background: var(--background-secondary);
-    padding: 6px 14px;
+    padding: 6px 24px;
     border-radius: 16px;
-    display: inline-block;
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .quiz-exam-start-btn {
@@ -666,4 +669,60 @@
 .quiz-exam-start-btn:active {
     transform: translateY(0);
     box-shadow: 0 2px 8px rgba(14, 165, 233, 0.3);
+}
+/* Responsive - Petites fenêtres et mode multi-fenêtres */
+@media (max-width: 600px) {
+    .quiz-exam-start-screen {
+        padding: 20px 16px;
+        margin: 12px auto;
+        border-radius: 8px;
+    }
+
+    .quiz-exam-start-content {
+        gap: 12px;
+    }
+
+    .quiz-exam-start-icon {
+        width: 48px;
+        height: 48px;
+    }
+
+    .quiz-exam-start-icon svg {
+        width: 28px;
+        height: 28px;
+    }
+
+    .quiz-exam-start-title {
+        font-size: 18px;
+    }
+
+    .quiz-exam-start-duration {
+        font-size: 13px;
+        padding: 6px 16px;
+    }
+
+    .quiz-exam-start-question-count {
+        font-size: 14px;
+        padding: 6px 16px;
+    }
+
+    .quiz-exam-start-btn {
+        padding: 8px 20px;
+        font-size: 14px;
+    }
+}
+
+/* Responsive - Très petites fenêtres */
+@media (max-width: 400px) {
+    .quiz-exam-start-screen {
+        padding: 16px 12px;
+        margin: 8px auto;
+        width: calc(100% - 16px);
+    }
+
+    .quiz-exam-start-duration,
+    .quiz-exam-start-question-count {
+        font-size: 12px;
+        padding: 5px 12px;
+    }
 }
