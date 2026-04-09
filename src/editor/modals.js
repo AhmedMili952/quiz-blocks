@@ -382,11 +382,21 @@ class OpenQuizFromNoteModal extends obsidian.FuzzySuggestModal {
 		this.openFiles = new Set();
 		this.resultItems = [];
 		this.quizFiles = new Set(); // Tracks which files have quiz-blocks
+		this.activeQuizFile = null; // File currently loaded in Quiz Editor
 	}
 
 	getItems() {
 		const result = [];
 		const seenPaths = new Set();
+
+		// Vérifier quel fichier est actuellement chargé dans le Quiz Editor
+		const quizEditorLeaves = this.app.workspace.getLeavesOfType("quiz-blocks-builder");
+		if (quizEditorLeaves.length > 0) {
+			const quizEditorView = quizEditorLeaves[0].view;
+			if (quizEditorView && quizEditorView.sourceFile) {
+				this.activeQuizFile = quizEditorView.sourceFile.path;
+			}
+		}
 
 		// D'abord les fichiers ouverts (priorité 1)
 		this.app.workspace.getLeavesOfType('markdown').forEach(leaf => {
@@ -410,15 +420,15 @@ class OpenQuizFromNoteModal extends obsidian.FuzzySuggestModal {
 			}
 		});
 
-		// Trier : fichiers avec quiz d'abord, puis par date
+		// Trier : fichier actif en premier, puis fichiers avec quiz, puis par date
 		result.sort((a, b) => {
+			const aIsActive = this.activeQuizFile === a.path;
+			const bIsActive = this.activeQuizFile === b.path;
 			const aHasQuiz = this.quizFiles.has(a.path);
 			const bHasQuiz = this.quizFiles.has(b.path);
-			const aIsOpen = this.openFiles.has(a.path);
-			const bIsOpen = this.openFiles.has(b.path);
 
-			if (aIsOpen && !bIsOpen) return -1;
-			if (!aIsOpen && bIsOpen) return 1;
+			if (aIsActive && !bIsActive) return -1;
+			if (!aIsActive && bIsActive) return 1;
 			if (aHasQuiz && !bHasQuiz) return -1;
 			if (!aHasQuiz && bHasQuiz) return 1;
 			return (b.stat?.mtime || 0) - (a.stat?.mtime || 0);
@@ -435,16 +445,16 @@ class OpenQuizFromNoteModal extends obsidian.FuzzySuggestModal {
 		const file = fuzzyMatch.item;
 		const filePath = file?.path || "";
 		const fileName = file?.basename || "";
-		const isOpen = this.openFiles.has(filePath);
+		const isActive = this.activeQuizFile === filePath;
 		const hasQuiz = this.quizFiles.has(filePath);
 
 		el.createDiv({ cls: "qb-suggest-item" }, div => {
 			div.createDiv({ cls: "qb-suggest-main" }, main => {
 				main.createEl("span", { cls: "qb-suggest-name", text: fileName });
-				if (isOpen) {
-					main.createEl("span", { cls: "qb-suggest-badge", text: "Ouvert" });
+				if (isActive) {
+					main.createEl("span", { cls: "qb-suggest-badge qb-active-badge", text: "Actif" });
 				}
-				if (hasQuiz) {
+				if (hasQuiz && !isActive) {
 					main.createEl("span", { cls: "qb-suggest-badge qb-quiz-badge", text: "Quiz" });
 				}
 			});
