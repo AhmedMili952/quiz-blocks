@@ -220,6 +220,7 @@ class QuizBuilderView extends obsidian.ItemView {
 
 			// Rafraîchir le titre de l'onglet
 			this.app.workspace.requestSaveLayout();
+			this.app.workspace.onLayoutChange();
 
 			this.render();
 			new obsidian.Notice(`${questions.length} question(s) importée(s)${fileName ? " depuis " + fileName : ""}`);
