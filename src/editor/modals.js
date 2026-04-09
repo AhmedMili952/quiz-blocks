@@ -438,9 +438,15 @@ class OpenQuizFromNoteModal extends obsidian.FuzzySuggestModal {
 			return b.mtime - a.mtime;
 		});
 
-		// Stocker les objets avec métadonnées pour pouvoir accéder à isOpen
+		// Créer des objets simples avec les propriétés nécessaires
+		// FuzzySuggestModal de Obsidian attend des objets avec une propriété de texte claire
 		this.filesWithQuizData = filesWithQuiz;
-		this.filesWithQuiz = filesWithQuiz.map(f => f.file);
+		this.filesWithQuiz = filesWithQuiz.map(f => ({
+			text: f.file.basename,
+			path: f.file.path,
+			isOpen: f.isOpen,
+			file: f.file
+		}));
 		this.loading = false;
 
 		// Rafraîchir la modale avec les résultats
@@ -456,11 +462,8 @@ class OpenQuizFromNoteModal extends obsidian.FuzzySuggestModal {
 
 	getItemText(item) {
 		if (item.loading) return "Chargement...";
-		// Pour TFile, utiliser basename qui est le nom sans extension
-		if (item.basename) return item.basename;
-		if (item.name) return item.name.replace(/\.[^/.]+$/, '');
-		if (item.path) return item.path.split('/').pop().replace(/\.[^/.]+$/, '');
-		return "Sans titre";
+		// Notre objet custom a une propriété text
+		return item.text || "Sans titre";
 	}
 
 	renderSuggestion(item, el) {
@@ -469,48 +472,34 @@ class OpenQuizFromNoteModal extends obsidian.FuzzySuggestModal {
 			return;
 		}
 
-		// Récupérer les métadonnées du fichier original
-		const fileData = this.filesWithQuizData?.find(f => f.file.path === item.path);
-		const isOpen = fileData?.isOpen || this.openFiles.has(item.path);
-
 		// Vider l'élément existant
 		el.empty();
 
 		// Créer la structure d'affichage
-		const container = el.createDiv({ cls: "suggestion-item mod-complex" });
+		const container = el.createDiv({ cls: "suggestion-item" });
 		container.style.cssText = "padding: 6px 8px;";
 
 		// Ligne principale : nom du fichier
 		const titleRow = container.createDiv({ cls: "suggestion-title" });
-		titleRow.style.cssText = "display: flex; align-items: center; gap: 6px; font-weight: 500;";
+		titleRow.style.cssText = "display: flex; align-items: center; gap: 6px;";
 
-		// Extraire le nom (basename sans extension)
-		let displayName = "Sans titre";
-		if (item.basename) {
-			displayName = item.basename;
-		} else if (item.name) {
-			displayName = item.name.replace(/\.md$/i, '');
-		} else if (item.path) {
-			displayName = item.path.split('/').pop().replace(/\.md$/i, '');
-		}
-
-		const nameSpan = titleRow.createSpan({ text: displayName });
+		// Nom du fichier
+		titleRow.createSpan({ text: item.text, cls: "suggestion-content" });
 
 		// Badge "Ouvert"
-		if (isOpen) {
-			const badge = titleRow.createSpan({ text: "Ouvert" });
-			badge.style.cssText = "font-size: 10px; padding: 2px 6px; background: var(--interactive-accent); color: var(--text-on-accent); border-radius: 4px; margin-left: 4px; flex-shrink: 0;";
+		if (item.isOpen) {
+			const badge = titleRow.createSpan({ text: "Ouvert", cls: "suggestion-flair" });
+			badge.style.cssText = "font-size: 10px; padding: 2px 6px; background: var(--interactive-accent); color: var(--text-on-accent); border-radius: 4px; margin-left: 4px;";
 		}
 
 		// Chemin
-		if (item.path) {
-			const pathDiv = container.createDiv({ text: item.path });
-			pathDiv.style.cssText = "font-size: 12px; color: var(--text-muted); margin-top: 2px; opacity: 0.8;";
-		}
+		const pathRow = container.createDiv({ text: item.path, cls: "suggestion-note" });
+		pathRow.style.cssText = "font-size: 12px; color: var(--text-muted); margin-top: 2px;";
 	}
 
-	async onChooseItem(file) {
+	async onChooseItem(item) {
 		try {
+			const file = item.file;
 			const content = await this.app.vault.read(file);
 			const match = content.match(/```quiz-blocks\n([\s\S]*?)\n```/);
 			if (!match) {
