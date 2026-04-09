@@ -438,15 +438,14 @@ class OpenQuizFromNoteModal extends obsidian.FuzzySuggestModal {
 			return b.mtime - a.mtime;
 		});
 
-		// Créer des objets simples avec les propriétés nécessaires
-		// FuzzySuggestModal de Obsidian attend des objets avec une propriété de texte claire
-		this.filesWithQuizData = filesWithQuiz;
-		this.filesWithQuiz = filesWithQuiz.map(f => ({
-			text: f.file.basename,
-			path: f.file.path,
-			isOpen: f.isOpen,
-			file: f.file
-		}));
+		// Créer une Map pour retrouver les fichiers par leur nom
+		this.fileMap = new Map();
+		filesWithQuiz.forEach(f => {
+			this.fileMap.set(f.file.basename, f);
+		});
+
+		// Stocker juste les noms pour FuzzySuggestModal
+		this.filesWithQuiz = filesWithQuiz.map(f => f.file.basename);
 		this.loading = false;
 
 		// Rafraîchir la modale avec les résultats
@@ -455,51 +454,53 @@ class OpenQuizFromNoteModal extends obsidian.FuzzySuggestModal {
 
 	getItems() {
 		if (this.loading) {
-			return [{ loading: true }];
+			return ["Chargement..."];
 		}
 		return this.filesWithQuiz;
 	}
 
 	getItemText(item) {
-		if (item.loading) return "Chargement...";
-		// Notre objet custom a une propriété text
-		return item.text || "Sans titre";
+		return item;
 	}
 
 	renderSuggestion(item, el) {
-		if (item.loading) {
-			el.createDiv({ text: "Chargement des notes avec quiz...", cls: "suggestion-item" });
-			return;
-		}
+		// Récupérer les métadonnées du fichier
+		const fileData = this.fileMap.get(item);
+		const isOpen = fileData?.isOpen || false;
+		const filePath = fileData?.file?.path || "";
 
 		// Vider l'élément existant
 		el.empty();
 
 		// Créer la structure d'affichage
 		const container = el.createDiv({ cls: "suggestion-item" });
-		container.style.cssText = "padding: 6px 8px;";
+		container.style.cssText = "display: flex; flex-direction: column; padding: 6px 8px;";
 
-		// Ligne principale : nom du fichier
-		const titleRow = container.createDiv({ cls: "suggestion-title" });
+		// Ligne principale : nom du fichier + badge
+		const titleRow = container.createDiv();
 		titleRow.style.cssText = "display: flex; align-items: center; gap: 6px;";
 
 		// Nom du fichier
-		titleRow.createSpan({ text: item.text, cls: "suggestion-content" });
+		titleRow.createSpan({ text: item });
 
 		// Badge "Ouvert"
-		if (item.isOpen) {
-			const badge = titleRow.createSpan({ text: "Ouvert", cls: "suggestion-flair" });
-			badge.style.cssText = "font-size: 10px; padding: 2px 6px; background: var(--interactive-accent); color: var(--text-on-accent); border-radius: 4px; margin-left: 4px;";
+		if (isOpen) {
+			const badge = titleRow.createSpan({ text: "Ouvert" });
+			badge.style.cssText = "font-size: 10px; padding: 2px 6px; background: var(--interactive-accent); color: var(--text-on-accent); border-radius: 4px; flex-shrink: 0;";
 		}
 
 		// Chemin
-		const pathRow = container.createDiv({ text: item.path, cls: "suggestion-note" });
-		pathRow.style.cssText = "font-size: 12px; color: var(--text-muted); margin-top: 2px;";
+		if (filePath) {
+			const pathDiv = container.createDiv({ text: filePath });
+			pathDiv.style.cssText = "font-size: 12px; color: var(--text-muted); margin-top: 2px; opacity: 0.8;";
+		}
 	}
 
 	async onChooseItem(item) {
 		try {
-			const file = item.file;
+			const fileData = this.fileMap.get(item);
+			if (!fileData) return;
+			const file = fileData.file;
 			const content = await this.app.vault.read(file);
 			const match = content.match(/```quiz-blocks\n([\s\S]*?)\n```/);
 			if (!match) {
