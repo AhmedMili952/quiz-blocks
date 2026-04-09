@@ -454,27 +454,40 @@ class OpenQuizFromNoteModal extends obsidian.FuzzySuggestModal {
 
 	getItemText(item) {
 		if (item.loading) return "Chargement...";
-		return item.basename;
+		return item.basename || item.name || "Sans titre";
 	}
 
 	renderSuggestion(item, el) {
 		if (item.loading) {
-			el.createDiv({ text: "Chargement des notes avec quiz...", cls: "qb-suggest-loading" });
+			el.createDiv({ text: "Chargement des notes avec quiz...", cls: "suggestion-item" });
 			return;
 		}
 
-		el.createDiv({ cls: "qb-suggest-item" }, div => {
-			const isOpen = this.openFiles.has(item.path);
+		// Utiliser la structure native d'Obsidian pour le rendu
+		const container = el.createDiv({ cls: "suggestion-item" });
 
-			div.createDiv({ cls: "qb-suggest-main" }, main => {
-				main.createEl("span", { cls: "qb-suggest-name", text: item.basename });
-				if (isOpen) {
-					main.createEl("span", { cls: "qb-suggest-badge", text: "Ouvert" });
-				}
-			});
+		// Ligne principale avec le nom du fichier
+		const titleRow = container.createDiv({ cls: "suggestion-title" });
+		titleRow.style.cssText = "display: flex; align-items: center; gap: 0.5em;";
 
-			div.createEl("span", { cls: "qb-suggest-path", text: item.path });
+		// Nom du fichier
+		titleRow.createSpan({
+			text: item.basename || item.name || "Sans titre",
+			cls: "suggestion-content"
 		});
+
+		// Badge "Ouvert" si applicable
+		if (this.openFiles.has(item.path)) {
+			const badge = titleRow.createSpan({ text: "Ouvert", cls: "suggestion-flair" });
+			badge.style.cssText = "font-size: 0.75em; padding: 0.1em 0.4em; background: var(--interactive-accent); color: var(--text-on-accent); border-radius: 4px; margin-left: 0.5em;";
+		}
+
+		// Chemin du fichier (ligne secondaire)
+		const pathRow = container.createDiv({
+			text: item.path,
+			cls: "suggestion-note"
+		});
+		pathRow.style.cssText = "font-size: 0.85em; color: var(--text-muted); margin-top: 0.25em;";
 	}
 
 	async onChooseItem(file) {
