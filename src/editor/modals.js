@@ -383,9 +383,16 @@ class OpenQuizFromNoteModal extends obsidian.FuzzySuggestModal {
 		this.resultItems = [];
 		this.quizFiles = new Set(); // Tracks which files have quiz-blocks
 		this.activeQuizFile = null; // File currently loaded in Quiz Editor
+		this.loading = true;
 	}
 
-	async getItems() {
+	onOpen() {
+		super.onOpen();
+		// Charger les fichiers avec quiz en arrière-plan
+		this.loadQuizFiles();
+	}
+
+	async loadQuizFiles() {
 		const result = [];
 		const seenPaths = new Set();
 
@@ -439,7 +446,15 @@ class OpenQuizFromNoteModal extends obsidian.FuzzySuggestModal {
 			return (b.stat?.mtime || 0) - (a.stat?.mtime || 0);
 		});
 
-		return result;
+		this.resultItems = result;
+		this.loading = false;
+
+		// Forcer le rafraîchissement de la modale
+		this.updateSuggestions();
+	}
+
+	getItems() {
+		return this.loading ? [] : this.resultItems;
 	}
 
 	getItemText(file) {
