@@ -134,15 +134,9 @@ class QuizBlocksSettingTab extends obsidian.PluginSettingTab {
 			},
 			{
 				id: "open-quiz-from-active-note",
-				name: "Ouvrir le quiz de la note active dans l'éditeur",
+				name: "Ouvrir le quiz de la note active",
 				hotkey: "Ctrl+Shift+Q",
 				desc: "Ouvre l'éditeur et charge le quiz de la note active"
-			},
-			{
-				id: "import-quiz-from-active-note",
-				name: "Importer le quiz de la note active",
-				hotkey: "Ctrl+Shift+I",
-				desc: "Importe le quiz dans l'éditeur déjà ouvert"
 			}
 		];
 
@@ -235,7 +229,7 @@ module.exports = class InteractiveQuizPlugin extends obsidian.Plugin {
 
 		this.addCommand({
 			id: "open-quiz-from-active-note",
-			name: "Ouvrir le quiz de la note active dans l'éditeur",
+			name: "Ouvrir le quiz de la note active",
 			hotkeys: [{ modifiers: ["Ctrl", "Shift"], key: "q" }],
 			callback: async () => {
 				// Check if there's an active file
@@ -276,50 +270,6 @@ module.exports = class InteractiveQuizPlugin extends obsidian.Plugin {
 				} catch (err) {
 					console.error("Open error:", err);
 					new obsidian.Notice("Erreur lors de l'ouverture");
-				}
-			},
-		});
-
-		this.addCommand({
-			id: "import-quiz-from-active-note",
-			name: "Importer le quiz de la note active",
-			hotkeys: [{ modifiers: ["Ctrl", "Shift"], key: "i" }],
-			callback: async () => {
-				// Check if there's an active file
-				const activeFile = this.app.workspace.getActiveFile();
-				if (!activeFile || !activeFile.path.endsWith('.md')) {
-					new obsidian.Notice("Aucune note active");
-					return;
-				}
-
-				try {
-					// Read file content
-					const content = await this.app.vault.read(activeFile);
-					// Find first quiz-blocks fence
-					const match = content.match(/```quiz-blocks\n([\s\S]*?)\n```/);
-					if (!match) {
-						new obsidian.Notice("Aucun bloc quiz-blocks trouvé dans cette note");
-						return;
-					}
-
-					// Check if Quiz Editor is already open
-					const existing = this.app.workspace.getLeavesOfType(VIEW_TYPE);
-					if (existing.length === 0) {
-						new obsidian.Notice("Veuillez d'abord ouvrir le Quiz Editor");
-						return;
-					}
-
-					// Import into existing editor
-					const leaf = existing[0];
-					const view = leaf.view;
-					if (view && view.importQuizSource) {
-						await view.importQuizSource(match[1], activeFile.name);
-						this.app.workspace.revealLeaf(leaf);
-						new obsidian.Notice(`Quiz importé : ${activeFile.name}`);
-					}
-				} catch (err) {
-					console.error("Import error:", err);
-					new obsidian.Notice("Erreur lors de l'import");
 				}
 			},
 		});
