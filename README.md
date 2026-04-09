@@ -1,124 +1,52 @@
-<div align="center">
+# Quiz Blocks [![plugin](https://img.shields.io/github/v/release/AhmedMili952/quiz-blocks?label=plugin&display_name=tag&logo=obsidian&color=purple&logoColor=violet)](https://github.com/AhmedMili952/quiz-blocks/releases)
 
-# 🧩 Quiz Blocks for Obsidian
-
-**Create fully interactive quizzes directly in Obsidian using simple JSON5 code blocks.**  
-Perfect for studying, testing knowledge, or creating engaging educational content.
-
-[![Version](https://img.shields.io/badge/version-1.3.0--beta-blue?style=flat-square)](https://github.com/AhmedMili952/quiz-blocks/releases)
-[![Obsidian](https://img.shields.io/badge/Obsidian-1.5.0+-7C3AED?style=flat-square&logo=obsidian&logoColor=white)](https://obsidian.md)
-[![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)](LICENSE)
-[![GitHub Stars](https://img.shields.io/github/stars/AhmedMili952/quiz-blocks?style=flat-square)](https://github.com/AhmedMili952/quiz-blocks/stargazers)
-
-</div>
+Render ` ```quiz-blocks ` code blocks into fully interactive quizzes directly inside Obsidian notes.
 
 ---
 
-## ✨ Features
+## How it works
 
-### 🎯 Question Types
-
-| Type | Description |
-|------|-------------|
-| **Single Choice** | Classic multiple choice with one correct answer |
-| **Multiple Choice** | Select all applicable answers |
-| **Text Input** | Free text answers with validation |
-| **Command Line** | CMD, PowerShell, and Bash terminal simulation |
-| **Ordering** | Drag & drop to arrange items in correct sequence |
-| **Matching** | Pair items from two columns |
-
-### 🛠️ Quiz Editor
-- **Visual Editor** — Build quizzes without writing a single line of code
-- **Live Preview** — See exactly how your quiz looks while editing
-- **Drag & Drop** — Reorder questions instantly
-- **Auto-save** — Changes saved automatically to the source file
-- **JSON5 Export** — Clean, readable code output
-
-### ⏱️ Exam Mode
-- **Timed Sessions** — Set duration limits for quizzes
-- **Auto-submit** — Optional automatic submission when time runs out
-- **Progress Timer** — Visual countdown display
-- **Scoring** — Track performance across all questions
-
-### 🧭 Navigation & UX
-- **Hints** — Optional hints for each question
-- **Explanations** — Detailed explanations shown after answering
-- **Smooth Transitions** — Animated question navigation
-- **Keyboard Shortcuts** — Full keyboard navigation support
-- **Responsive Design** — Works seamlessly on desktop and mobile
+You describe a quiz using a JSON5 code block. The plugin transforms it into a rich interactive form with multiple question types, a visual editor, exam mode, and more. There is a **Check** button that highlights right, wrong, and missed answers, with optional `hint` and `explanation` commentary. Great for self-education, certification prep, and learning notes.
 
 ---
 
-## 📦 Installation
+## Supported question types
 
-### Manual Installation
+### Single Choice — one correct answer
 
-1. Go to the [Releases](https://github.com/AhmedMili952/quiz-blocks/releases) page and download the latest release
-2. Extract the files into your vault's plugin folder:
-   ```
-   <your-vault>/.obsidian/plugins/quiz-blocks/
-   ```
-3. Open Obsidian → **Settings** → **Community Plugins** → enable **Quiz Blocks**
+<img src=".github/demo-single-choice.png" width="430" alt="Single choice demo" />
 
-> ⚠️ Make sure **Safe Mode** is disabled in Community Plugins to allow third-party plugins.
+> **`demo-single-choice.png`** — Screenshot of a rendered single choice question in Obsidian with one option selected and the Check button visible.
 
----
+<details><summary>show code</summary>
 
-## 🚀 Quick Start
-
-### Creating Your First Quiz
-
-Create a code block with the language identifier `quiz-blocks`:
-
-````markdown
+````
 ```quiz-blocks
 [
   {
-    title: "My First Question",
+    title: "Single Choice",
     prompt: "What is the capital of France?",
     options: ["London", "Berlin", "Paris", "Madrid"],
-    correctIndex: 2
+    correctIndex: 2,
+    explanation: "Paris has been the capital of France since the 10th century."
   }
 ]
 ```
 ````
 
-### Using the Visual Editor
-
-Press `Ctrl+Shift+E` (or click the 🎓 icon in the ribbon) to open the Quiz Editor.
-
-- ➕ Add questions via the **"+"** button
-- 🎨 Choose from different question types
-- ✏️ Edit content visually without touching JSON
-- ↕️ Reorder questions with drag & drop
-- 💾 Auto-saves back to your note
-
-### Opening Existing Quizzes
-
-Press `Ctrl+Shift+Q` to open the quiz from the currently active note, or use the **Open** button in the Quiz Editor to browse all notes containing quiz blocks.
+</details>
 
 ---
 
-## 📖 Question Type Examples
+### Multiple Choice — several correct answers
 
-<details>
-<summary><strong>Single Choice</strong></summary>
+<img src=".github/demo-multiple-choice.png" width="430" alt="Multiple choice demo" />
 
-```quiz-blocks
-[
-  {
-    title: "Single Choice",
-    prompt: "What is 2 + 2?",
-    options: ["3", "4", "5", "6"],
-    correctIndex: 1
-  }
-]
-```
-</details>
+> **`demo-multiple-choice.png`** — Screenshot showing a multiple choice question with checkboxes, some correct and some wrong answers highlighted after clicking Check.
 
-<details>
-<summary><strong>Multiple Choice</strong></summary>
+<details><summary>show code</summary>
 
+````
 ```quiz-blocks
 [
   {
@@ -126,15 +54,26 @@ Press `Ctrl+Shift+Q` to open the quiz from the currently active note, or use the
     prompt: "Select all prime numbers:",
     options: ["2", "4", "5", "9", "11"],
     multiSelect: true,
-    correctIndices: [0, 2, 4]
+    correctIndices: [0, 2, 4],
+    explanation: "Prime numbers are only divisible by 1 and themselves."
   }
 ]
 ```
+````
+
 </details>
 
-<details>
-<summary><strong>Text Input</strong></summary>
+---
 
+### Text Input — free text with validation
+
+<img src=".github/demo-text-input.png" width="430" alt="Text input demo" />
+
+> **`demo-text-input.png`** — Screenshot of a text input question with a text field, showing a correct answer highlighted in green after validation.
+
+<details><summary>show code</summary>
+
+````
 ```quiz-blocks
 [
   {
@@ -142,15 +81,26 @@ Press `Ctrl+Shift+Q` to open the quiz from the currently active note, or use the
     prompt: "What is the chemical symbol for water?",
     acceptedAnswers: ["H2O", "h2o"],
     caseSensitive: false,
-    placeholder: "Enter your answer..."
+    placeholder: "Enter your answer...",
+    explanation: "Water is composed of 2 hydrogen atoms and 1 oxygen atom."
   }
 ]
 ```
+````
+
 </details>
 
-<details>
-<summary><strong>Command Line (PowerShell / CMD / Bash)</strong></summary>
+---
 
+### Command Line — terminal simulation (CMD / PowerShell / Bash)
+
+<img src=".github/demo-command-line.png" width="430" alt="Command line demo" />
+
+> **`demo-command-line.png`** — Screenshot of a PowerShell-style terminal input question with the `PS>` prefix, showing a correct command typed and validated.
+
+<details><summary>show code</summary>
+
+````
 ```quiz-blocks
 [
   {
@@ -160,20 +110,31 @@ Press `Ctrl+Shift+Q` to open the quiz from the currently active note, or use the
     textVariant: "powershell",
     commandPrefix: "PS>",
     acceptedAnswers: ["Get-Process", "gps"],
-    caseSensitive: false
+    caseSensitive: false,
+    explanation: "Get-Process (alias: gps) retrieves all active processes."
   }
 ]
 ```
+````
+
 </details>
 
-<details>
-<summary><strong>Ordering</strong></summary>
+---
 
+### Ordering — drag & drop to arrange items
+
+<img src=".github/demo-ordering.png" width="430" alt="Ordering demo" />
+
+> **`demo-ordering.png`** — Screenshot of an ordering question with draggable items being reordered into the correct sequence.
+
+<details><summary>show code</summary>
+
+````
 ```quiz-blocks
 [
   {
     title: "Order Steps",
-    prompt: "Arrange these steps in the correct order:",
+    prompt: "Arrange these steps in the correct order to bake a cake:",
     ordering: true,
     slots: ["Step 1", "Step 2", "Step 3"],
     possibilities: ["Bake", "Mix ingredients", "Preheat oven"],
@@ -181,11 +142,21 @@ Press `Ctrl+Shift+Q` to open the quiz from the currently active note, or use the
   }
 ]
 ```
+````
+
 </details>
 
-<details>
-<summary><strong>Matching</strong></summary>
+---
 
+### Matching — pair items from two columns
+
+<img src=".github/demo-matching.png" width="430" alt="Matching demo" />
+
+> **`demo-matching.png`** — Screenshot of a matching question with two columns of items connected by lines, showing correct and incorrect pairings highlighted.
+
+<details><summary>show code</summary>
+
+````
 ```quiz-blocks
 [
   {
@@ -198,14 +169,23 @@ Press `Ctrl+Shift+Q` to open the quiz from the currently active note, or use the
   }
 ]
 ```
+````
+
 </details>
 
 ---
 
-## ⏱️ Exam Mode
+## Exam Mode
 
-Add an exam configuration object to your quiz array to enable timed sessions:
+<img src=".github/demo-exam-mode.png" width="430" alt="Exam mode demo" />
 
+> **`demo-exam-mode.png`** — Screenshot of a quiz running in exam mode with a visible countdown timer in the top right corner and an auto-submit warning.
+
+Add an exam configuration object anywhere in your quiz array to enable timed sessions:
+
+<details><summary>show code</summary>
+
+````
 ```quiz-blocks
 [
   {
@@ -222,10 +202,50 @@ Add an exam configuration object to your quiz array to enable timed sessions:
   }
 ]
 ```
+````
+
+</details>
 
 ---
 
-## ⌨️ Keyboard Shortcuts
+## Visual Editor
+
+<img src=".github/demo-editor.png" width="430" alt="Visual editor demo" />
+
+> **`demo-editor.png`** — Screenshot of the Quiz Editor panel open in Obsidian, showing a list of questions on the left and the edit form on the right with a live preview.
+
+Press `Ctrl+Shift+E` (or click the 🎓 icon in the ribbon) to open the **Quiz Editor** — build and edit quizzes without writing any code.
+
+- ➕ Add questions via the **"+"** button
+- 🎨 Choose from all supported question types
+- ✏️ Edit content visually
+- ↕️ Reorder questions with drag & drop
+- 💾 Auto-saves changes directly to your note
+
+---
+
+## Installation
+
+**Quiz Blocks** can be installed manually from GitHub.
+
+#### Install manually
+
+<details><summary>show steps</summary>
+
+1. Go to the [Releases](https://github.com/AhmedMili952/quiz-blocks/releases) page and download the latest release.
+2. Extract the ZIP file.
+3. Copy the extracted folder into your vault's plugin directory:
+   ```
+   YOUR_VAULT/.obsidian/plugins/quiz-blocks/
+   ```
+4. Restart Obsidian or go to **Settings → Community plugins** and click **Reload plugins**.
+5. Enable **Quiz Blocks** from the list.
+
+</details>
+
+---
+
+## Keyboard Shortcuts
 
 | Shortcut | Action |
 |----------|--------|
@@ -236,61 +256,17 @@ Add an exam configuration object to your quiz array to enable timed sessions:
 
 ---
 
-## 💡 Tips & Best Practices
+## Notes & limitations
 
-- 🔍 Use **hints** to guide users without giving away the answer
-- 📚 Add **explanations** so users learn from their mistakes
-- ⏱️ Enable **exam mode** for time-limited assessments or mock exams
-- 💾 The Quiz Editor **auto-saves** all changes directly to the source file
-- 🔢 Questions with default titles auto-update their numbering when reordered
-- 🖥️ The **Command Line** type is great for IT/networking certification practice
+This plugin is in active beta development — bugs are possible. Feel free to [open an issue](https://github.com/AhmedMili952/quiz-blocks/issues/new) and share feedback.
 
----
-
-## 🛠️ Development
-
-### Prerequisites
-
-- Node.js 18+
-- npm
-
-### Building from Source
-
-```bash
-# Clone the repository
-git clone https://github.com/AhmedMili952/quiz-blocks.git
-cd quiz-blocks
-
-# Install dependencies
-npm install
-
-# Build for production
-npm run build
-
-# Build in watch mode (for development)
-npm run dev
-```
-
-### Publishing a New Release
-
-```bash
-# Tag the new version — GitHub Actions handles the rest
-git tag v1.4.0-beta
-git push origin v1.4.0-beta
-```
-
-The CI/CD pipeline will automatically build and publish the release with all required assets (`main.js`, `manifest.json`, `styles.css`).
+- Answers are not persisted between sessions
+- The visual editor requires the note to be in edit mode
+- The `esbuild.config.mjs` build path is configured for a local Obsidian vault — adjust it for your setup
 
 ---
 
-## 📄 License
+If you find this plugin useful, please consider starring the repository ⭐️
 
-This project is licensed under the **MIT License** — free to use for personal and commercial projects.
-
----
-
-<div align="center">
-
-Made with ❤️ by [Ahmed](https://github.com/AhmedMili952) · Powered by [Obsidian](https://obsidian.md)
-
-</div>
+<br>
+<br>
