@@ -1,2 +1,0 @@
-// Nouveau code de test
-const x = 42;
