@@ -62,13 +62,6 @@ module.exports = function createEditorUIHandlers(ctx) {
 			}
 		});
 
-		const importBtn = actions.createEl("button", { cls: "qb-btn" });
-		_iconSpan(importBtn, "download", "qb-btn-leading-icon");
-		importBtn.createSpan({ text: "Importer" });
-		importBtn.addEventListener("click", () => {
-			new ImportQuizModal(view.app, view).open();
-		});
-
 		view._exportBtn = actions.createEl("button", { cls: "qb-btn qb-btn-accent" });
 		_iconSpan(view._exportBtn, "share", "qb-btn-leading-icon");
 		view._exportBtn.createSpan({ text: "Exporter" });
