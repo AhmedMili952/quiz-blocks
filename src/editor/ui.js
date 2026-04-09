@@ -1,7 +1,7 @@
 'use strict';
 
 const obsidian = require("obsidian");
-const { ConfirmModal, TypePickerModal, ImportQuizModal } = require('./modals');
+const { ConfirmModal, TypePickerModal, ImportQuizModal, OpenQuizFromNoteModal } = require('./modals');
 
 module.exports = function createEditorUIHandlers(ctx) {
 	const { _setIcon, _iconSpan, exportAllWithFence } = ctx;
@@ -60,6 +60,13 @@ module.exports = function createEditorUIHandlers(ctx) {
 			if (!view._saveBtn.disabled) {
 				view.saveToSourceFile?.();
 			}
+		});
+
+		const openBtn = actions.createEl("button", { cls: "qb-btn" });
+		_iconSpan(openBtn, "file-input", "qb-btn-leading-icon");
+		openBtn.createSpan({ text: "Ouvrir" });
+		openBtn.addEventListener("click", () => {
+			new OpenQuizFromNoteModal(view.app, view).open();
 		});
 
 		view._exportBtn = actions.createEl("button", { cls: "qb-btn qb-btn-accent" });

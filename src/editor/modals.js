@@ -371,4 +371,127 @@ class ImportFromNoteModal extends obsidian.Modal {
 	onClose() { this.contentEl.empty(); }
 }
 
-module.exports = { ConfirmModal, TypePickerModal, ImportQuizModal, QuizFileSuggestModal, ImportFromNoteModal, _htmlToText };
+/* ════════════════════════════════════════════════════════
+   OPEN QUIZ FROM NOTE MODAL
+   ════════════════════════════════════════════════════════ */
+class OpenQuizFromNoteModal extends obsidian.FuzzySuggestModal {
+	constructor(app, builderView) {
+		super(app);
+		this.builderView = builderView;
+		this.setPlaceholder("Choisir une note contenant un quiz...");
+		this.openFiles = new Set();
+		this.filesWithQuiz = [];
+	}
+
+	async getFilesWithQuiz() {
+		const allMarkdownFiles = this.app.vault.getMarkdownFiles();
+		const filesWithQuiz = [];
+		const seenPaths = new Set();
+
+		// D'abord les fichiers ouverts (priorité 1)
+		this.app.workspace.getLeavesOfType('markdown').forEach(leaf => {
+			if (leaf.view && leaf.view.file) {
+				this.openFiles.add(leaf.view.file.path);
+				// Vérifier si le fichier contient un quiz
+				const content = leaf.view.data || "";
+				if (content.match(/```quiz-blocks\n([\s\S]*?)\n```/)) {
+					filesWithQuiz.push({
+						file: leaf.view.file,
+						isOpen: true,
+						mtime: leaf.view.file.stat?.mtime || 0
+					});
+					seenPaths.add(leaf.view.file.path);
+				}
+			}
+		});
+
+		// Ensuite les autres fichiers récents contenant des quiz
+		for (const file of allMarkdownFiles) {
+			if (seenPaths.has(file.path)) continue;
+
+			try {
+				const content = await this.app.vault.read(file);
+				if (content.match(/```quiz-blocks\n([\s\S]*?)\n```/)) {
+					filesWithQuiz.push({
+						file: file,
+						isOpen: false,
+						mtime: file.stat?.mtime || 0
+					});
+					seenPaths.add(file.path);
+				}
+			} catch (e) {
+				// Ignorer les erreurs de lecture
+			}
+		}
+
+		// Trier par : ouverts d'abord, puis par date de modification (plus récents)
+		filesWithQuiz.sort((a, b) => {
+			if (a.isOpen && !b.isOpen) return -1;
+			if (!a.isOpen && b.isOpen) return 1;
+			return b.mtime - a.mtime;
+		});
+
+		return filesWithQuiz.map(f => f.file);
+	}
+
+	async getItems() {
+		if (this.filesWithQuiz.length === 0) {
+			this.filesWithQuiz = await this.getFilesWithQuiz();
+		}
+		return this.filesWithQuiz;
+	}
+
+	getItemText(file) {
+		return file.basename;
+	}
+
+	renderSuggestion(file, el) {
+		el.createDiv({ cls: "qb-suggest-item" }, div => {
+			const isOpen = this.openFiles.has(file.path);
+
+			div.createDiv({ cls: "qb-suggest-main" }, main => {
+				main.createEl("span", { cls: "qb-suggest-name", text: file.basename });
+				if (isOpen) {
+					main.createEl("span", { cls: "qb-suggest-badge", text: "Ouvert" });
+				}
+			});
+
+			div.createEl("span", { cls: "qb-suggest-path", text: file.path });
+		});
+	}
+
+	async onChooseItem(file) {
+		try {
+			const content = await this.app.vault.read(file);
+			const match = content.match(/```quiz-blocks\n([\s\S]*?)\n```/);
+			if (!match) {
+				new obsidian.Notice("Aucun bloc quiz-blocks trouvé dans cette note");
+				return;
+			}
+
+			// Ouvrir ou révéler le Quiz Editor
+			const existing = this.app.workspace.getLeavesOfType("quiz-blocks-builder");
+			let leaf;
+			if (existing.length > 0) {
+				leaf = existing[0];
+				this.app.workspace.revealLeaf(leaf);
+			} else {
+				leaf = this.app.workspace.getLeaf("tab");
+				await leaf.setViewState({ type: "quiz-blocks-builder", active: true });
+				this.app.workspace.revealLeaf(leaf);
+			}
+
+			// Ouvrir le quiz pour édition
+			const view = leaf.view;
+			if (view && view.openQuizFile) {
+				await view.openQuizFile(file, match[1]);
+				new obsidian.Notice(`Quiz ouvert : ${file.name}`);
+			}
+		} catch (err) {
+			console.error("Open quiz error:", err);
+			new obsidian.Notice("Erreur lors de l'ouverture");
+		}
+	}
+}
+
+module.exports = { ConfirmModal, TypePickerModal, ImportQuizModal, QuizFileSuggestModal, ImportFromNoteModal, OpenQuizFromNoteModal, _htmlToText };
