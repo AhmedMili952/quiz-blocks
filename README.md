@@ -16,23 +16,25 @@ You describe a quiz using a JSON5 code block. The plugin transforms it into a ri
 
 <img src=".github/demo-single-choice.png" width="430" alt="Single choice demo" />
 
-<details><summary>show code</summary>
-
 ````
 ```quiz-blocks
 [
   {
     title: "Single Choice",
-    prompt: "What is the capital of France?",
-    options: ["London", "Berlin", "Paris", "Madrid"],
+    prompt: "You receive an email from your bank asking you to click a link and confirm your password urgently. What should you do?",
+    options: [
+      "Click the link and enter your credentials quickly before it expires",
+      "Reply to the email asking if it is legitimate",
+      "Go directly to your bank website by typing the URL yourself",
+      "Forward the email to friends to warn them"
+    ],
     correctIndex: 2,
-    explanation: "Paris has been the capital of France since the 10th century."
+    hint: "Legitimate banks never ask for your password by email.",
+    explanation: "This is a classic phishing attack. Always type the URL yourself and never click links in suspicious emails."
   }
 ]
 ```
 ````
-
-</details>
 
 ---
 
@@ -40,24 +42,26 @@ You describe a quiz using a JSON5 code block. The plugin transforms it into a ri
 
 <img src=".github/demo-multiple-choice.png" width="430" alt="Multiple choice demo" />
 
-<details><summary>show code</summary>
-
 ````
 ```quiz-blocks
 [
   {
     title: "Multiple Choice",
-    prompt: "Select all prime numbers:",
-    options: ["2", "4", "5", "9", "11"],
+    prompt: "Which of the following are good habits for a strong password? (Select all that apply)",
+    options: [
+      "Use a different password for every account",
+      "Include your date of birth for easy recall",
+      "Use a mix of uppercase, lowercase, numbers, and symbols",
+      "Use a password manager to store them",
+      "Reuse your strongest password on all important sites"
+    ],
     multiSelect: true,
-    correctIndices: [0, 2, 4],
-    explanation: "Prime numbers are only divisible by 1 and themselves."
+    correctIndices: [0, 2, 3],
+    explanation: "Personal info and password reuse are the two biggest weaknesses. A password manager removes the need to remember them all."
   }
 ]
 ```
 ````
-
-</details>
 
 ---
 
@@ -65,24 +69,21 @@ You describe a quiz using a JSON5 code block. The plugin transforms it into a ri
 
 <img src=".github/demo-text-input.png" width="430" alt="Text input demo" />
 
-<details><summary>show code</summary>
-
 ````
 ```quiz-blocks
 [
   {
     title: "Text Answer",
-    prompt: "What is the chemical symbol for water?",
-    acceptedAnswers: ["H2O", "h2o"],
+    prompt: "In a URL like 'https://bank.example.com', what is the part that guarantees the connection is encrypted?",
+    type: "text",
+    placeholder: "Enter the protocol prefix...",
+    acceptedAnswers: ["https", "HTTPS"],
     caseSensitive: false,
-    placeholder: "Enter your answer...",
-    explanation: "Water is composed of 2 hydrogen atoms and 1 oxygen atom."
+    explanation: "HTTPS means the connection is encrypted with TLS. Never enter passwords on a plain http:// site."
   }
 ]
 ```
 ````
-
-</details>
 
 ---
 
@@ -90,26 +91,22 @@ You describe a quiz using a JSON5 code block. The plugin transforms it into a ri
 
 <img src=".github/demo-command-line.png" width="430" alt="Command line demo" />
 
-<details><summary>show code</summary>
-
 ````
 ```quiz-blocks
 [
   {
-    title: "PowerShell Command",
-    prompt: "Which cmdlet lists all running processes?",
+    title: "Windows CMD",
+    prompt: "Your internet is slow. Type the command to test if your PC can reach Google by IP (8.8.8.8) to rule out a DNS issue.",
     type: "text",
-    textVariant: "powershell",
-    commandPrefix: "PS>",
-    acceptedAnswers: ["Get-Process", "gps"],
+    terminalVariant: "cmd",
+    commandPrefix: "C:\\>",
+    acceptedAnswers: ["ping 8.8.8.8"],
     caseSensitive: false,
-    explanation: "Get-Process (alias: gps) retrieves all active processes."
+    explanation: "ping 8.8.8.8 bypasses DNS. If it works, your connection is fine and the problem is DNS resolution."
   }
 ]
 ```
 ````
-
-</details>
 
 ---
 
@@ -117,24 +114,26 @@ You describe a quiz using a JSON5 code block. The plugin transforms it into a ri
 
 <img src=".github/demo-ordering.png" width="430" alt="Ordering demo" />
 
-<details><summary>show code</summary>
-
 ````
 ```quiz-blocks
 [
   {
-    title: "Order Steps",
-    prompt: "Arrange these steps in the correct order to bake a cake:",
+    title: "Ordering",
+    prompt: "You want to push code to GitHub. Put these Git steps in the correct order.",
     ordering: true,
-    slots: ["Step 1", "Step 2", "Step 3"],
-    possibilities: ["Bake", "Mix ingredients", "Preheat oven"],
-    correctOrder: [2, 1, 0]
+    slots: ["1st", "2nd", "3rd", "4th"],
+    possibilities: [
+      "git push",
+      "git add .",
+      "git commit -m \"message\"",
+      "Make changes to your files"
+    ],
+    correctOrder: [3, 1, 2, 0],
+    explanation: "Make changes → git add → git commit → git push."
   }
 ]
 ```
 ````
-
-</details>
 
 ---
 
@@ -142,24 +141,26 @@ You describe a quiz using a JSON5 code block. The plugin transforms it into a ri
 
 <img src=".github/demo-matching.png" width="430" alt="Matching demo" />
 
-<details><summary>show code</summary>
-
 ````
 ```quiz-blocks
 [
   {
-    title: "Match Pairs",
-    prompt: "Match the countries with their capitals:",
+    title: "Matching",
+    prompt: "Match each HTTP status code with what it means.",
     matching: true,
-    rows: ["France", "Germany", "Spain"],
-    choices: ["Paris", "Berlin", "Madrid"],
-    correctMap: [0, 1, 2]
+    rows: ["200", "404", "403", "500"],
+    choices: [
+      "Forbidden — you do not have permission",
+      "Internal Server Error — something broke on the server",
+      "Not Found — the page does not exist",
+      "OK — the request succeeded"
+    ],
+    correctMap: [3, 2, 0, 1],
+    explanation: "2xx = success, 4xx = client error, 5xx = server error."
   }
 ]
 ```
 ````
-
-</details>
 
 ---
 
@@ -168,8 +169,6 @@ You describe a quiz using a JSON5 code block. The plugin transforms it into a ri
 <img src=".github/demo-exam-mode.png" width="430" alt="Exam mode demo" />
 
 Add an exam configuration object anywhere in your quiz array to enable timed sessions:
-
-<details><summary>show code</summary>
 
 ````
 ```quiz-blocks
@@ -189,8 +188,6 @@ Add an exam configuration object anywhere in your quiz array to enable timed ses
 ]
 ```
 ````
-
-</details>
 
 ---
 
@@ -212,9 +209,7 @@ Press `Ctrl+Shift+E` (or click the 🎓 icon in the ribbon) to open the **Quiz E
 
 **Quiz Blocks** can be installed manually from GitHub.
 
-#### Install manually
-
-<details><summary>show steps</summary>
+<details><summary>Show steps</summary>
 
 1. Go to the [Releases](https://github.com/AhmedMili952/quiz-blocks/releases) page and download the latest release.
 2. Extract the ZIP file.
@@ -254,7 +249,7 @@ This plugin is in active beta development — bugs are possible. Feel free to [o
 
 Want to test all question types at once in your vault?
 
-👉 **[Copy the demo template](https://github.com/AhmedMili952/quiz-blocks/blob/main/demo-template.md)** — open the file, click the **Copy** button, paste it into a new Obsidian note, and the quiz is ready to run.
+👉 **[Copy the full demo template](https://github.com/AhmedMili952/quiz-blocks/blob/main/demo-template.md)** — open the file, click the **Copy** button, paste it into a new Obsidian note, and the quiz is ready to run.
 
 ---
 
