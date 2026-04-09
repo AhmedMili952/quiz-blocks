@@ -219,8 +219,8 @@ class QuizBuilderView extends obsidian.ItemView {
 			}
 
 			// Rafraîchir le titre de l'onglet
-			if (this.leaf) {
-				this.leaf.view.titleEl.setText(this.getDisplayText());
+			if (this.leaf && this.sourceFile) {
+				this.leaf.setDisplayText(this.sourceFile.basename);
 			}
 
 			this.render();
