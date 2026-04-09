@@ -219,11 +219,18 @@ class QuizBuilderView extends obsidian.ItemView {
 			}
 
 			// Rafraîchir le titre de l'onglet
-			if (this.leaf?.containerEl && this.sourceFile) {
-				const tabHeader = this.leaf.containerEl.closest('.workspace-tab-header');
-				if (tabHeader) {
-					const titleEl = tabHeader.querySelector('.workspace-tab-header-inner-text');
-					if (titleEl) titleEl.textContent = this.sourceFile.basename;
+			if (this.sourceFile) {
+				// Mettre à jour tous les onglets de ce type de vue
+				const leaves = this.app.workspace.getLeavesOfType(VIEW_TYPE);
+				for (const leaf of leaves) {
+					if (leaf.view === this) {
+						const headerEl = document.querySelector(`.workspace-tab-header[data-type="${VIEW_TYPE}"]`);
+						if (headerEl) {
+							const titleEl = headerEl.querySelector('.workspace-tab-header-inner-text');
+							if (titleEl) titleEl.textContent = this.sourceFile.basename;
+						}
+						break;
+					}
 				}
 			}
 
