@@ -188,7 +188,8 @@ module.exports = class InteractiveQuizPlugin extends obsidian.Plugin {
 
 		this.addCommand({
 			id: "open-quiz-from-active-note",
-			name: "Ouvrir le quiz de la note active",
+			name: "Ouvrir le quiz de la note active dans l'éditeur",
+			hotkeys: [{ modifiers: ["Ctrl", "Shift"], key: "q" }],
 			callback: async () => {
 				// Check if there's an active file
 				const activeFile = this.app.workspace.getActiveFile();
