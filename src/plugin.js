@@ -174,6 +174,7 @@ module.exports = class InteractiveQuizPlugin extends obsidian.Plugin {
 		this.addCommand({
 			id: "open-quiz-builder",
 			name: "Ouvrir le Quiz Editor",
+			hotkeys: [{ modifiers: ["Ctrl", "Shift"], key: "e" }],
 			callback: async () => {
 				const existing = this.app.workspace.getLeavesOfType(VIEW_TYPE);
 				if (existing.length > 0) {
