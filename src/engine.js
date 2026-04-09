@@ -645,71 +645,71 @@ let __quizZoomLastDpr = window.devicePixelRatio || 1;
 let __quizZoomFixHandler = null;
 
 function render() {
-	ctx.lifecycle.restartAsyncLifecycle();
-	cancelEnsureTrackVisibleRaf();
+    ctx.lifecycle.restartAsyncLifecycle();
+    cancelEnsureTrackVisibleRaf();
 
-	container.querySelectorAll('.quiz-track-item[data-slide-kind="question"]').forEach(item => {
-		if (typeof item.__quizTextQuestionCleanup === "function") {
-			try { item.__quizTextQuestionCleanup(); } catch (_) {}
-		}
-	});
+    container.querySelectorAll('.quiz-track-item[data-slide-kind="question"]').forEach(item => {
+        if (typeof item.__quizTextQuestionCleanup === "function") {
+            try { item.__quizTextQuestionCleanup(); } catch (_) {}
+        }
+    });
 
-	ctx.lifecycle.bumpAllSlideGenerations();
-	ctx.viewport.destroyActiveSlideResizeObserver();
-	ctx.viewport.destroyAllSlidesResizeObserver();
-	ctx.viewport.destroyViewportResizeObserver();
-	ctx.track.clearTrackTransitionFallback();
+    ctx.lifecycle.bumpAllSlideGenerations();
+    ctx.viewport.destroyActiveSlideResizeObserver();
+    ctx.viewport.destroyAllSlidesResizeObserver();
+    ctx.viewport.destroyViewportResizeObserver();
+    ctx.track.clearTrackTransitionFallback();
 
-	container.innerHTML = `${ctx.exam.examTimerHtml()}${ctx.cards.navHtml()}<div class="quiz-track-viewport" data-quiz-height-ready="0"><div class="quiz-track">${quiz.map((_, i) => ctx.cards.questionCardHtml(i)).join("")}${ctx.cards.submitSlideHtml()}${ctx.cards.resultsSlideHtml()}</div></div>`;
-	__quizSubmitSlideSignature = ctx.state.getSubmitSlideSignature();
-	__quizResultsSlideSignature = ctx.state.getResultsSlideSignature();
+    container.innerHTML = `${ctx.exam.examTimerHtml()}${ctx.cards.navHtml()}<div class="quiz-track-viewport" data-quiz-height-ready="0"><div class="quiz-track">${quiz.map((_, i) => ctx.cards.questionCardHtml(i)).join("")}${ctx.cards.submitSlideHtml()}${ctx.cards.resultsSlideHtml()}</div></div>`;
+    __quizSubmitSlideSignature = ctx.state.getSubmitSlideSignature();
+    __quizResultsSlideSignature = ctx.state.getResultsSlideSignature();
 
-	const { viewport: vp, track } = viewport.getTrackElements();
-	bindTrackFirstLoadFix();
-	ctx.viewport.bindViewportResizeObserver();
-	ctx.interactions.bindZoomFixHandlers();
+    const { viewport: vp, track } = viewport.getTrackElements();
+    bindTrackFirstLoadFix();
+    ctx.viewport.bindViewportResizeObserver();
+    ctx.interactions.bindZoomFixHandlers();
 
-	if (!track || !vp) return;
+    if (!track || !vp) return;
 
-	track.style.transition = "none";
-	track.style.willChange = "";
-	track.style.backfaceVisibility = "hidden";
-	track.style.transformStyle = "preserve-3d";
+    track.style.transition = "none";
+    track.style.willChange = "";
+    track.style.backfaceVisibility = "hidden";
+    track.style.transformStyle = "preserve-3d";
 
-	viewport.applyTrackGeometry({ refreshWidth: true });
-	ctx.track.setTrackTransformPx(ctx.track.getSlideTranslateX(quizState.current));
+    viewport.applyTrackGeometry({ refreshWidth: true });
+    ctx.track.setTrackTransformPx(ctx.track.getSlideTranslateX(quizState.current));
 
-	vp.style.willChange = "";
-	vp.style.transform = "";
-	vp.style.opacity = "";
+    vp.style.willChange = "";
+    vp.style.transform = "";
+    vp.style.opacity = "";
 
-	if (!applyTrackPositionAndHeightInstant()) {
-		ensureTrackVisibleAfterLayout(24, currentAsyncEpoch());
-	}
+    if (!applyTrackPositionAndHeightInstant()) {
+        ensureTrackVisibleAfterLayout(24, currentAsyncEpoch());
+    }
 
-	ctx.viewport.bindAllSlidesResizeObserver();
-	ctx.warming.bindAllTrackImages();
-	ctx.resources.bindQuizResourceButtons(container);
-	container.querySelectorAll('.quiz-track-item[data-slide-kind="question"]').forEach(ctx.interactions.bindQuestionTrackItem);
-	ctx.interactions.bindStaticControls();
+    ctx.viewport.bindAllSlidesResizeObserver();
+    ctx.warming.bindAllTrackImages();
+    ctx.resources.bindQuizResourceButtons(container);
+    container.querySelectorAll('.quiz-track-item[data-slide-kind="question"]').forEach(ctx.interactions.bindQuestionTrackItem);
+    ctx.interactions.bindStaticControls();
 
-	if (isExamMode && !examStarted) {
-		// En mode examen, tant que l'examen n'a pas commencé,
-		// on affiche seulement l'écran de démarrage (pas de navigation, pas de quiz)
-		container.innerHTML = `${ctx.exam.examTimerHtml()}<div class="quiz-exam-placeholder" data-exam-placeholder="1"><p>Commencez l'examen pour afficher le quiz.</p></div>`;
-		ctx.exam.bindExamStartButton();
-		return;
-	}
+    if (isExamMode && !examStarted) {
+        // En mode examen, tant que l'examen n'a pas commencé,
+        // on affiche seulement l'écran de démarrage (pas de navigation, pas de quiz)
+        container.innerHTML = `${ctx.exam.examTimerHtml()}<div class="quiz-exam-placeholder" data-exam-placeholder="1"></div>`;
+        ctx.exam.bindExamStartButton();
+        return;
+    }
 
-	primeAllSlideHeights({ retries: 6, syncCurrent: true });
-	ctx.warming.warmSlidesAroundIndex(quizState.current, 3);
-	ctx.warming.startFullBackgroundWarm();
-	ctx.state.updateNavHighlight();
-	ctx.state.setSlidingClass(quizState.isSliding);
+    primeAllSlideHeights({ retries: 6, syncCurrent: true });
+    ctx.warming.warmSlidesAroundIndex(quizState.current, 3);
+    ctx.warming.startFullBackgroundWarm();
+    ctx.state.updateNavHighlight();
+    ctx.state.setSlidingClass(quizState.isSliding);
 
-	if (isExamMode) {
-		ctx.exam.startExamTimer();
-	}
+    if (isExamMode) {
+        ctx.exam.startExamTimer();
+    }
 }
 
 // Assign render function to ctx AFTER it's defined to avoid TDZ

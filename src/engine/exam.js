@@ -17,7 +17,7 @@ module.exports = function createExamHandlers(ctx) {
                         <circle cx="12" cy="14" r="8"></circle>
                     </svg>
                 </div>
-                <div class="quiz-exam-start-title">Mode Examen</div>
+                <div class="quiz-exam-start-title">Examen</div>
                 <div class="quiz-exam-start-duration">Durée : ${ctx.examOptions.durationMinutes} minutes</div>
                 <div class="quiz-exam-start-question-count">${ctx.quiz.length} questions</div>
                 <button class="quiz-exam-start-btn" type="button">Commencer l'examen</button>
