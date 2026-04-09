@@ -151,35 +151,6 @@ class QuizBlocksSettingTab extends obsidian.PluginSettingTab {
 				});
 		}
 
-		// ─── Keyboard Shortcuts Section ───
-		containerEl.createEl("h3", { text: "Raccourcis clavier disponibles" });
-
-		// Liste des commandes avec configuration des raccourcis
-		const commands = [
-			{ id: "open-quiz-builder", name: "Ouvrir le Quiz Editor" },
-			{ id: "import-quiz-from-active-note", name: "Importer le quiz de la note active" }
-		];
-
-		for (const cmd of commands) {
-			new obsidian.Setting(containerEl)
-				.setName(cmd.name)
-				.setDesc(`(${cmd.id})`)
-				.addButton(button => {
-					button
-						.setButtonText("Configurer le raccourci")
-						.onClick(() => {
-							this.app.setting.open();
-							this.app.setting.openTabById('hotkeys');
-							const tab = this.app.setting.activeTab;
-							if (tab && tab.searchComponent) {
-								tab.searchComponent.setValue('quiz blocks');
-								if (tab.updateHotkeyVisibility) {
-									tab.updateHotkeyVisibility();
-								}
-							}
-						});
-				});
-		}
 	}
 }
 
