@@ -438,6 +438,8 @@ class OpenQuizFromNoteModal extends obsidian.FuzzySuggestModal {
 			return b.mtime - a.mtime;
 		});
 
+		// Stocker les objets avec métadonnées pour pouvoir accéder à isOpen
+		this.filesWithQuizData = filesWithQuiz;
 		this.filesWithQuiz = filesWithQuiz.map(f => f.file);
 		this.loading = false;
 
@@ -454,7 +456,8 @@ class OpenQuizFromNoteModal extends obsidian.FuzzySuggestModal {
 
 	getItemText(item) {
 		if (item.loading) return "Chargement...";
-		return item.basename || item.name || "Sans titre";
+		// TFile a basename comme propriété
+		return item.name || item.basename || item.path?.split('/').pop() || "Sans titre";
 	}
 
 	renderSuggestion(item, el) {
@@ -463,6 +466,10 @@ class OpenQuizFromNoteModal extends obsidian.FuzzySuggestModal {
 			return;
 		}
 
+		// Récupérer les métadonnées du fichier
+		const fileData = this.filesWithQuizData?.find(f => f.file.path === item.path);
+		const isOpen = fileData?.isOpen || this.openFiles.has(item.path);
+
 		// Utiliser la structure native d'Obsidian pour le rendu
 		const container = el.createDiv({ cls: "suggestion-item" });
 
@@ -470,14 +477,15 @@ class OpenQuizFromNoteModal extends obsidian.FuzzySuggestModal {
 		const titleRow = container.createDiv({ cls: "suggestion-title" });
 		titleRow.style.cssText = "display: flex; align-items: center; gap: 0.5em;";
 
-		// Nom du fichier
+		// Nom du fichier (basename sans extension)
+		const name = item.name || item.basename || item.path?.split('/').pop() || "Sans titre";
 		titleRow.createSpan({
-			text: item.basename || item.name || "Sans titre",
+			text: name,
 			cls: "suggestion-content"
 		});
 
 		// Badge "Ouvert" si applicable
-		if (this.openFiles.has(item.path)) {
+		if (isOpen) {
 			const badge = titleRow.createSpan({ text: "Ouvert", cls: "suggestion-flair" });
 			badge.style.cssText = "font-size: 0.75em; padding: 0.1em 0.4em; background: var(--interactive-accent); color: var(--text-on-accent); border-radius: 4px; margin-left: 0.5em;";
 		}
