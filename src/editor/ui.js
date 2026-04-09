@@ -100,6 +100,11 @@ module.exports = function createEditorUIHandlers(ctx) {
 		view.resizerSidebarEditor.dataset.resizer = "sidebar-editor";
 
 		view.editorEl = main.createDiv({ cls: "qb-panel qb-editor" });
+
+		// Resizer entre editor et code (visible quand preview est masqué)
+		view.resizerEditorCode = main.createDiv({ cls: "qb-resizer" });
+		view.resizerEditorCode.dataset.resizer = "editor-code";
+
 		view.resizerEditorPreview = main.createDiv({ cls: "qb-resizer" });
 		view.resizerEditorPreview.dataset.resizer = "editor-preview";
 
@@ -109,14 +114,10 @@ module.exports = function createEditorUIHandlers(ctx) {
 
 		view.codeEl = main.createDiv({ cls: "qb-panel qb-code" });
 
-		// Resizer entre editor et code (visible quand preview est masqué)
-		view.resizerEditorCode = main.createDiv({ cls: "qb-resizer" });
-		view.resizerEditorCode.dataset.resizer = "editor-code";
-
 		view._setupResizer(view.resizerSidebarEditor, view.sidebarEl, view.editorEl, 'sidebar-editor');
+		view._setupResizer(view.resizerEditorCode, view.editorEl, view.codeEl, 'editor-code');
 		view._setupResizer(view.resizerEditorPreview, view.editorEl, view.previewEl, 'editor-preview');
 		view._setupResizer(view.resizerPreviewCode, view.previewEl, view.codeEl, 'preview-code');
-		view._setupResizer(view.resizerEditorCode, view.editorEl, view.codeEl, 'editor-code');
 
 		const sHead = view.sidebarEl.createDiv({ cls: "qb-sidebar-head" });
 		view.qCountEl = sHead.createSpan({ text: "Questions (1)" });
