@@ -315,7 +315,8 @@ class QuizFileSuggestModal extends obsidian.FuzzySuggestModal {
 		return file.path;
 	}
 
-	renderSuggestion(file, el) {
+	renderSuggestion(fuzzyMatch, el) {
+		const file = fuzzyMatch.item;
 		el.createDiv({ cls: "qb-suggest-item" }, div => {
 			const isOpen = this.openFiles.has(file.path);
 
@@ -380,19 +381,11 @@ class OpenQuizFromNoteModal extends obsidian.FuzzySuggestModal {
 		this.builderView = builderView;
 		this.openFiles = new Set();
 		this.resultItems = [];
-		this.isReady = false;
+		this.quizFiles = new Set(); // Tracks which files have quiz-blocks
 	}
 
-	async onOpen() {
-		super.onOpen();
-
-		// Charger les fichiers en arrière-plan
-		await this.loadFilesWithQuiz();
-	}
-
-	async loadFilesWithQuiz() {
-		const allMarkdownFiles = this.app.vault.getMarkdownFiles();
-		const filesWithQuiz = [];
+	getItems() {
+		const result = [];
 		const seenPaths = new Set();
 
 		// D'abord les fichiers ouverts (priorité 1)
@@ -401,70 +394,58 @@ class OpenQuizFromNoteModal extends obsidian.FuzzySuggestModal {
 				this.openFiles.add(leaf.view.file.path);
 				// Vérifier si le fichier contient un quiz
 				const content = leaf.view.data || "";
-				if (content.match(/```quiz-blocks\n([\s\S]*?)\n```/)) {
-					filesWithQuiz.push({
-						file: leaf.view.file,
-						isOpen: true,
-						mtime: leaf.view.file.stat?.mtime || 0
-					});
+				if (content.includes("```quiz-blocks")) {
+					this.quizFiles.add(leaf.view.file.path);
+					result.push(leaf.view.file);
 					seenPaths.add(leaf.view.file.path);
 				}
 			}
 		});
 
-		// Ensuite les autres fichiers récents contenant des quiz
-		for (const file of allMarkdownFiles) {
-			if (seenPaths.has(file.path)) continue;
-
-			try {
-				const content = await this.app.vault.read(file);
-				if (content.match(/```quiz-blocks\n([\s\S]*?)\n```/)) {
-					filesWithQuiz.push({
-						file: file,
-						isOpen: false,
-						mtime: file.stat?.mtime || 0
-					});
-					seenPaths.add(file.path);
-				}
-			} catch (e) {
-				// Ignorer les erreurs de lecture
+		// Ensuite les autres fichiers markdown (on les ajoute aussi, on vérifiera au moment du choix)
+		this.app.vault.getMarkdownFiles().forEach(file => {
+			if (!seenPaths.has(file.path)) {
+				result.push(file);
+				seenPaths.add(file.path);
 			}
-		}
-
-		// Trier par : ouverts d'abord, puis par date de modification (plus récents)
-		filesWithQuiz.sort((a, b) => {
-			if (a.isOpen && !b.isOpen) return -1;
-			if (!a.isOpen && b.isOpen) return 1;
-			return b.mtime - a.mtime;
 		});
 
-		this.resultItems = filesWithQuiz.map(item => item.file);
-		this.isReady = true;
+		// Trier : fichiers avec quiz d'abord, puis par date
+		result.sort((a, b) => {
+			const aHasQuiz = this.quizFiles.has(a.path);
+			const bHasQuiz = this.quizFiles.has(b.path);
+			const aIsOpen = this.openFiles.has(a.path);
+			const bIsOpen = this.openFiles.has(b.path);
 
-		// Rafraîchir la modale avec les résultats
-		// La méthode recommandée par l'API Obsidian
-		this.inputEl.value = this.inputEl.value || "";
-		this.inputEl.dispatchEvent(new Event("input"));
-	}
+			if (aIsOpen && !bIsOpen) return -1;
+			if (!aIsOpen && bIsOpen) return 1;
+			if (aHasQuiz && !bHasQuiz) return -1;
+			if (!aHasQuiz && bHasQuiz) return 1;
+			return (b.stat?.mtime || 0) - (a.stat?.mtime || 0);
+		});
 
-	getItems() {
-		return this.resultItems;
+		return result;
 	}
 
 	getItemText(file) {
 		return file.path;
 	}
 
-	renderSuggestion(file, el) {
+	renderSuggestion(fuzzyMatch, el) {
+		const file = fuzzyMatch.item;
 		const filePath = file?.path || "";
 		const fileName = file?.basename || "";
 		const isOpen = this.openFiles.has(filePath);
+		const hasQuiz = this.quizFiles.has(filePath);
 
 		el.createDiv({ cls: "qb-suggest-item" }, div => {
 			div.createDiv({ cls: "qb-suggest-main" }, main => {
 				main.createEl("span", { cls: "qb-suggest-name", text: fileName });
 				if (isOpen) {
 					main.createEl("span", { cls: "qb-suggest-badge", text: "Ouvert" });
+				}
+				if (hasQuiz) {
+					main.createEl("span", { cls: "qb-suggest-badge qb-quiz-badge", text: "Quiz" });
 				}
 			});
 			div.createEl("span", { cls: "qb-suggest-path", text: filePath });
