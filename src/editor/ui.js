@@ -114,10 +114,15 @@ module.exports = function createEditorUIHandlers(ctx) {
 
 		view.codeEl = main.createDiv({ cls: "qb-panel qb-code" });
 
+		// Resizer à droite de code (pour resize libre)
+		view.resizerCodeRight = main.createDiv({ cls: "qb-resizer" });
+		view.resizerCodeRight.dataset.resizer = "code-right";
+
 		view._setupResizer(view.resizerSidebarEditor, view.sidebarEl, view.editorEl, 'sidebar-editor');
 		view._setupResizer(view.resizerEditorCode, view.editorEl, view.codeEl, 'editor-code');
 		view._setupResizer(view.resizerEditorPreview, view.editorEl, view.previewEl, 'editor-preview');
 		view._setupResizer(view.resizerPreviewCode, view.previewEl, view.codeEl, 'preview-code');
+		view._setupResizer(view.resizerCodeRight, view.codeEl, view.editorEl, 'code-right');
 
 		const sHead = view.sidebarEl.createDiv({ cls: "qb-sidebar-head" });
 		view.qCountEl = sHead.createSpan({ text: "Questions (1)" });
@@ -317,6 +322,11 @@ module.exports = function createEditorUIHandlers(ctx) {
 			// Visible quand editor et code sont actifs mais preview est masqué
 			const showEditorCode = ctx.panels.editor && ctx.panels.code && !ctx.panels.preview;
 			view.resizerEditorCode.toggleClass("qb-hidden", !showEditorCode);
+		}
+		if (view.resizerCodeRight) {
+			// Visible quand code est actif et qu'il y a un panel à gauche pour resize
+			const showCodeRight = ctx.panels.code && (ctx.panels.editor || ctx.panels.preview);
+			view.resizerCodeRight.toggleClass("qb-hidden", !showCodeRight);
 		}
 	}
 

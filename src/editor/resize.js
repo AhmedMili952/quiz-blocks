@@ -64,6 +64,13 @@ module.exports = function createResizeHandlers(ctx) {
 				if (newCodeWidth >= view._minPanelWidth && previewWidth >= minPreviewWidth) {
 					_resizePanels(type, mainEl, 0, newCodeWidth);
 				}
+			} else if (type === 'code-right') {
+				// Resize code depuis sa bordure droite
+				const newCodeWidth = startWidthLeft + delta;
+				if (newCodeWidth >= view._minPanelWidth) {
+					mainEl.style.setProperty('--qb-code-w', `${newCodeWidth}px`);
+					view._savedWidths.code = newCodeWidth;
+				}
 			} else {
 				if (newLeftWidth <= view._hideThreshold && delta < 0) {
 					_closeLeftPanel(type, mainEl);
@@ -121,6 +128,8 @@ module.exports = function createResizeHandlers(ctx) {
 			} else if (type === 'editor-code') {
 				view._savedWidths.editor = startWidthLeft;
 				view._savedWidths.code = startWidthRight;
+			} else if (type === 'code-right') {
+				view._savedWidths.code = startWidthLeft;
 			}
 
 			overlay = document.createElement('div');
@@ -181,7 +190,8 @@ module.exports = function createResizeHandlers(ctx) {
 			'sidebar-editor': 'sidebar',
 			'editor-preview': 'editor',
 			'preview-code': 'preview',
-			'editor-code': 'editor'
+			'editor-code': 'editor',
+			'code-right': 'code'
 		};
 		const panel = panelNames[type];
 
@@ -205,7 +215,8 @@ module.exports = function createResizeHandlers(ctx) {
 			'sidebar-editor': 'editor',
 			'editor-preview': 'preview',
 			'preview-code': 'code',
-			'editor-code': 'code'
+			'editor-code': 'code',
+			'code-right': null  // Pas de panel à droite
 		};
 		const panel = panelNames[type];
 
