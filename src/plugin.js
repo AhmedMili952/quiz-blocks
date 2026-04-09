@@ -123,33 +123,79 @@ class QuizBlocksSettingTab extends obsidian.PluginSettingTab {
 		notesEl.createEl("li", { text: "Interactive rendering happens directly inside the note preview." });
 
 		// ─── Available Commands Section ───
-		containerEl.createEl("h3", { text: "Commandes disponibles" });
+		containerEl.createEl("h3", { text: "Commandes et raccourcis clavier" });
 
-		const commands = [
-			{ id: "open-quiz-builder", name: "Ouvrir le Quiz Editor" },
-			{ id: "import-quiz-from-active-note", name: "Importer le quiz de la note active" }
+		const commandsInfo = [
+			{
+				id: "open-quiz-builder",
+				name: "Ouvrir le Quiz Editor",
+				hotkey: "Ctrl+Shift+E",
+				desc: "Ouvre un nouvel onglet avec le Quiz Editor vide"
+			},
+			{
+				id: "open-quiz-from-active-note",
+				name: "Ouvrir le quiz de la note active dans l'éditeur",
+				hotkey: "Ctrl+Shift+Q",
+				desc: "Ouvre l'éditeur et charge le quiz de la note active"
+			},
+			{
+				id: "import-quiz-from-active-note",
+				name: "Importer le quiz de la note active",
+				hotkey: "Ctrl+Shift+I",
+				desc: "Importe le quiz dans l'éditeur déjà ouvert"
+			}
 		];
 
-		for (const cmd of commands) {
-			new obsidian.Setting(containerEl)
-				.setName(cmd.name)
-				.setDesc(`(${cmd.id})`)
-				.addButton(button => {
-					button
-						.setButtonText("Configurer le raccourci")
-						.onClick(() => {
-							this.app.setting.open();
-							this.app.setting.openTabById('hotkeys');
-							const tab = this.app.setting.activeTab;
-							if (tab && tab.searchComponent) {
-								tab.searchComponent.setValue('quiz blocks');
-								if (tab.updateHotkeyVisibility) {
-									tab.updateHotkeyVisibility();
-								}
-							}
-						});
-				});
+		// Tableau des commandes
+		const commandsTable = containerEl.createDiv({ cls: "qb-commands-table" });
+		commandsTable.style.cssText = "margin: 1em 0; border: 1px solid var(--background-modifier-border); border-radius: 8px; overflow: hidden;";
+
+		for (const cmd of commandsInfo) {
+			const row = commandsTable.createDiv({ cls: "qb-command-row" });
+			row.style.cssText = "display: flex; align-items: center; padding: 0.75em 1em; border-bottom: 1px solid var(--background-modifier-border); background: var(--background-secondary);";
+
+			const infoDiv = row.createDiv({ cls: "qb-command-info" });
+			infoDiv.style.cssText = "flex: 1; min-width: 0;";
+			infoDiv.createDiv({ cls: "qb-command-name", text: cmd.name }).style.cssText = "font-weight: 600; color: var(--text-normal); margin-bottom: 0.25em;";
+			infoDiv.createDiv({ cls: "qb-command-desc", text: cmd.desc }).style.cssText = "font-size: 0.85em; color: var(--text-muted);";
+
+			const hotkeyDiv = row.createDiv({ cls: "qb-command-hotkey" });
+			hotkeyDiv.style.cssText = "display: flex; align-items: center; gap: 0.5em; margin-left: 1em;";
+
+			// Afficher la combinaison de touches
+			const hotkeyBadge = hotkeyDiv.createSpan({ cls: "qb-hotkey-badge", text: cmd.hotkey });
+			hotkeyBadge.style.cssText = "font-family: var(--font-monospace); font-size: 0.75em; padding: 0.25em 0.5em; background: var(--interactive-accent); color: var(--text-on-accent); border-radius: 4px; white-space: nowrap;";
 		}
+
+		// Supprimer la dernière bordure
+		const rows = commandsTable.querySelectorAll('.qb-command-row');
+		if (rows.length > 0) {
+			rows[rows.length - 1].style.borderBottom = 'none';
+		}
+
+		// Bouton unique en bas
+		const buttonContainer = containerEl.createDiv({ cls: "qb-config-button-container" });
+		buttonContainer.style.cssText = "margin-top: 1.5em; text-align: center;";
+
+		const configButton = buttonContainer.createEl("button", { cls: "mod-cta" });
+		configButton.textContent = "Configurer les raccourcis";
+		configButton.style.cssText = "padding: 0.75em 1.5em; font-size: 1em;";
+		configButton.addEventListener("click", () => {
+			this.app.setting.open();
+			this.app.setting.openTabById('hotkeys');
+			const tab = this.app.setting.activeTab;
+			if (tab && tab.searchComponent) {
+				tab.searchComponent.setValue('quiz blocks');
+				if (tab.updateHotkeyVisibility) {
+					tab.updateHotkeyVisibility();
+				}
+			}
+		});
+
+		// Note explicative
+		const noteEl = containerEl.createEl("p", { cls: "setting-item-description" });
+		noteEl.textContent = "Cliquez sur le bouton ci-dessus pour personnaliser les raccourcis clavier dans les paramètres d'Obsidian.";
+		noteEl.style.cssText = "text-align: center; margin-top: 0.75em; font-style: italic;";
 
 	}
 }
