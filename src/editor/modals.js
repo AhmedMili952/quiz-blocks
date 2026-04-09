@@ -381,9 +381,16 @@ class OpenQuizFromNoteModal extends obsidian.FuzzySuggestModal {
 		this.setPlaceholder("Choisir une note contenant un quiz...");
 		this.openFiles = new Set();
 		this.filesWithQuiz = [];
+		this.loading = true;
 	}
 
-	async getFilesWithQuiz() {
+	onOpen() {
+		super.onOpen();
+		// Charger les fichiers dès l'ouverture
+		this.loadFilesWithQuiz();
+	}
+
+	async loadFilesWithQuiz() {
 		const allMarkdownFiles = this.app.vault.getMarkdownFiles();
 		const filesWithQuiz = [];
 		const seenPaths = new Set();
@@ -431,32 +438,42 @@ class OpenQuizFromNoteModal extends obsidian.FuzzySuggestModal {
 			return b.mtime - a.mtime;
 		});
 
-		return filesWithQuiz.map(f => f.file);
+		this.filesWithQuiz = filesWithQuiz.map(f => f.file);
+		this.loading = false;
+
+		// Rafraîchir la modale avec les résultats
+		this.updateSuggestions();
 	}
 
-	async getItems() {
-		if (this.filesWithQuiz.length === 0) {
-			this.filesWithQuiz = await this.getFilesWithQuiz();
+	getItems() {
+		if (this.loading) {
+			return [{ loading: true }];
 		}
 		return this.filesWithQuiz;
 	}
 
-	getItemText(file) {
-		return file.basename;
+	getItemText(item) {
+		if (item.loading) return "Chargement...";
+		return item.basename;
 	}
 
-	renderSuggestion(file, el) {
+	renderSuggestion(item, el) {
+		if (item.loading) {
+			el.createDiv({ text: "Chargement des notes avec quiz...", cls: "qb-suggest-loading" });
+			return;
+		}
+
 		el.createDiv({ cls: "qb-suggest-item" }, div => {
-			const isOpen = this.openFiles.has(file.path);
+			const isOpen = this.openFiles.has(item.path);
 
 			div.createDiv({ cls: "qb-suggest-main" }, main => {
-				main.createEl("span", { cls: "qb-suggest-name", text: file.basename });
+				main.createEl("span", { cls: "qb-suggest-name", text: item.basename });
 				if (isOpen) {
 					main.createEl("span", { cls: "qb-suggest-badge", text: "Ouvert" });
 				}
 			});
 
-			div.createEl("span", { cls: "qb-suggest-path", text: file.path });
+			div.createEl("span", { cls: "qb-suggest-path", text: item.path });
 		});
 	}
 
