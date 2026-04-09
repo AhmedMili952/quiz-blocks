@@ -1,3 +1,36 @@
+# Dependencies
 node_modules/
+
+# Build output
+dist/
+build/
+release/
+
+# Environment & secrets
+.env
+.env.local
+.env.*.local
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# AI tools
 .claude/
+
+# Local temp files
 temp/
