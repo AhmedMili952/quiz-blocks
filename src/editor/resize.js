@@ -118,9 +118,6 @@ module.exports = function createResizeHandlers(ctx) {
 			} else if (type === 'preview-code') {
 				view._savedWidths.preview = startWidthLeft;
 				view._savedWidths.code = startWidthRight;
-			} else if (type === 'editor-code') {
-				view._savedWidths.editor = startWidthLeft;
-				view._savedWidths.code = startWidthRight;
 			}
 
 			overlay = document.createElement('div');
@@ -180,8 +177,7 @@ module.exports = function createResizeHandlers(ctx) {
 		const panelNames = {
 			'sidebar-editor': 'sidebar',
 			'editor-preview': 'editor',
-			'preview-code': 'preview',
-			'editor-code': 'editor'
+			'preview-code': 'preview'
 		};
 		const panel = panelNames[type];
 
@@ -204,8 +200,7 @@ module.exports = function createResizeHandlers(ctx) {
 		const panelNames = {
 			'sidebar-editor': 'editor',
 			'editor-preview': 'preview',
-			'preview-code': 'code',
-			'editor-code': 'code'
+			'preview-code': 'code'
 		};
 		const panel = panelNames[type];
 
