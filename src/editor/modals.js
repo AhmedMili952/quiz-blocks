@@ -384,34 +384,55 @@ class OpenQuizFromNoteModal extends obsidian.FuzzySuggestModal {
 		this.quizFiles = new Set(); // Tracks which files have quiz-blocks
 		this.activeQuizFile = null; // File currently loaded in Quiz Editor
 		this.loading = true;
-		this.loadingEl = null;
 	}
 
 	onOpen() {
 		super.onOpen();
 
+		// Verrouiller l'input pendant le chargement :
+		// - readOnly bloque toute frappe (PC + Android)
+		// - inputmode="none" empêche le clavier virtuel mobile
+		// - blur() retire le caret et ferme le clavier s'il a eu le temps de s'ouvrir
+		if (this.inputEl) {
+			this.inputEl.readOnly = true;
+			this.inputEl.setAttribute("inputmode", "none");
+			this.inputEl.blur();
+		}
+
 		// Placeholder pour indiquer l'état de chargement
 		this.setPlaceholder("Chargement des quiz en cours...");
 
-		// Overlay avec spinner rotatif pendant le scan du vault
-		this.loadingEl = this.modalEl.createDiv({ cls: "qb-modal-loading" });
-		this.loadingEl.createDiv({ cls: "qb-spinner" });
-		this.loadingEl.createSpan({
-			cls: "qb-modal-loading-text",
-			text: "Recherche des quiz dans le vault..."
-		});
+		// Injecter le spinner directement dans le conteneur de résultats
+		// (remplace l'empty-state natif "Aucun résultat trouvé")
+		if (this.resultContainerEl) {
+			this.resultContainerEl.empty();
+			const loader = this.resultContainerEl.createDiv({ cls: "qb-modal-loading" });
+			loader.createDiv({ cls: "qb-spinner" });
+			loader.createSpan({
+				cls: "qb-modal-loading-text",
+				text: "Recherche des quiz dans le vault..."
+			});
+		}
 
 		// Charger les fichiers avec quiz en arrière-plan
 		this.loadQuizFiles();
 	}
 
 	onClose() {
-		// Nettoyer la référence si la modale est fermée pendant le chargement
-		if (this.loadingEl) {
-			this.loadingEl.remove();
-			this.loadingEl = null;
+		// Nettoyage défensif : si la modale est fermée pendant le chargement,
+		// restaurer l'état normal de l'input
+		if (this.inputEl) {
+			this.inputEl.readOnly = false;
+			this.inputEl.removeAttribute("inputmode");
 		}
 		super.onClose?.();
+	}
+
+	updateSuggestions() {
+		// No-op tant que le scan est en cours : on ne veut pas qu'un rafraîchissement
+		// interne d'Obsidian efface notre spinner
+		if (this.loading) return;
+		return super.updateSuggestions?.();
 	}
 
 	async loadQuizFiles() {
@@ -471,16 +492,18 @@ class OpenQuizFromNoteModal extends obsidian.FuzzySuggestModal {
 		this.resultItems = result;
 		this.loading = false;
 
-		// Retirer l'overlay de chargement
-		if (this.loadingEl) {
-			this.loadingEl.remove();
-			this.loadingEl = null;
+		// Déverrouiller l'input et rendre le focus (l'utilisateur peut maintenant taper)
+		if (this.inputEl) {
+			this.inputEl.readOnly = false;
+			this.inputEl.removeAttribute("inputmode");
+			this.inputEl.focus();
 		}
 
 		// Restaurer le placeholder par défaut
 		this.setPlaceholder("Rechercher un quiz...");
 
-		// Forcer le rafraîchissement de la modale
+		// Forcer le rafraîchissement de la modale (passe maintenant au super
+		// puisque this.loading === false)
 		this.updateSuggestions();
 	}
 
