@@ -384,12 +384,34 @@ class OpenQuizFromNoteModal extends obsidian.FuzzySuggestModal {
 		this.quizFiles = new Set(); // Tracks which files have quiz-blocks
 		this.activeQuizFile = null; // File currently loaded in Quiz Editor
 		this.loading = true;
+		this.loadingEl = null;
 	}
 
 	onOpen() {
 		super.onOpen();
+
+		// Placeholder pour indiquer l'état de chargement
+		this.setPlaceholder("Chargement des quiz en cours...");
+
+		// Overlay avec spinner rotatif pendant le scan du vault
+		this.loadingEl = this.modalEl.createDiv({ cls: "qb-modal-loading" });
+		this.loadingEl.createDiv({ cls: "qb-spinner" });
+		this.loadingEl.createSpan({
+			cls: "qb-modal-loading-text",
+			text: "Recherche des quiz dans le vault..."
+		});
+
 		// Charger les fichiers avec quiz en arrière-plan
 		this.loadQuizFiles();
+	}
+
+	onClose() {
+		// Nettoyer la référence si la modale est fermée pendant le chargement
+		if (this.loadingEl) {
+			this.loadingEl.remove();
+			this.loadingEl = null;
+		}
+		super.onClose?.();
 	}
 
 	async loadQuizFiles() {
@@ -448,6 +470,15 @@ class OpenQuizFromNoteModal extends obsidian.FuzzySuggestModal {
 
 		this.resultItems = result;
 		this.loading = false;
+
+		// Retirer l'overlay de chargement
+		if (this.loadingEl) {
+			this.loadingEl.remove();
+			this.loadingEl = null;
+		}
+
+		// Restaurer le placeholder par défaut
+		this.setPlaceholder("Rechercher un quiz...");
 
 		// Forcer le rafraîchissement de la modale
 		this.updateSuggestions();
