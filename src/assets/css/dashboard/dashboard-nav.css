@@ -2,41 +2,33 @@
    DASHBOARD NAVIGATION — Sidebar
    ═════════════════════════════════════════════════════════ */
 
-.qbd-sidebar {
-	width: 180px;
-	min-width: 180px;
-	background: var(--background-secondary);
-	border-right: 1px solid var(--background-modifier-border);
-	display: flex;
-	flex-direction: column;
-	padding: 0;
-	flex-shrink: 0;
-}
-
 /* ── Brand ── */
 .qbd-nav-brand {
-	padding: 14px;
-	border-bottom: 1px solid var(--background-modifier-border);
-	margin-bottom: 8px;
+	padding: 16px 14px 12px;
+	display: flex;
+	flex-direction: column;
+	gap: 1px;
 }
 
 .qbd-nav-brand-title {
-	font-size: 13px;
+	font-size: 14px;
 	font-weight: 700;
 	color: var(--text-normal);
 	margin: 0;
+	letter-spacing: -0.01em;
 }
 
 .qbd-nav-brand-sub {
 	font-size: 9px;
 	color: var(--text-faint);
-	margin: 2px 0 0;
+	margin: 0;
+	letter-spacing: 0.02em;
 }
 
 /* ── Nav items ── */
 .qbd-nav-items {
 	flex: 1;
-	padding: 0 6px;
+	padding: 8px 6px;
 	display: flex;
 	flex-direction: column;
 	gap: 1px;
@@ -45,8 +37,8 @@
 .qbd-nav-item {
 	display: flex;
 	align-items: center;
-	gap: 8px;
-	padding: 7px 10px;
+	gap: 9px;
+	padding: 8px 11px;
 	border-radius: var(--radius-m, 8px);
 	width: 100%;
 	background: transparent;
@@ -58,15 +50,16 @@
 	cursor: pointer;
 	text-align: left;
 	font-family: var(--font-interface, inherit);
-	transition: all 0.14s ease;
+	transition: background 0.12s ease, color 0.12s ease, border-color 0.15s ease;
 }
 
 .qbd-nav-item:hover {
 	background: var(--background-modifier-hover, rgba(255,255,255,0.04));
+	color: var(--text-normal);
 }
 
 .qbd-nav-item--active {
-	background: var(--background-modifier-hover, rgba(255,255,255,0.04));
+	background: var(--background-modifier-hover, rgba(255,255,255,0.06));
 	color: var(--text-normal);
 	font-weight: 600;
 	border-left-color: var(--interactive-accent);
@@ -76,14 +69,21 @@
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	width: 15px;
-	height: 15px;
+	width: 18px;
+	height: 18px;
 	flex-shrink: 0;
+	opacity: 0.7;
+	transition: opacity 0.12s ease;
+}
+
+.qbd-nav-item--active .qbd-nav-icon,
+.qbd-nav-item:hover .qbd-nav-icon {
+	opacity: 1;
 }
 
 .qbd-nav-icon svg {
-	width: 15px;
-	height: 15px;
+	width: 16px;
+	height: 16px;
 }
 
 .qbd-nav-label {
@@ -94,31 +94,35 @@
 	margin-left: auto;
 	font-size: 9px;
 	font-weight: 600;
-	padding: 1px 5px;
-	border-radius: 6px;
-	background: var(--background-primary);
-	color: var(--text-faint);
+	padding: 2px 6px;
+	border-radius: 10px;
+	background: var(--interactive-accent);
+	color: var(--text-on-accent);
+	line-height: 1;
 }
 
 /* ── Footer ── */
 .qbd-nav-footer {
 	padding: 12px 14px;
 	border-top: 1px solid var(--background-modifier-border);
+	background: var(--background-secondary);
 }
 
 .qbd-nav-footer-label {
 	font-size: 8px;
 	color: var(--text-faint);
-	letter-spacing: 0.07em;
+	letter-spacing: 0.08em;
 	text-transform: uppercase;
 	margin: 0 0 4px;
+	font-weight: 500;
 }
 
 .qbd-nav-footer-path {
 	font-size: 9px;
-	color: var(--text-faint);
+	color: var(--text-muted);
 	font-family: var(--font-monospace, monospace);
 	word-break: break-all;
 	line-height: 1.5;
 	margin: 0;
+	opacity: 0.8;
 }

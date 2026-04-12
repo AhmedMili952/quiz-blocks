@@ -98,8 +98,10 @@ function createHomeHandlers(ctx) {
 		// Empty state
 		if (quizzes.length === 0) {
 			const empty = container.createDiv({ cls: "qbd-empty-state" });
-			empty.createEl("p", { text: "Aucun quiz trouvé dans le vault." });
-			empty.createEl("p", { text: "Créez un bloc ```quiz-blocks dans une note pour commencer.", cls: "qbd-empty-hint" });
+			const emptyIcon = empty.createDiv({ cls: "qbd-empty-icon" });
+			obsidian.setIcon(emptyIcon, "search");
+			empty.createEl("p", { text: "Aucun quiz trouvé dans le vault" });
+			empty.createEl("p", { text: "Créez un bloc quiz-blocks dans une note pour commencer.", cls: "qbd-empty-hint" });
 		}
 	}
 
