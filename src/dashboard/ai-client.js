@@ -56,69 +56,54 @@ Génère ${typeInstruction}. Réponds UNIQUEMENT avec le tableau JSON5, sans exp
 		}
 	}
 
-	function parseAnthropicError(err) {
-		let status = 0;
-		let detail = "";
-
-		// Extract status from all possible properties
-		status = err?.status || err?.httpStatus || err?.statusCode || 0;
-
-		// Try to extract Anthropic error details from the response body
-		// obsidian.requestUrl may put the response in different properties
-		const sources = [
-			err?.json, err?.data, err?.body, err?.responseText,
-			err?.response?.json, err?.response?.data
-		];
-
-		for (const src of sources) {
-			if (!src) continue;
-			let parsed = src;
-			if (typeof src === "string") {
-				try { parsed = JSON.parse(src); } catch (_) { continue; }
-			}
-			if (parsed?.error?.message) {
-				detail = parsed.error.message;
-				break;
-			}
-		}
-
-		// Last resort: try to extract from the error message itself
-		if (!detail && err?.message) {
-			try {
-				// requestUrl sometimes embeds the response body in the error message
-				const jsonMatch = err.message.match(/\{[\s\S]*\}/);
-				if (jsonMatch) {
-					const parsed = JSON.parse(jsonMatch[0]);
-					if (parsed?.error?.message) detail = parsed.error.message;
-				}
-			} catch (_) { /* ignore */ }
-		}
-
-		return { status, detail };
-	}
-
 	async function callAnthropic(apiKey, model, systemPrompt, userPrompt) {
 		const { requestUrl } = require("obsidian");
 
-		const requestBody = {
+		const commonHeaders = {
+			"anthropic-version": "2023-06-01",
+			"anthropic-dangerous-direct-browser-access": "true",
+			"x-api-key": apiKey
+		};
+
+		// ── Step 1: Verify API key by listing models ──
+		console.log("[quiz-blocks] Step 1: Verifying API key...");
+		try {
+			const modelsResp = await requestUrl({
+				url: "https://api.anthropic.com/v1/models?limit=20",
+				method: "GET",
+				headers: commonHeaders
+			});
+			const modelsData = modelsResp.json;
+			const availableModels = (modelsData?.data || []).map(m => m.id);
+			console.log("[quiz-blocks] API key valid. Available models:", availableModels);
+
+			// Check if requested model is available
+			if (!availableModels.includes(model)) {
+				const fallback = availableModels.find(m => m.includes("sonnet")) || availableModels[0];
+				console.log("[quiz-blocks] Model " + model + " not in list, falling back to:", fallback);
+				model = fallback;
+			}
+		} catch (err) {
+			const status = err?.status || 0;
+			console.error("[quiz-blocks] Model list failed:", status, err?.message);
+			if (status === 401 || status === 403) {
+				throw new Error("Clé API Anthropic invalide. Vérifiez votre clé sur console.anthropic.com/settings/keys");
+			}
+			// If we can't list models, just continue with the requested model
+		}
+
+		// ── Step 2: Call the Messages API ──
+		console.log("[quiz-blocks] Step 2: Calling Messages API with model:", model);
+
+		// Try with system as a content block array (newer format)
+		let requestBody = {
 			model,
 			max_tokens: 4096,
+			system: [{ type: "text", text: systemPrompt }],
 			messages: [
 				{ role: "user", content: userPrompt }
 			]
 		};
-
-		// Use system as a top-level string (supported by anthropic-version 2023-06-01)
-		// For newer API versions, system should be an array of content blocks.
-		// We use the older format for maximum compatibility.
-		requestBody.system = systemPrompt;
-
-		console.log("[quiz-blocks] Calling Anthropic API:", {
-			model,
-			apiKeyPrefix: apiKey.substring(0, 8) + "...",
-			systemPromptLength: systemPrompt.length,
-			userPromptLength: userPrompt.length
-		});
 
 		let response;
 		try {
@@ -126,41 +111,75 @@ Génère ${typeInstruction}. Réponds UNIQUEMENT avec le tableau JSON5, sans exp
 				url: "https://api.anthropic.com/v1/messages",
 				method: "POST",
 				headers: {
-					"Content-Type": "application/json",
-					"anthropic-version": "2023-06-01",
-					"anthropic-dangerous-direct-browser-access": "true",
-					"x-api-key": apiKey
+					...commonHeaders,
+					"Content-Type": "application/json"
 				},
 				body: JSON.stringify(requestBody)
 			});
 		} catch (err) {
-			const { status, detail } = parseAnthropicError(err);
-			console.error("[quiz-blocks] Anthropic API error:", {
+			const status = err?.status || 0;
+			const errHeaders = err?.headers || {};
+			console.error("[quiz-blocks] Messages API error:", {
 				status,
-				detail,
 				errMessage: err?.message,
-				errType: typeof err,
-				errKeys: Object.keys(err || {})
+				responseHeaders: errHeaders
 			});
 
-			if (status === 401 || status === 403) {
-				throw new Error("Clé API Anthropic invalide ou sans crédits. Vérifiez votre clé et vos crédits sur console.anthropic.com");
-			}
-			if (status === 429) {
-				throw new Error("Limite de requêtes atteinte (rate limit). Réessayez dans quelques instants.");
-			}
-			if (status === 404) {
-				throw new Error("Modèle " + model + " non trouvé. Changez de modèle dans le sélecteur ci-dessus.");
-			}
+			// If system as array failed, try as string (older format)
 			if (status === 400) {
-				const msg = detail || "Requête invalide";
-				throw new Error("Erreur 400 : " + msg + " (modèle : " + model + ")");
+				console.log("[quiz-blocks] Retrying with system as string...");
+				requestBody.system = systemPrompt;
+
+				try {
+					response = await requestUrl({
+						url: "https://api.anthropic.com/v1/messages",
+						method: "POST",
+						headers: {
+							...commonHeaders,
+							"Content-Type": "application/json"
+						},
+						body: JSON.stringify(requestBody)
+					});
+				} catch (retryErr) {
+					const retryStatus = retryErr?.status || 0;
+					console.error("[quiz-blocks] Retry also failed:", retryStatus, retryErr?.message);
+
+					// Last resort: merge system prompt into user message
+					if (retryStatus === 400) {
+						console.log("[quiz-blocks] Last resort: merging system into user message...");
+						const fallbackBody = {
+							model,
+							max_tokens: 4096,
+							messages: [
+								{ role: "user", content: systemPrompt + "\n\n" + userPrompt }
+							]
+						};
+
+						try {
+							response = await requestUrl({
+								url: "https://api.anthropic.com/v1/messages",
+								method: "POST",
+								headers: {
+									...commonHeaders,
+									"Content-Type": "application/json"
+								},
+								body: JSON.stringify(fallbackBody)
+							});
+						} catch (finalErr) {
+							const finalStatus = finalErr?.status || 0;
+							throw new Error(
+								"Toutes les tentatives ont échoué (" + finalStatus + "). " +
+								"Vérifiez votre clé API et vos crédits sur console.anthropic.com. " +
+								"Modèle : " + model
+							);
+						}
+					} else {
+						throw new Error("Erreur Anthropic (" + retryStatus + ") : " + (retryErr?.message || "Connexion impossible"));
+					}
+				}
+			} else {
+				throw new Error("Erreur Anthropic (" + status + ") : " + (err?.message || "Connexion impossible"));
 			}
-			// If no specific status, include whatever detail we have
-			if (detail) {
-				throw new Error("Erreur Anthropic" + (status ? " (" + status + ")" : "") + " : " + detail);
-			}
-			throw new Error("Erreur Anthropic" + (status ? " (" + status + ")" : "") + " : " + (err.message || "Connexion impossible. Vérifiez votre clé API."));
 		}
 
 		const data = response.json;
@@ -173,6 +192,7 @@ Génère ${typeInstruction}. Réponds UNIQUEMENT avec le tableau JSON5, sans exp
 		if (!content.trim()) {
 			throw new Error("L'IA n'a retourné aucune réponse. Réessayez ou changez de modèle.");
 		}
+		console.log("[quiz-blocks] Success! Response length:", content.length);
 		return parseQuizResponse(content);
 	}
 
