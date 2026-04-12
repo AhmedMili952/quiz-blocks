@@ -18,7 +18,6 @@ const DEFAULT_SETTINGS = {
 	aiApiKey: "",
 	aiModel: "",
 	aiOllamaUrl: "http://localhost:11434",
-		aiCompatibleUrl: "https://api.groq.com/openai/v1"
 };
 
 function createLogger() {
@@ -204,67 +203,149 @@ class QuizBlocksSettingTab extends obsidian.PluginSettingTab {
 		containerEl.createEl("h3", { text: "Génération IA" });
 
 		containerEl.createEl("p", {
-			text: "Configurez votre fournisseur IA. Anthropic (Claude), Ollama (local/cloud) ou API Compatible (Groq, Together, etc.).",
+			text: "Configurez votre fournisseur IA pour générer des quiz automatiquement.",
 			cls: "setting-item-description"
 		});
 
+		// ─── Modèles par fournisseur ───
+		const ANTHROPIC_MODELS = [
+			{ value: "claude-sonnet-4-20250514", label: "Claude Sonnet 4 (recommandé)" },
+			{ value: "claude-3-5-sonnet-20241022", label: "Claude 3.5 Sonnet" },
+			{ value: "claude-3-5-haiku-20241022", label: "Claude 3.5 Haiku (rapide)" },
+			{ value: "claude-3-opus-20240229", label: "Claude 3 Opus (puissant)" }
+		];
+
+		const OLLAMA_MODELS = [
+			{ value: "llama3", label: "Llama 3" },
+			{ value: "llama3.1", label: "Llama 3.1" },
+			{ value: "mistral", label: "Mistral" },
+			{ value: "codellama", label: "Code Llama" },
+			{ value: "gemma2", label: "Gemma 2" },
+			{ value: "phi3", label: "Phi-3" },
+			{ value: "qwen2", label: "Qwen 2" },
+			{ value: "deepseek-coder", label: "DeepSeek Coder" },
+			{ value: "mixtral", label: "Mixtral" },
+			{ value: "mistral-nemo", label: "Mistral Nemo" }
+		];
+
+		const TUTORIALS = {
+			anthropic: {
+				title: "Comment configurer Anthropic (Claude)",
+				steps: [
+					"1. Allez sur console.anthropic.com et créez un compte.",
+					"2. Accédez à la section « API Keys » dans votre tableau de bord.",
+					"3. Cliquez sur « Create Key » et copiez la clé.",
+					"4. Collez-la dans le champ « Clé API » ci-dessus.",
+					"5. Choisissez le modèle Claude que vous souhaitez utiliser.",
+					"⚠️ Votre clé API est stockée localement et n'est jamais partagée."
+				]
+			},
+			ollama: {
+				title: "Comment configurer Ollama",
+				steps: [
+					"1. Téléchargez Ollama sur ollama.com et installez-le.",
+					"2. Ouvrez un terminal et lancez : ollama pull llama3",
+					"3. Attendez que le modèle soit téléchargé (premier téléchargement seulement).",
+					"4. Ollama démarre automatiquement sur http://localhost:11434",
+					"5. Choisissez le modèle dans la liste ci-dessus.",
+					"💡 Pour utiliser Ollama en cloud, changez l'URL pour celle de votre serveur distant.",
+					"💡 Vous pouvez installer d'autres modèles avec : ollama pull <nom-du-modele>"
+				]
+			}
+		};
+
+		// Provider dropdown
 		new obsidian.Setting(containerEl)
 			.setName("Fournisseur IA")
 			.setDesc("Choisissez le fournisseur pour la génération de quiz")
 			.addDropdown(dropdown => dropdown
 				.addOption("anthropic", "Anthropic (Claude)")
 				.addOption("ollama", "Ollama (local / cloud)")
-				.addOption("compatible", "API Compatible (Groq, Together…)")
 				.setValue(this.plugin.settings.aiProvider || "anthropic")
 				.onChange(async (value) => {
 					this.plugin.settings.aiProvider = value;
+					// Reset model to default when switching provider
+					const defaults = { anthropic: "claude-sonnet-4-20250514", ollama: "llama3" };
+					this.plugin.settings.aiModel = defaults[value] || "";
 					await this.plugin.saveSettings();
+					// Re-render settings to update model dropdown and tutorial
+					this.display();
 				}));
 
-		new obsidian.Setting(containerEl)
-			.setName("Clé API")
-			.setDesc("Clé API Anthropic ou API Compatible. Non requis pour Ollama local.")
-			.addText(text => text
-				.setPlaceholder("sk-ant-… / gsk_…")
-				.setValue(this.plugin.settings.aiApiKey || "")
-				.onChange(async (value) => {
-					this.plugin.settings.aiApiKey = value;
-					await this.plugin.saveSettings();
-				}));
+		// API Key (Anthropic only)
+		if (this.plugin.settings.aiProvider === "anthropic") {
+			new obsidian.Setting(containerEl)
+				.setName("Clé API Anthropic")
+				.setDesc("Votre clé API Anthropic. Obligatoire pour utiliser Claude.")
+				.addText(text => {
+					text.setPlaceholder("sk-ant-api03-…")
+						.setValue(this.plugin.settings.aiApiKey || "")
+						.onChange(async (value) => {
+							this.plugin.settings.aiApiKey = value;
+							await this.plugin.saveSettings();
+						});
+				});
+		}
+
+		// Model dropdown (provider-specific)
+		const currentProvider = this.plugin.settings.aiProvider || "anthropic";
+		const models = currentProvider === "ollama" ? OLLAMA_MODELS : ANTHROPIC_MODELS;
+		const currentModel = this.plugin.settings.aiModel || models[0].value;
 
 		new obsidian.Setting(containerEl)
 			.setName("Modèle")
-			.setDesc("Laissez vide pour le modèle par défaut du fournisseur")
-			.addText(text => text
-				.setPlaceholder("claude-sonnet-4-20250514 / llama3 / mixtral-8x7b-32768")
-				.setValue(this.plugin.settings.aiModel || "")
-				.onChange(async (value) => {
+			.setDesc(currentProvider === "ollama"
+				? "Modèle Ollama à utiliser. Assurez-vous de l'avoir téléchargé avec ollama pull."
+				: "Modèle Claude à utiliser pour la génération.")
+			.addDropdown(dropdown => {
+				for (const m of models) {
+					dropdown.addOption(m.value, m.label);
+				}
+				// If current model is not in the list, add it as custom
+				if (!models.find(m => m.value === currentModel)) {
+					dropdown.addOption(currentModel, "✂️ " + currentModel + " (personnalisé)");
+				}
+				dropdown.setValue(currentModel);
+				dropdown.onChange(async (value) => {
 					this.plugin.settings.aiModel = value;
 					await this.plugin.saveSettings();
-				}));
+				});
+			});
 
-		new obsidian.Setting(containerEl)
-			.setName("URL Ollama")
-			.setDesc("Adresse du serveur Ollama (local ou cloud). Uniquement pour le fournisseur Ollama.")
-			.addText(text => text
-				.setPlaceholder("http://localhost:11434")
-				.setValue(this.plugin.settings.aiOllamaUrl || "http://localhost:11434")
-				.onChange(async (value) => {
-					this.plugin.settings.aiOllamaUrl = value;
-					await this.plugin.saveSettings();
-				}));
+		// Ollama URL (Ollama only)
+		if (currentProvider === "ollama") {
+			new obsidian.Setting(containerEl)
+				.setName("URL du serveur Ollama")
+				.setDesc("Adresse du serveur Ollama (local ou cloud).")
+				.addText(text => text
+					.setPlaceholder("http://localhost:11434")
+					.setValue(this.plugin.settings.aiOllamaUrl || "http://localhost:11434")
+					.onChange(async (value) => {
+						this.plugin.settings.aiOllamaUrl = value;
+						await this.plugin.saveSettings();
+					}));
+		}
 
-		new obsidian.Setting(containerEl)
-			.setName("URL API Compatible")
-			.setDesc("URL de base du serveur (Groq, Together AI, etc.). Uniquement pour le fournisseur API Compatible.")
-			.addText(text => text
-				.setPlaceholder("https://api.groq.com/openai/v1")
-				.setValue(this.plugin.settings.aiCompatibleUrl || "https://api.groq.com/openai/v1")
-				.onChange(async (value) => {
-					this.plugin.settings.aiCompatibleUrl = value;
-					await this.plugin.saveSettings();
-				}));
+		// ─── Contextual Tutorial ───
+		const tutorial = TUTORIALS[currentProvider];
+		if (tutorial) {
+			const tutorialEl = containerEl.createDiv({ cls: "qb-ai-tutorial" });
+			tutorialEl.createEl("h4", { text: tutorial.title });
 
+			const stepsList = tutorialEl.createEl("ul", { cls: "qb-ai-tutorial-steps" });
+			for (const step of tutorial.steps) {
+				const isWarning = step.startsWith("⚠️");
+				const isTip = step.startsWith("💡");
+				stepsList.createEl("li", {
+					text: step,
+					cls: isWarning ? "qb-ai-tutorial-warning" : isTip ? "qb-ai-tutorial-tip" : ""
+				});
+			}
+
+			// Style the tutorial
+			tutorialEl.style.cssText = "margin-top: 1em; padding: 1em; background: var(--background-secondary); border-radius: 8px; border: 1px solid var(--background-modifier-border);";
+			stepsList.style.cssText = "padding-left: 1.2em; margin: 0.5em 0 0 0;";
+		}
 	}
 }
 
@@ -428,6 +509,11 @@ module.exports = class InteractiveQuizPlugin extends obsidian.Plugin {
 
 		if ("enableDebugLogs" in this.settings) {
 			delete this.settings.enableDebugLogs;
+			await this.saveSettings();
+		}
+
+		if ("aiCompatibleUrl" in this.settings) {
+			delete this.settings.aiCompatibleUrl;
 			await this.saveSettings();
 		}
 	}

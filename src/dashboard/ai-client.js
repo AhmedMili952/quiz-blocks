@@ -1,7 +1,7 @@
 'use strict';
 
 /* ══════════════════════════════════════════════════════════
-   AI CLIENT — Anthropic + Ollama + API Compatible (Groq, Together…)
+   AI CLIENT — Anthropic + Ollama
    Aucun recours à OpenAI. Utilise obsidian.requestUrl() pour CORS.
 ══════════════════════════════════════════════════════════ */
 
@@ -9,7 +9,6 @@ function createAiClient(plugin) {
 	const DEFAULT_MODELS = {
 		anthropic: "claude-sonnet-4-20250514",
 		ollama: "llama3",
-		compatible: "llama3"
 	};
 
 	async function generate(prompt, options = {}) {
@@ -18,11 +17,8 @@ function createAiClient(plugin) {
 		const apiKey = plugin.settings.aiApiKey || "";
 		const model = plugin.settings.aiModel || DEFAULT_MODELS[provider];
 
-		// Ollama local ne nécessite pas de clé API
-		if (provider === "ollama" && !apiKey) {
-			// OK, pas besoin de clé pour Ollama local
-		} else if (!apiKey) {
-			throw new Error("Clé API non configurée. Allez dans les paramètres du plugin.");
+		if (provider === "anthropic" && !apiKey) {
+			throw new Error("Clé API Anthropic non configurée. Allez dans les paramètres du plugin.");
 		}
 
 		// Construire le prompt système
@@ -54,8 +50,6 @@ Génère ${typeInstruction}. Réponds UNIQUEMENT avec le tableau JSON5, sans exp
 
 		if (provider === "ollama") {
 			return callOllama(model, systemPrompt, userPrompt);
-		} else if (provider === "compatible") {
-			return callCompatible(apiKey, model, systemPrompt, userPrompt);
 		} else {
 			return callAnthropic(apiKey, model, systemPrompt, userPrompt);
 		}
@@ -109,33 +103,6 @@ Génère ${typeInstruction}. Réponds UNIQUEMENT avec le tableau JSON5, sans exp
 		return parseQuizResponse(content);
 	}
 
-	async function callCompatible(apiKey, model, systemPrompt, userPrompt) {
-		const { requestUrl } = require("obsidian");
-
-		// URL de base configurable : Groq, Together, OpenRouter, Mistral, etc.
-		const baseUrl = (plugin.settings.aiCompatibleUrl || "https://api.groq.com/openai/v1").replace(/\/+$/, "");
-
-		const response = await requestUrl({
-			url: `${baseUrl}/chat/completions`,
-			method: "POST",
-			headers: {
-				"Content-Type": "application/json",
-				"Authorization": `Bearer ${apiKey}`
-			},
-			body: JSON.stringify({
-				model,
-				messages: [
-					{ role: "system", content: systemPrompt },
-					{ role: "user", content: userPrompt }
-				],
-				temperature: 0.7,
-				max_tokens: 4096
-			})
-		});
-
-		const content = response.json.choices?.[0]?.message?.content || "";
-		return parseQuizResponse(content);
-	}
 
 	function parseQuizResponse(content) {
 		// Nettoyer le contenu pour extraire le JSON
