@@ -3,7 +3,7 @@
 /* ══════════════════════════════════════════════════════════
    AI CLIENT — Anthropic + Ollama
    Utilise obsidian.requestUrl() pour bypasser CORS.
-   Anthropic: header anthropic-dangerous-direct-browser-access requis.
+   Passe body comme objet (pas JSON.stringify) pour Obsidian.
 ══════════════════════════════════════════════════════════ */
 
 function createAiClient(plugin) {
@@ -22,7 +22,6 @@ function createAiClient(plugin) {
 			throw new Error("Clé API Anthropic non configurée. Allez dans les paramètres du plugin.");
 		}
 
-		// Construire le prompt système
 		const typeInstruction = type === "Mixte"
 			? "un mélange de questions à choix unique, choix multiple et texte libre"
 			: type === "Choix unique"
@@ -59,141 +58,111 @@ Génère ${typeInstruction}. Réponds UNIQUEMENT avec le tableau JSON5, sans exp
 	async function callAnthropic(apiKey, model, systemPrompt, userPrompt) {
 		const { requestUrl } = require("obsidian");
 
-		const commonHeaders = {
+		const headers = {
 			"anthropic-version": "2023-06-01",
 			"anthropic-dangerous-direct-browser-access": "true",
 			"x-api-key": apiKey
 		};
 
-		// ── Step 1: Verify API key by listing models ──
-		console.log("[quiz-blocks] Step 1: Verifying API key...");
+		// ── Step 1: Verify API key and check available models ──
+		let availableModels = [];
 		try {
 			const modelsResp = await requestUrl({
-				url: "https://api.anthropic.com/v1/models?limit=20",
+				url: "https://api.anthropic.com/v1/models?limit=100",
 				method: "GET",
-				headers: commonHeaders
+				headers
 			});
 			const modelsData = modelsResp.json;
-			const availableModels = (modelsData?.data || []).map(m => m.id);
-			console.log("[quiz-blocks] API key valid. Available models:", availableModels);
+			availableModels = (modelsData?.data || []).map(m => m.id);
+			console.log("[quiz-blocks] Available models:", availableModels.join(", "));
 
-			// Check if requested model is available
 			if (!availableModels.includes(model)) {
 				const fallback = availableModels.find(m => m.includes("sonnet")) || availableModels[0];
-				console.log("[quiz-blocks] Model " + model + " not in list, falling back to:", fallback);
+				console.log("[quiz-blocks] Model", model, "not available, falling back to:", fallback);
 				model = fallback;
 			}
 		} catch (err) {
-			const status = err?.status || 0;
-			console.error("[quiz-blocks] Model list failed:", status, err?.message);
-			if (status === 401 || status === 403) {
-				throw new Error("Clé API Anthropic invalide. Vérifiez votre clé sur console.anthropic.com/settings/keys");
+			console.warn("[quiz-blocks] Could not list models:", err?.status, err?.message);
+			if (err?.status === 401 || err?.status === 403) {
+				throw new Error("Clé API Anthropic invalide. Vérifiez sur console.anthropic.com/settings/keys");
 			}
-			// If we can't list models, just continue with the requested model
+			// Continue anyway — the key might work for messages even if listing fails
 		}
 
-		// ── Step 2: Call the Messages API ──
-		console.log("[quiz-blocks] Step 2: Calling Messages API with model:", model);
-
-		// Try with system as a content block array (newer format)
-		let requestBody = {
-			model,
-			max_tokens: 4096,
-			system: [{ type: "text", text: systemPrompt }],
-			messages: [
-				{ role: "user", content: userPrompt }
-			]
-		};
-
-		let response;
-		try {
-			response = await requestUrl({
-				url: "https://api.anthropic.com/v1/messages",
-				method: "POST",
-				headers: {
-					...commonHeaders,
-					"Content-Type": "application/json"
-				},
-				body: JSON.stringify(requestBody)
-			});
-		} catch (err) {
-			const status = err?.status || 0;
-			const errHeaders = err?.headers || {};
-			console.error("[quiz-blocks] Messages API error:", {
-				status,
-				errMessage: err?.message,
-				responseHeaders: errHeaders
-			});
-
-			// If system as array failed, try as string (older format)
-			if (status === 400) {
-				console.log("[quiz-blocks] Retrying with system as string...");
-				requestBody.system = systemPrompt;
-
-				try {
-					response = await requestUrl({
-						url: "https://api.anthropic.com/v1/messages",
-						method: "POST",
-						headers: {
-							...commonHeaders,
-							"Content-Type": "application/json"
-						},
-						body: JSON.stringify(requestBody)
-					});
-				} catch (retryErr) {
-					const retryStatus = retryErr?.status || 0;
-					console.error("[quiz-blocks] Retry also failed:", retryStatus, retryErr?.message);
-
-					// Last resort: merge system prompt into user message
-					if (retryStatus === 400) {
-						console.log("[quiz-blocks] Last resort: merging system into user message...");
-						const fallbackBody = {
-							model,
-							max_tokens: 4096,
-							messages: [
-								{ role: "user", content: systemPrompt + "\n\n" + userPrompt }
-							]
-						};
-
-						try {
-							response = await requestUrl({
-								url: "https://api.anthropic.com/v1/messages",
-								method: "POST",
-								headers: {
-									...commonHeaders,
-									"Content-Type": "application/json"
-								},
-								body: JSON.stringify(fallbackBody)
-							});
-						} catch (finalErr) {
-							const finalStatus = finalErr?.status || 0;
-							throw new Error(
-								"Toutes les tentatives ont échoué (" + finalStatus + "). " +
-								"Vérifiez votre clé API et vos crédits sur console.anthropic.com. " +
-								"Modèle : " + model
-							);
-						}
-					} else {
-						throw new Error("Erreur Anthropic (" + retryStatus + ") : " + (retryErr?.message || "Connexion impossible"));
-					}
+		// ── Step 2: Call Messages API ──
+		// Try first with system param, then without as fallback
+		const attempts = [
+			{
+				label: "with system param",
+				body: {
+					model,
+					max_tokens: 4096,
+					system: systemPrompt,
+					messages: [{ role: "user", content: userPrompt }]
 				}
-			} else {
-				throw new Error("Erreur Anthropic (" + status + ") : " + (err?.message || "Connexion impossible"));
+			},
+			{
+				label: "system merged into user message",
+				body: {
+					model,
+					max_tokens: 4096,
+					messages: [{ role: "user", content: systemPrompt + "\n\n" + userPrompt }]
+				}
+			}
+		];
+
+		for (let i = 0; i < attempts.length; i++) {
+			const attempt = attempts[i];
+			console.log("[quiz-blocks] Attempt", i + 1, "(", attempt.label, ") with model:", model);
+
+			try {
+				const response = await requestUrl({
+					url: "https://api.anthropic.com/v1/messages",
+					method: "POST",
+					headers,
+					contentType: "application/json",
+					body: attempt.body
+				});
+
+				const data = response.json;
+
+				if (data?.error) {
+					throw new Error("Erreur Anthropic : " + (data.error.message || data.error.type || JSON.stringify(data.error)));
+				}
+
+				const content = data?.content?.[0]?.text || "";
+				if (!content.trim()) {
+					throw new Error("L'IA n'a retourné aucune réponse. Réessayez ou changez de modèle.");
+				}
+
+				console.log("[quiz-blocks] Success with", attempt.label, "- response length:", content.length);
+				return parseQuizResponse(content);
+
+			} catch (err) {
+				const status = err?.status || 0;
+				console.error("[quiz-blocks] Attempt", i + 1, "failed:", status, err?.message);
+
+				// Auth errors — no point retrying
+				if (status === 401 || status === 403) {
+					throw new Error("Clé API Anthropic invalide ou sans crédits. Vérifiez sur console.anthropic.com");
+				}
+				if (status === 429) {
+					throw new Error("Limite de requêtes atteinte. Réessayez dans quelques instants.");
+				}
+
+				// 400 — try next attempt
+				if (status === 400 && i < attempts.length - 1) {
+					continue;
+				}
+
+				// Last attempt or non-retryable error
+				throw new Error(
+					"Erreur Anthropic (" + status + ") : " + (err?.message || "Connexion impossible") +
+					". Modèle : " + model +
+					(availableModels.length > 0 ? ". Modèles disponibles : " + availableModels.slice(0, 5).join(", ") : "")
+				);
 			}
 		}
-
-		const data = response.json;
-
-		if (data?.error) {
-			throw new Error("Erreur Anthropic : " + (data.error.message || data.error.type || JSON.stringify(data.error)));
-		}
-
-		const content = data?.content?.[0]?.text || "";
-		if (!content.trim()) {
-			throw new Error("L'IA n'a retourné aucune réponse. Réessayez ou changez de modèle.");
-		}
-		console.log("[quiz-blocks] Success! Response length:", content.length);
-		return parseQuizResponse(content);
 	}
 
 	async function callOllama(model, systemPrompt, userPrompt) {
@@ -206,18 +175,16 @@ Génère ${typeInstruction}. Réponds UNIQUEMENT avec le tableau JSON5, sans exp
 			response = await requestUrl({
 				url: `${ollamaUrl}/api/generate`,
 				method: "POST",
-				headers: {
-					"Content-Type": "application/json"
-				},
-				body: JSON.stringify({
+				contentType: "application/json",
+				body: {
 					model,
 					prompt: `${systemPrompt}\n\n${userPrompt}`,
 					stream: false,
 					format: "json"
-				})
+				}
 			});
 		} catch (err) {
-			throw new Error("Impossible de contacter Ollama sur " + ollamaUrl + ". Vérifiez que le serveur est démarré et que l'URL est correcte.");
+			throw new Error("Impossible de contacter Ollama sur " + ollamaUrl + ". Vérifiez que le serveur est démarré.");
 		}
 
 		const data = response.json;
@@ -234,16 +201,13 @@ Génère ${typeInstruction}. Réponds UNIQUEMENT avec le tableau JSON5, sans exp
 	}
 
 	function parseQuizResponse(content) {
-		// Nettoyer le contenu pour extraire le JSON
 		let cleaned = content.trim();
 
-		// Retirer les balises de code markdown si présentes
 		const jsonMatch = cleaned.match(/```(?:json5?|json)?\s*\n?([\s\S]*?)\n?```/);
 		if (jsonMatch) {
 			cleaned = jsonMatch[1].trim();
 		}
 
-		// Essayer de parser avec JSON5
 		const JSON5 = require("json5");
 		const parsed = JSON5.parse(cleaned);
 
