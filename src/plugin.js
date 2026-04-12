@@ -256,7 +256,7 @@ class QuizBlocksSettingTab extends obsidian.PluginSettingTab {
 
 		new obsidian.Setting(containerEl)
 			.setName("URL API Compatible")
-			.setDesc("URL de base du serveur compatible OpenAI. Uniquement pour le fournisseur API Compatible.")
+			.setDesc("URL de base du serveur (Groq, Together AI, etc.). Uniquement pour le fournisseur API Compatible.")
 			.addText(text => text
 				.setPlaceholder("https://api.groq.com/openai/v1")
 				.setValue(this.plugin.settings.aiCompatibleUrl || "https://api.groq.com/openai/v1")

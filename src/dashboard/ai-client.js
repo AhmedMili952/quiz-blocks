@@ -1,8 +1,8 @@
 'use strict';
 
 /* ══════════════════════════════════════════════════════════
-   AI CLIENT — Anthropic + Ollama + API Compatible
-   Utilise obsidian.requestUrl() pour éviter les problèmes CORS.
+   AI CLIENT — Anthropic + Ollama + API Compatible (Groq, Together…)
+   Aucun recours à OpenAI. Utilise obsidian.requestUrl() pour CORS.
 ══════════════════════════════════════════════════════════ */
 
 function createAiClient(plugin) {
