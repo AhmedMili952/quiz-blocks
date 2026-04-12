@@ -17,7 +17,8 @@ const DEFAULT_SETTINGS = {
 	aiProvider: "anthropic",
 	aiApiKey: "",
 	aiModel: "",
-	aiOllamaUrl: "http://localhost:11434"
+	aiOllamaUrl: "http://localhost:11434",
+		aiCompatibleUrl: "https://api.groq.com/openai/v1"
 };
 
 function createLogger() {
@@ -203,16 +204,17 @@ class QuizBlocksSettingTab extends obsidian.PluginSettingTab {
 		containerEl.createEl("h3", { text: "Génération IA" });
 
 		containerEl.createEl("p", {
-			text: "Configurez votre fournisseur IA pour générer des quiz automatiquement. Anthropic (Claude) ou Ollama (local).",
+			text: "Configurez votre fournisseur IA. Anthropic (Claude), Ollama (local/cloud) ou API Compatible (Groq, Together, etc.).",
 			cls: "setting-item-description"
 		});
 
 		new obsidian.Setting(containerEl)
 			.setName("Fournisseur IA")
-			.setDesc("Anthropic (Claude) ou Ollama (local)")
+			.setDesc("Choisissez le fournisseur pour la génération de quiz")
 			.addDropdown(dropdown => dropdown
 				.addOption("anthropic", "Anthropic (Claude)")
-				.addOption("ollama", "Ollama (local)")
+				.addOption("ollama", "Ollama (local / cloud)")
+				.addOption("compatible", "API Compatible (Groq, Together…)")
 				.setValue(this.plugin.settings.aiProvider || "anthropic")
 				.onChange(async (value) => {
 					this.plugin.settings.aiProvider = value;
@@ -220,10 +222,10 @@ class QuizBlocksSettingTab extends obsidian.PluginSettingTab {
 				}));
 
 		new obsidian.Setting(containerEl)
-			.setName("Clé API Anthropic")
-			.setDesc("Votre clé API Anthropic (pour Claude). Non requis pour Ollama.")
+			.setName("Clé API")
+			.setDesc("Clé API Anthropic ou API Compatible. Non requis pour Ollama local.")
 			.addText(text => text
-				.setPlaceholder("sk-ant-…")
+				.setPlaceholder("sk-ant-… / gsk_…")
 				.setValue(this.plugin.settings.aiApiKey || "")
 				.onChange(async (value) => {
 					this.plugin.settings.aiApiKey = value;
@@ -232,9 +234,9 @@ class QuizBlocksSettingTab extends obsidian.PluginSettingTab {
 
 		new obsidian.Setting(containerEl)
 			.setName("Modèle")
-			.setDesc("Laissez vide pour le modèle par défaut")
+			.setDesc("Laissez vide pour le modèle par défaut du fournisseur")
 			.addText(text => text
-				.setPlaceholder("claude-sonnet-4-20250514 / llama3 / mistral")
+				.setPlaceholder("claude-sonnet-4-20250514 / llama3 / mixtral-8x7b-32768")
 				.setValue(this.plugin.settings.aiModel || "")
 				.onChange(async (value) => {
 					this.plugin.settings.aiModel = value;
@@ -243,12 +245,23 @@ class QuizBlocksSettingTab extends obsidian.PluginSettingTab {
 
 		new obsidian.Setting(containerEl)
 			.setName("URL Ollama")
-			.setDesc("Adresse du serveur Ollama (uniquement pour le fournisseur Ollama)")
+			.setDesc("Adresse du serveur Ollama (local ou cloud). Uniquement pour le fournisseur Ollama.")
 			.addText(text => text
 				.setPlaceholder("http://localhost:11434")
 				.setValue(this.plugin.settings.aiOllamaUrl || "http://localhost:11434")
 				.onChange(async (value) => {
 					this.plugin.settings.aiOllamaUrl = value;
+					await this.plugin.saveSettings();
+				}));
+
+		new obsidian.Setting(containerEl)
+			.setName("URL API Compatible")
+			.setDesc("URL de base du serveur compatible OpenAI. Uniquement pour le fournisseur API Compatible.")
+			.addText(text => text
+				.setPlaceholder("https://api.groq.com/openai/v1")
+				.setValue(this.plugin.settings.aiCompatibleUrl || "https://api.groq.com/openai/v1")
+				.onChange(async (value) => {
+					this.plugin.settings.aiCompatibleUrl = value;
 					await this.plugin.saveSettings();
 				}));
 

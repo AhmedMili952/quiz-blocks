@@ -41,7 +41,8 @@ function createAiHandlers(ctx) {
 
 		// Provider indicator
 		const provider = ctx.plugin.settings.aiProvider || "anthropic";
-		const providerLabel = provider === "ollama" ? "Ollama (local)" : "Anthropic (Claude)";
+		const providerLabels = { anthropic: "Anthropic (Claude)", ollama: "Ollama", compatible: "API Compatible" };
+		const providerLabel = providerLabels[provider] || provider;
 		formCol.createEl("p", { cls: "qbd-ai-subtitle", text: `À partir d'un sujet, d'images ou de texte · ${providerLabel}` });
 
 		// Onglets source

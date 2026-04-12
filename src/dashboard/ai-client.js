@@ -1,14 +1,15 @@
 'use strict';
 
 /* ══════════════════════════════════════════════════════════
-   AI CLIENT — Anthropic + Ollama
+   AI CLIENT — Anthropic + Ollama + API Compatible
    Utilise obsidian.requestUrl() pour éviter les problèmes CORS.
 ══════════════════════════════════════════════════════════ */
 
 function createAiClient(plugin) {
 	const DEFAULT_MODELS = {
 		anthropic: "claude-sonnet-4-20250514",
-		ollama: "llama3"
+		ollama: "llama3",
+		compatible: "llama3"
 	};
 
 	async function generate(prompt, options = {}) {
@@ -17,8 +18,10 @@ function createAiClient(plugin) {
 		const apiKey = plugin.settings.aiApiKey || "";
 		const model = plugin.settings.aiModel || DEFAULT_MODELS[provider];
 
-		// Ollama ne nécessite pas de clé API
-		if (provider !== "ollama" && !apiKey) {
+		// Ollama local ne nécessite pas de clé API
+		if (provider === "ollama" && !apiKey) {
+			// OK, pas besoin de clé pour Ollama local
+		} else if (!apiKey) {
 			throw new Error("Clé API non configurée. Allez dans les paramètres du plugin.");
 		}
 
@@ -51,6 +54,8 @@ Génère ${typeInstruction}. Réponds UNIQUEMENT avec le tableau JSON5, sans exp
 
 		if (provider === "ollama") {
 			return callOllama(model, systemPrompt, userPrompt);
+		} else if (provider === "compatible") {
+			return callCompatible(apiKey, model, systemPrompt, userPrompt);
 		} else {
 			return callAnthropic(apiKey, model, systemPrompt, userPrompt);
 		}
@@ -84,7 +89,7 @@ Génère ${typeInstruction}. Réponds UNIQUEMENT avec le tableau JSON5, sans exp
 	async function callOllama(model, systemPrompt, userPrompt) {
 		const { requestUrl } = require("obsidian");
 
-		const ollamaUrl = plugin.settings.aiOllamaUrl || "http://localhost:11434";
+		const ollamaUrl = (plugin.settings.aiOllamaUrl || "http://localhost:11434").replace(/\/+$/, "");
 
 		const response = await requestUrl({
 			url: `${ollamaUrl}/api/generate`,
@@ -101,6 +106,34 @@ Génère ${typeInstruction}. Réponds UNIQUEMENT avec le tableau JSON5, sans exp
 		});
 
 		const content = response.json.response || "";
+		return parseQuizResponse(content);
+	}
+
+	async function callCompatible(apiKey, model, systemPrompt, userPrompt) {
+		const { requestUrl } = require("obsidian");
+
+		// URL de base configurable : Groq, Together, OpenRouter, Mistral, etc.
+		const baseUrl = (plugin.settings.aiCompatibleUrl || "https://api.groq.com/openai/v1").replace(/\/+$/, "");
+
+		const response = await requestUrl({
+			url: `${baseUrl}/chat/completions`,
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+				"Authorization": `Bearer ${apiKey}`
+			},
+			body: JSON.stringify({
+				model,
+				messages: [
+					{ role: "system", content: systemPrompt },
+					{ role: "user", content: userPrompt }
+				],
+				temperature: 0.7,
+				max_tokens: 4096
+			})
+		});
+
+		const content = response.json.choices?.[0]?.message?.content || "";
 		return parseQuizResponse(content);
 	}
 
