@@ -38,7 +38,11 @@ function createAiHandlers(ctx) {
 		const formCol = layout.createDiv({ cls: "qbd-ai-form" });
 
 		formCol.createEl("h2", { cls: "qbd-ai-title", text: "Générer un quiz" });
-		formCol.createEl("p", { cls: "qbd-ai-subtitle", text: "À partir d'un sujet, d'images ou de texte" });
+
+		// Provider indicator
+		const provider = ctx.plugin.settings.aiProvider || "anthropic";
+		const providerLabel = provider === "ollama" ? "Ollama (local)" : "Anthropic (Claude)";
+		formCol.createEl("p", { cls: "qbd-ai-subtitle", text: `À partir d'un sujet, d'images ou de texte · ${providerLabel}` });
 
 		// Onglets source
 		const tabsCard = formCol.createDiv({ cls: "qbd-ai-tabs-card" });

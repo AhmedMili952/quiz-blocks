@@ -22,6 +22,7 @@ class QuizDashboardView extends obsidian.ItemView {
 		this.plugin = plugin;
 		this.currentView = "home"; // home | quizzes | detail | ai
 		this.selectedQuiz = null;
+		this.previousView = "home";
 		this.navEl = null;
 		this.contentEl_ = null;
 		this._unregisterScanner = null;
@@ -98,8 +99,13 @@ class QuizDashboardView extends obsidian.ItemView {
 		if (data) {
 			if (data.quiz) this.selectedQuiz = data.quiz;
 		}
+		// Track previous view for back navigation from detail
+		if (view === "detail") {
+			this.previousView = this.currentView;
+		}
 		this.currentView = view;
 		this.nav.setActive(view);
+		this.renderSidebar();
 		this.renderCurrentView();
 	}
 

@@ -1,23 +1,24 @@
 'use strict';
 
 /* ══════════════════════════════════════════════════════════
-   AI CLIENT — Client API configurable (OpenAI / Anthropic)
+   AI CLIENT — Anthropic + Ollama
    Utilise obsidian.requestUrl() pour éviter les problèmes CORS.
 ══════════════════════════════════════════════════════════ */
 
 function createAiClient(plugin) {
 	const DEFAULT_MODELS = {
-		openai: "gpt-4o-mini",
-		anthropic: "claude-3-5-haiku-20241022"
+		anthropic: "claude-sonnet-4-20250514",
+		ollama: "llama3"
 	};
 
 	async function generate(prompt, options = {}) {
 		const { count = 5, type = "Mixte", source = "topic" } = options;
-		const provider = plugin.settings.aiProvider || "openai";
+		const provider = plugin.settings.aiProvider || "anthropic";
 		const apiKey = plugin.settings.aiApiKey || "";
 		const model = plugin.settings.aiModel || DEFAULT_MODELS[provider];
 
-		if (!apiKey) {
+		// Ollama ne nécessite pas de clé API
+		if (provider !== "ollama" && !apiKey) {
 			throw new Error("Clé API non configurée. Allez dans les paramètres du plugin.");
 		}
 
@@ -48,36 +49,11 @@ Génère ${typeInstruction}. Réponds UNIQUEMENT avec le tableau JSON5, sans exp
 			? `Génère un quiz basé sur ce texte :\n\n${prompt}`
 			: `Génère un quiz basé sur les images fournies : ${prompt}`;
 
-		if (provider === "anthropic") {
-			return callAnthropic(apiKey, model, systemPrompt, userPrompt);
+		if (provider === "ollama") {
+			return callOllama(model, systemPrompt, userPrompt);
 		} else {
-			return callOpenAI(apiKey, model, systemPrompt, userPrompt);
+			return callAnthropic(apiKey, model, systemPrompt, userPrompt);
 		}
-	}
-
-	async function callOpenAI(apiKey, model, systemPrompt, userPrompt) {
-		const { requestUrl } = require("obsidian");
-
-		const response = await requestUrl({
-			url: "https://api.openai.com/v1/chat/completions",
-			method: "POST",
-			headers: {
-				"Content-Type": "application/json",
-				"Authorization": `Bearer ${apiKey}`
-			},
-			body: JSON.stringify({
-				model,
-				messages: [
-					{ role: "system", content: systemPrompt },
-					{ role: "user", content: userPrompt }
-				],
-				temperature: 0.7,
-				max_tokens: 2000
-			})
-		});
-
-		const content = response.json.choices[0]?.message?.content || "";
-		return parseQuizResponse(content);
 	}
 
 	async function callAnthropic(apiKey, model, systemPrompt, userPrompt) {
@@ -93,7 +69,7 @@ Génère ${typeInstruction}. Réponds UNIQUEMENT avec le tableau JSON5, sans exp
 			},
 			body: JSON.stringify({
 				model,
-				max_tokens: 2000,
+				max_tokens: 4096,
 				system: systemPrompt,
 				messages: [
 					{ role: "user", content: userPrompt }
@@ -102,6 +78,29 @@ Génère ${typeInstruction}. Réponds UNIQUEMENT avec le tableau JSON5, sans exp
 		});
 
 		const content = response.json.content?.[0]?.text || "";
+		return parseQuizResponse(content);
+	}
+
+	async function callOllama(model, systemPrompt, userPrompt) {
+		const { requestUrl } = require("obsidian");
+
+		const ollamaUrl = plugin.settings.aiOllamaUrl || "http://localhost:11434";
+
+		const response = await requestUrl({
+			url: `${ollamaUrl}/api/generate`,
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json"
+			},
+			body: JSON.stringify({
+				model,
+				prompt: `${systemPrompt}\n\n${userPrompt}`,
+				stream: false,
+				format: "json"
+			})
+		});
+
+		const content = response.json.response || "";
 		return parseQuizResponse(content);
 	}
 

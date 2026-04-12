@@ -23,7 +23,7 @@ function createDetailHandlers(ctx) {
 		const backBtn = topbar.createEl("button", { cls: "qbd-btn qbd-btn--subtle" });
 		const backIcon = backBtn.createSpan({ cls: "qbd-btn-icon" });
 		obsidian.setIcon(backIcon, "arrow-left");
-		backBtn.addEventListener("click", () => ctx.navigate("home"));
+		backBtn.addEventListener("click", () => ctx.navigate(ctx.view.previousView || "home"));
 
 		const topbarInfo = topbar.createDiv({ cls: "qbd-detail-topbar-info" });
 		topbarInfo.createEl("p", { cls: "qbd-detail-title", text: quiz.title });

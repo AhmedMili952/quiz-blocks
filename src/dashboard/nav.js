@@ -2,6 +2,7 @@
 
 /* ══════════════════════════════════════════════════════════
    NAVIGATION SIDEBAR — Dashboard
+   Sidebar avec brand, nav items stylisés, note active.
 ══════════════════════════════════════════════════════════ */
 
 function createNavHandlers(ctx) {
@@ -10,16 +11,21 @@ function createNavHandlers(ctx) {
 	const NAV_ITEMS = [
 		{ key: "home", label: "Accueil", icon: "home" },
 		{ key: "quizzes", label: "Mes quiz", icon: "layers" },
-		{ key: "ai", label: "Générer un quiz", icon: "sparkles" }
+		{ key: "ai", label: "Générer", icon: "sparkles" }
 	];
 
 	function render(container) {
 		container.empty();
 
-		// Brand
+		// Brand header
 		const brand = container.createDiv({ cls: "qbd-nav-brand" });
-		brand.createEl("p", { cls: "qbd-nav-brand-title", text: "Quiz Blocks" });
-		brand.createEl("p", { cls: "qbd-nav-brand-sub", text: "dashboard · obsidian" });
+		const brandRow = brand.createDiv({ cls: "qbd-nav-brand-row" });
+		const brandIcon = brandRow.createSpan({ cls: "qbd-nav-brand-icon" });
+		obsidian.setIcon(brandIcon, "graduation-cap");
+		brandRow.createEl("span", { cls: "qbd-nav-brand-title", text: "Quiz Blocks" });
+
+		// Separator
+		container.createDiv({ cls: "qbd-nav-sep" });
 
 		// Nav items
 		const navList = container.createDiv({ cls: "qbd-nav-items" });
@@ -30,8 +36,8 @@ function createNavHandlers(ctx) {
 				cls: `qbd-nav-item ${activeNav === item.key ? "qbd-nav-item--active" : ""}`
 			});
 
-			const iconSpan = btn.createSpan({ cls: "qbd-nav-icon" });
-			obsidian.setIcon(iconSpan, item.icon);
+			const iconWrap = btn.createSpan({ cls: "qbd-nav-icon" });
+			obsidian.setIcon(iconWrap, item.icon);
 
 			btn.createSpan({ cls: "qbd-nav-label", text: item.label });
 
@@ -45,9 +51,16 @@ function createNavHandlers(ctx) {
 			});
 		}
 
-		// Footer — Note active
+		// Spacer pushes footer down
+		container.createDiv({ cls: "qbd-nav-spacer" });
+
+		// Footer — Active note
 		const footer = container.createDiv({ cls: "qbd-nav-footer" });
-		footer.createEl("p", { cls: "qbd-nav-footer-label", text: "Note active" });
+		const footerLabel = footer.createDiv({ cls: "qbd-nav-footer-label-row" });
+		const footerIcon = footerLabel.createSpan({ cls: "qbd-nav-footer-icon" });
+		obsidian.setIcon(footerIcon, "file-text");
+		footerLabel.createSpan({ text: "Note active" });
+
 		const activeFile = ctx.getActiveFile();
 		const notePath = activeFile ? activeFile.path : "Aucune note ouverte";
 		footer.createEl("p", { cls: "qbd-nav-footer-path", text: notePath });
@@ -58,7 +71,6 @@ function createNavHandlers(ctx) {
 	}
 
 	function updateActiveNote() {
-		// Re-render le footer si le view est ouvert
 		const footerEl = ctx.navEl.querySelector(".qbd-nav-footer");
 		if (footerEl) {
 			const pathEl = footerEl.querySelector(".qbd-nav-footer-path");

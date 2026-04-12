@@ -25,6 +25,19 @@ function createQuizzesHandlers(ctx) {
 		const newIcon = newBtn.createSpan({ cls: "qbd-btn-icon" });
 		obsidian.setIcon(newIcon, "plus");
 		newBtn.createSpan({ text: "Nouveau" });
+		newBtn.addEventListener("click", async () => {
+			const { QuizBuilderView, VIEW_TYPE } = require("../editor");
+			const existing = ctx.app.workspace.getLeavesOfType(VIEW_TYPE);
+			let leaf;
+			if (existing.length > 0) {
+				leaf = existing[0];
+				ctx.app.workspace.revealLeaf(leaf);
+			} else {
+				leaf = ctx.app.workspace.getLeaf("tab");
+				await leaf.setViewState({ type: VIEW_TYPE, active: true });
+				ctx.app.workspace.revealLeaf(leaf);
+			}
+		});
 
 		// ── Search ──
 		const searchWrap = container.createDiv({ cls: "qbd-quizzes-search" });
