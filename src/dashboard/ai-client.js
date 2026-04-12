@@ -2,7 +2,8 @@
 
 /* ══════════════════════════════════════════════════════════
    AI CLIENT — Anthropic + Ollama
-   Aucun recours à OpenAI. Utilise obsidian.requestUrl() pour CORS.
+   Utilise obsidian.requestUrl() pour bypasser CORS.
+   Anthropic: header anthropic-dangerous-direct-browser-access requis.
 ══════════════════════════════════════════════════════════ */
 
 function createAiClient(plugin) {
@@ -55,52 +56,42 @@ Génère ${typeInstruction}. Réponds UNIQUEMENT avec le tableau JSON5, sans exp
 		}
 	}
 
-	function extractAnthropicError(err) {
-		// obsidian.requestUrl throws an error on non-2xx.
-		// The response body is accessible via different properties depending on the version.
-		let detail = "";
+	function parseAnthropicError(err) {
 		let status = 0;
+		let detail = "";
 
-		// Try all possible ways to get the status code
+		// Extract status from all possible properties
 		status = err?.status || err?.httpStatus || err?.statusCode || 0;
 
-		// Try all possible ways to get the response body
-		const tryParse = (obj) => {
-			if (!obj) return null;
-			if (typeof obj === "object" && obj.error) return obj;
-			if (typeof obj === "string") {
-				try { return JSON.parse(obj); } catch (_) { return null; }
-			}
-			return null;
-		};
-
-		// Check various properties where the response body might be
-		const candidates = [
-			err?.json,
-			err?.data,
-			err?.response?.json,
-			err?.response?.data,
-			err?.body,
-			err?.responseText,
+		// Try to extract Anthropic error details from the response body
+		// obsidian.requestUrl may put the response in different properties
+		const sources = [
+			err?.json, err?.data, err?.body, err?.responseText,
+			err?.response?.json, err?.response?.data
 		];
 
-		for (const candidate of candidates) {
-			const parsed = tryParse(candidate);
+		for (const src of sources) {
+			if (!src) continue;
+			let parsed = src;
+			if (typeof src === "string") {
+				try { parsed = JSON.parse(src); } catch (_) { continue; }
+			}
 			if (parsed?.error?.message) {
 				detail = parsed.error.message;
 				break;
 			}
 		}
 
-		// Last resort: try to parse from error message
+		// Last resort: try to extract from the error message itself
 		if (!detail && err?.message) {
-			const jsonMatch = err.message.match(/\{[\s\S]*"error"[\s\S]*\}/);
-			if (jsonMatch) {
-				const parsed = tryParse(jsonMatch[0]);
-				if (parsed?.error?.message) {
-					detail = parsed.error.message;
+			try {
+				// requestUrl sometimes embeds the response body in the error message
+				const jsonMatch = err.message.match(/\{[\s\S]*\}/);
+				if (jsonMatch) {
+					const parsed = JSON.parse(jsonMatch[0]);
+					if (parsed?.error?.message) detail = parsed.error.message;
 				}
-			}
+			} catch (_) { /* ignore */ }
 		}
 
 		return { status, detail };
@@ -112,17 +103,21 @@ Génère ${typeInstruction}. Réponds UNIQUEMENT avec le tableau JSON5, sans exp
 		const requestBody = {
 			model,
 			max_tokens: 4096,
-			system: systemPrompt,
 			messages: [
 				{ role: "user", content: userPrompt }
 			]
 		};
 
-		console.log("[quiz-blocks] Anthropic request:", {
-			url: "https://api.anthropic.com/v1/messages",
+		// Use system as a top-level string (supported by anthropic-version 2023-06-01)
+		// For newer API versions, system should be an array of content blocks.
+		// We use the older format for maximum compatibility.
+		requestBody.system = systemPrompt;
+
+		console.log("[quiz-blocks] Calling Anthropic API:", {
 			model,
 			apiKeyPrefix: apiKey.substring(0, 8) + "...",
-			messageLength: userPrompt.length
+			systemPromptLength: systemPrompt.length,
+			userPromptLength: userPrompt.length
 		});
 
 		let response;
@@ -133,37 +128,48 @@ Génère ${typeInstruction}. Réponds UNIQUEMENT avec le tableau JSON5, sans exp
 				headers: {
 					"Content-Type": "application/json",
 					"anthropic-version": "2023-06-01",
+					"anthropic-dangerous-direct-browser-access": "true",
 					"x-api-key": apiKey
 				},
 				body: JSON.stringify(requestBody)
 			});
 		} catch (err) {
-			const { status, detail } = extractAnthropicError(err);
-			console.error("[quiz-blocks] Anthropic error:", { status, detail, errMessage: err?.message, errKeys: Object.keys(err || {}) });
+			const { status, detail } = parseAnthropicError(err);
+			console.error("[quiz-blocks] Anthropic API error:", {
+				status,
+				detail,
+				errMessage: err?.message,
+				errType: typeof err,
+				errKeys: Object.keys(err || {})
+			});
 
 			if (status === 401 || status === 403) {
-				throw new Error("Clé API Anthropic invalide. Vérifiez votre clé dans les paramètres.");
+				throw new Error("Clé API Anthropic invalide ou sans crédits. Vérifiez votre clé et vos crédits sur console.anthropic.com");
 			}
 			if (status === 429) {
 				throw new Error("Limite de requêtes atteinte (rate limit). Réessayez dans quelques instants.");
 			}
 			if (status === 404) {
-				throw new Error("Modèle " + model + " non trouvé. Vérifiez le nom du modèle dans les paramètres.");
+				throw new Error("Modèle " + model + " non trouvé. Changez de modèle dans le sélecteur ci-dessus.");
 			}
 			if (status === 400) {
-				throw new Error("Requête invalide (400)" + (detail ? " : " + detail : "") + ". Modèle utilisé : " + model);
+				const msg = detail || "Requête invalide";
+				throw new Error("Erreur 400 : " + msg + " (modèle : " + model + ")");
 			}
-			throw new Error("Erreur Anthropic (" + (status || "réseau") + ")" + (detail ? " : " + detail : "") + " — " + (err.message || "Connexion impossible"));
+			// If no specific status, include whatever detail we have
+			if (detail) {
+				throw new Error("Erreur Anthropic" + (status ? " (" + status + ")" : "") + " : " + detail);
+			}
+			throw new Error("Erreur Anthropic" + (status ? " (" + status + ")" : "") + " : " + (err.message || "Connexion impossible. Vérifiez votre clé API."));
 		}
 
 		const data = response.json;
-		console.log("[quiz-blocks] Anthropic response keys:", Object.keys(data || {}));
 
-		if (data.error) {
+		if (data?.error) {
 			throw new Error("Erreur Anthropic : " + (data.error.message || data.error.type || JSON.stringify(data.error)));
 		}
 
-		const content = data.content?.[0]?.text || "";
+		const content = data?.content?.[0]?.text || "";
 		if (!content.trim()) {
 			throw new Error("L'IA n'a retourné aucune réponse. Réessayez ou changez de modèle.");
 		}
