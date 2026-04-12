@@ -58,25 +58,49 @@ Génère ${typeInstruction}. Réponds UNIQUEMENT avec le tableau JSON5, sans exp
 	async function callAnthropic(apiKey, model, systemPrompt, userPrompt) {
 		const { requestUrl } = require("obsidian");
 
-		const response = await requestUrl({
-			url: "https://api.anthropic.com/v1/messages",
-			method: "POST",
-			headers: {
-				"Content-Type": "application/json",
-				"anthropic-version": "2023-06-01",
-				"x-api-key": apiKey
-			},
-			body: JSON.stringify({
-				model,
-				max_tokens: 4096,
-				system: systemPrompt,
-				messages: [
-					{ role: "user", content: userPrompt }
-				]
-			})
-		});
+		let response;
+		try {
+			response = await requestUrl({
+				url: "https://api.anthropic.com/v1/messages",
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					"anthropic-version": "2023-06-01",
+					"x-api-key": apiKey
+				},
+				body: JSON.stringify({
+					model,
+					max_tokens: 4096,
+					system: systemPrompt,
+					messages: [
+						{ role: "user", content: userPrompt }
+					]
+				})
+			});
+		} catch (err) {
+			const status = err?.status || err?.httpStatus;
+			if (status === 401 || status === 403) {
+				throw new Error("Clé API Anthropic invalide. Vérifiez votre clé dans les paramètres.");
+			}
+			if (status === 429) {
+				throw new Error("Limite de requêtes atteinte (rate limit). Réessayez dans quelques instants.");
+			}
+			if (status === 404) {
+				throw new Error("Modèle " + model + " non trouvé. Vérifiez le nom du modèle dans les paramètres.");
+			}
+			throw new Error("Erreur Anthropic (" + (status || "réseau") + ") : " + (err.message || "Connexion impossible"));
+		}
 
-		const content = response.json.content?.[0]?.text || "";
+		const data = response.json;
+
+		if (data.error) {
+			throw new Error("Erreur Anthropic : " + (data.error.message || data.error.type || "Erreur inconnue"));
+		}
+
+		const content = data.content?.[0]?.text || "";
+		if (!content.trim()) {
+			throw new Error("L'IA n'a retourné aucune réponse. Réessayez ou changez de modèle.");
+		}
 		return parseQuizResponse(content);
 	}
 
@@ -85,24 +109,37 @@ Génère ${typeInstruction}. Réponds UNIQUEMENT avec le tableau JSON5, sans exp
 
 		const ollamaUrl = (plugin.settings.aiOllamaUrl || "http://localhost:11434").replace(/\/+$/, "");
 
-		const response = await requestUrl({
-			url: `${ollamaUrl}/api/generate`,
-			method: "POST",
-			headers: {
-				"Content-Type": "application/json"
-			},
-			body: JSON.stringify({
-				model,
-				prompt: `${systemPrompt}\n\n${userPrompt}`,
-				stream: false,
-				format: "json"
-			})
-		});
+		let response;
+		try {
+			response = await requestUrl({
+				url: `${ollamaUrl}/api/generate`,
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json"
+				},
+				body: JSON.stringify({
+					model,
+					prompt: `${systemPrompt}\n\n${userPrompt}`,
+					stream: false,
+					format: "json"
+				})
+			});
+		} catch (err) {
+			throw new Error("Impossible de contacter Ollama sur " + ollamaUrl + ". Vérifiez que le serveur est démarré et que l'URL est correcte.");
+		}
 
-		const content = response.json.response || "";
+		const data = response.json;
+
+		if (data.error) {
+			throw new Error("Erreur Ollama : " + data.error + ". Exécutez \"ollama pull " + model + "\" pour télécharger le modèle.");
+		}
+
+		const content = data.response || "";
+		if (!content.trim()) {
+			throw new Error("Ollama n'a retourné aucune réponse. Vérifiez que le modèle est installé.");
+		}
 		return parseQuizResponse(content);
 	}
-
 
 	function parseQuizResponse(content) {
 		// Nettoyer le contenu pour extraire le JSON

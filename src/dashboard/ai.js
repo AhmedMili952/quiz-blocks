@@ -3,8 +3,35 @@
 /* ══════════════════════════════════════════════════════════
    AI VIEW — Dashboard
    Formulaire de génération IA (onglets Sujet/Image/Texte)
-   + preview (idle / loading / result)
+   + preview (idle / loading / result / error)
 ══════════════════════════════════════════════════════════ */
+
+const ANTHROPIC_MODELS = [
+	{ value: "claude-sonnet-4-6", label: "Claude Sonnet 4.6" },
+	{ value: "claude-opus-4-6", label: "Claude Opus 4.6" },
+	{ value: "claude-haiku-4-5-20251001", label: "Claude Haiku 4.5" },
+	{ value: "claude-sonnet-4-5-20250929", label: "Claude Sonnet 4.5" },
+	{ value: "claude-opus-4-5-20251101", label: "Claude Opus 4.5" },
+	{ value: "claude-sonnet-4-20250514", label: "Claude Sonnet 4" },
+	{ value: "claude-opus-4-20250514", label: "Claude Opus 4" }
+];
+
+const OLLAMA_MODELS = [
+	{ value: "qwen3:14b", label: "Qwen 3 14B" },
+	{ value: "qwen3.5:9b", label: "Qwen 3.5 9B" },
+	{ value: "qwen3.5:27b", label: "Qwen 3.5 27B" },
+	{ value: "deepseek-r1:14b", label: "DeepSeek R1 14B" },
+	{ value: "qwen3-coder:30b-a3b", label: "Qwen 3 Coder 30B" },
+	{ value: "gemma3:12b", label: "Gemma 3 12B" },
+	{ value: "gemma3:27b", label: "Gemma 3 27B" },
+	{ value: "llama3.3:70b", label: "Llama 3.3 70B" },
+	{ value: "llama4:scout", label: "Llama 4 Scout" },
+	{ value: "phi4:14b", label: "Phi-4 14B" },
+	{ value: "phi4-mini", label: "Phi-4 Mini" },
+	{ value: "mistral-nemo", label: "Mistral Nemo" },
+	{ value: "mixtral", label: "Mixtral" },
+	{ value: "gemma3:4b", label: "Gemma 3 4B" }
+];
 
 function createAiHandlers(ctx) {
 	let currentTab = "topic";
@@ -13,8 +40,9 @@ function createAiHandlers(ctx) {
 	let questionCount = 5;
 	let questionType = "Mixte";
 	let images = [];
-	let phase = "idle"; // idle | loading | result
+	let phase = "idle"; // idle | loading | result | error
 	let generatedQuestions = [];
+	let errorMessage = "";
 
 	const TABS = [
 		{ key: "topic", label: "Sujet" },
@@ -24,12 +52,14 @@ function createAiHandlers(ctx) {
 
 	const TYPES = ["Mixte", "Choix unique", "Choix multiple", "Texte libre"];
 
-	function render(container) {
-		container.empty();
-
-		const canGenerate = (currentTab === "topic" && topicValue.trim()) ||
+	function canGenerate() {
+		return (currentTab === "topic" && topicValue.trim()) ||
 			(currentTab === "image" && images.length > 0) ||
 			(currentTab === "text" && textValue.trim());
+	}
+
+	function render(container) {
+		container.empty();
 
 		// ── Layout 2 colonnes ──
 		const layout = container.createDiv({ cls: "qbd-ai-layout" });
@@ -39,11 +69,32 @@ function createAiHandlers(ctx) {
 
 		formCol.createEl("h2", { cls: "qbd-ai-title", text: "Générer un quiz" });
 
-		// Provider indicator
+		// ── Provider & Model bar ──
 		const provider = ctx.plugin.settings.aiProvider || "anthropic";
 		const providerLabels = { anthropic: "Anthropic (Claude)", ollama: "Ollama" };
-		const providerLabel = providerLabels[provider] || provider;
-		formCol.createEl("p", { cls: "qbd-ai-subtitle", text: `À partir d'un sujet, d'images ou de texte · ${providerLabel}` });
+		const models = provider === "ollama" ? OLLAMA_MODELS : ANTHROPIC_MODELS;
+		const currentModel = ctx.plugin.settings.aiModel || models[0].value;
+
+		const modelBar = formCol.createDiv({ cls: "qbd-ai-model-bar" });
+
+		const providerTag = modelBar.createDiv({ cls: "qbd-ai-provider-tag" });
+		const providerIcon = providerTag.createSpan({ cls: "qbd-ai-provider-icon" });
+		obsidian.setIcon(providerIcon, provider === "anthropic" ? "brain" : "cpu");
+		providerTag.createSpan({ text: providerLabels[provider] || provider });
+
+		const modelSelect = modelBar.createEl("select", { cls: "qbd-ai-model-select" });
+		for (const m of models) {
+			const opt = modelSelect.createEl("option", { text: m.label, value: m.value });
+			if (m.value === currentModel) opt.selected = true;
+		}
+		if (!models.find(m => m.value === currentModel)) {
+			const opt = modelSelect.createEl("option", { text: currentModel + " (personnalisé)", value: currentModel });
+			opt.selected = true;
+		}
+		modelSelect.addEventListener("change", async (e) => {
+			ctx.plugin.settings.aiModel = e.target.value;
+			await ctx.plugin.saveSettings();
+		});
 
 		// Onglets source
 		const tabsCard = formCol.createDiv({ cls: "qbd-ai-tabs-card" });
@@ -60,6 +111,8 @@ function createAiHandlers(ctx) {
 		}
 
 		const tabContent = tabsCard.createDiv({ cls: "qbd-ai-tab-content" });
+		let generateBtnRef = null;
+
 		if (currentTab === "topic") {
 			const input = tabContent.createEl("input", {
 				type: "text",
@@ -69,7 +122,7 @@ function createAiHandlers(ctx) {
 			});
 			input.addEventListener("input", (e) => {
 				topicValue = e.target.value;
-				updateGenerateBtn(generateBtn);
+				updateGenerateBtn(generateBtnRef);
 			});
 		} else if (currentTab === "image") {
 			renderImageTab(tabContent);
@@ -82,7 +135,7 @@ function createAiHandlers(ctx) {
 			textarea.rows = 4;
 			textarea.addEventListener("input", (e) => {
 				textValue = e.target.value;
-				updateGenerateBtn(generateBtn);
+				updateGenerateBtn(generateBtnRef);
 			});
 		}
 
@@ -118,17 +171,19 @@ function createAiHandlers(ctx) {
 		});
 
 		// Generate button
+		const canGen = canGenerate();
 		const generateBtn = formCol.createEl("button", {
-			cls: `qbd-ai-generate-btn ${canGenerate ? "qbd-ai-generate-btn--active" : ""}`,
+			cls: `qbd-ai-generate-btn ${canGen ? "qbd-ai-generate-btn--active" : ""}`,
 			text: "Générer le quiz"
 		});
-		if (!canGenerate) generateBtn.setAttribute("disabled", "");
+		generateBtnRef = generateBtn;
+		if (!canGen) generateBtn.setAttribute("disabled", "");
 		const genIcon = generateBtn.createSpan({ cls: "qbd-btn-icon" });
 		obsidian.setIcon(genIcon, "sparkles");
 		generateBtn.prepend(genIcon);
 
 		generateBtn.addEventListener("click", () => {
-			if (!canGenerate) return;
+			if (!canGenerate()) return;
 			startGeneration(container);
 		});
 
@@ -178,7 +233,7 @@ function createAiHandlers(ctx) {
 
 		const label = container.createEl("p", {
 			cls: "qbd-ai-preview-label",
-			text: phase === "idle" ? "Aperçu" : phase === "loading" ? "Génération en cours…" : "Résultat"
+			text: phase === "idle" ? "Aperçu" : phase === "loading" ? "Génération en cours…" : phase === "error" ? "Erreur" : "Résultat"
 		});
 
 		if (phase === "idle") {
@@ -197,6 +252,21 @@ function createAiHandlers(ctx) {
 			for (let i = 0; i < 3; i++) {
 				dots.createDiv({ cls: "qbd-ai-loading-dot" });
 			}
+		} else if (phase === "error") {
+			const errorEl = container.createDiv({ cls: "qbd-ai-preview-error" });
+			const errorIcon = errorEl.createSpan({ cls: "qbd-btn-icon" });
+			obsidian.setIcon(errorIcon, "alert-triangle");
+			errorEl.createEl("p", { cls: "qbd-ai-error-title", text: "Échec de la génération" });
+			errorEl.createEl("p", { cls: "qbd-ai-error-msg", text: errorMessage });
+
+			const retryBtn = errorEl.createEl("button", {
+				cls: "qbd-btn qbd-btn--ghost",
+				text: "Réessayer"
+			});
+			retryBtn.addEventListener("click", () => {
+				phase = "idle";
+				render(container.parentElement.parentElement);
+			});
 		} else if (phase === "result") {
 			const header = container.createDiv({ cls: "qbd-ai-result-header" });
 			header.createEl("span", { cls: "qbd-ai-result-count", text: `✓ ${generatedQuestions.length} questions générées` });
@@ -237,9 +307,8 @@ function createAiHandlers(ctx) {
 	}
 
 	function updateGenerateBtn(btn) {
-		const canGen = (currentTab === "topic" && topicValue.trim()) ||
-			(currentTab === "image" && images.length > 0) ||
-			(currentTab === "text" && textValue.trim());
+		if (!btn) return;
+		const canGen = canGenerate();
 
 		if (canGen) {
 			btn.classList.add("qbd-ai-generate-btn--active");
@@ -252,6 +321,7 @@ function createAiHandlers(ctx) {
 
 	async function startGeneration(container) {
 		phase = "loading";
+		errorMessage = "";
 		render(container);
 
 		try {
@@ -268,12 +338,11 @@ function createAiHandlers(ctx) {
 				source: currentTab
 			});
 		} catch (err) {
-			// Fallback : afficher un message d'erreur
-			new obsidian.Notice(`Erreur de génération : ${err.message || "Vérifiez vos paramètres IA."}`);
+			errorMessage = err.message || "Vérifiez vos paramètres IA dans les paramètres du plugin.";
 			generatedQuestions = [];
 		}
 
-		phase = generatedQuestions.length > 0 ? "result" : "idle";
+		phase = generatedQuestions.length > 0 ? "result" : "error";
 		render(container);
 	}
 
