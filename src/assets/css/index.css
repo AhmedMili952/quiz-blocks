@@ -31,6 +31,15 @@
 /* Mobile overrides — MUST come after components & pages for correct cascade */
 @import url('./components/mobile.css');
 
+/* Dashboard */
+@import url('./dashboard/dashboard-base.css');
+@import url('./dashboard/dashboard-nav.css');
+@import url('./dashboard/dashboard-components.css');
+@import url('./dashboard/dashboard-home.css');
+@import url('./dashboard/dashboard-quizzes.css');
+@import url('./dashboard/dashboard-detail.css');
+@import url('./dashboard/dashboard-ai.css');
+
 /* Editor */
 @import url('./editor/editor-base.css');
 @import url('./editor/editor-layout.css');

@@ -1,0 +1,124 @@
+/* ═════════════════════════════════════════════════════════
+   DASHBOARD NAVIGATION — Sidebar
+   ═════════════════════════════════════════════════════════ */
+
+.qbd-sidebar {
+	width: 180px;
+	min-width: 180px;
+	background: var(--background-secondary);
+	border-right: 1px solid var(--background-modifier-border);
+	display: flex;
+	flex-direction: column;
+	padding: 0;
+	flex-shrink: 0;
+}
+
+/* ── Brand ── */
+.qbd-nav-brand {
+	padding: 14px;
+	border-bottom: 1px solid var(--background-modifier-border);
+	margin-bottom: 8px;
+}
+
+.qbd-nav-brand-title {
+	font-size: 13px;
+	font-weight: 700;
+	color: var(--text-normal);
+	margin: 0;
+}
+
+.qbd-nav-brand-sub {
+	font-size: 9px;
+	color: var(--text-faint);
+	margin: 2px 0 0;
+}
+
+/* ── Nav items ── */
+.qbd-nav-items {
+	flex: 1;
+	padding: 0 6px;
+	display: flex;
+	flex-direction: column;
+	gap: 1px;
+}
+
+.qbd-nav-item {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 7px 10px;
+	border-radius: var(--radius-m, 8px);
+	width: 100%;
+	background: transparent;
+	border: none;
+	border-left: 2px solid transparent;
+	color: var(--text-muted);
+	font-size: 12px;
+	font-weight: 400;
+	cursor: pointer;
+	text-align: left;
+	font-family: var(--font-interface, inherit);
+	transition: all 0.14s ease;
+}
+
+.qbd-nav-item:hover {
+	background: var(--background-modifier-hover, rgba(255,255,255,0.04));
+}
+
+.qbd-nav-item--active {
+	background: var(--background-modifier-hover, rgba(255,255,255,0.04));
+	color: var(--text-normal);
+	font-weight: 600;
+	border-left-color: var(--interactive-accent);
+}
+
+.qbd-nav-icon {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 15px;
+	height: 15px;
+	flex-shrink: 0;
+}
+
+.qbd-nav-icon svg {
+	width: 15px;
+	height: 15px;
+}
+
+.qbd-nav-label {
+	white-space: nowrap;
+}
+
+.qbd-nav-badge {
+	margin-left: auto;
+	font-size: 9px;
+	font-weight: 600;
+	padding: 1px 5px;
+	border-radius: 6px;
+	background: var(--background-primary);
+	color: var(--text-faint);
+}
+
+/* ── Footer ── */
+.qbd-nav-footer {
+	padding: 12px 14px;
+	border-top: 1px solid var(--background-modifier-border);
+}
+
+.qbd-nav-footer-label {
+	font-size: 8px;
+	color: var(--text-faint);
+	letter-spacing: 0.07em;
+	text-transform: uppercase;
+	margin: 0 0 4px;
+}
+
+.qbd-nav-footer-path {
+	font-size: 9px;
+	color: var(--text-faint);
+	font-family: var(--font-monospace, monospace);
+	word-break: break-all;
+	line-height: 1.5;
+	margin: 0;
+}

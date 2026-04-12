@@ -1,0 +1,88 @@
+/* ═════════════════════════════════════════════════════════
+   DASHBOARD QUIZZES VIEW
+   ═════════════════════════════════════════════════════════ */
+
+.qbd-quizzes-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+}
+
+.qbd-quizzes-title {
+	font-size: 16px;
+	font-weight: 700;
+	color: var(--text-normal);
+	margin: 0;
+}
+
+/* ── Search ── */
+.qbd-quizzes-search {
+	position: relative;
+}
+
+.qbd-quizzes-search-icon {
+	position: absolute;
+	left: 10px;
+	top: 50%;
+	transform: translateY(-50%);
+	color: var(--text-faint);
+	display: flex;
+	align-items: center;
+}
+
+.qbd-quizzes-search-icon svg {
+	width: 13px;
+	height: 13px;
+}
+
+.qbd-quizzes-search-input {
+	width: 100%;
+	background: var(--background-secondary);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-m, 8px);
+	padding: 8px 12px 8px 30px;
+	color: var(--text-normal);
+	font-size: 12px;
+	outline: none;
+	box-sizing: border-box;
+	font-family: var(--font-interface, inherit);
+}
+
+.qbd-quizzes-search-input:focus {
+	border-color: var(--interactive-accent);
+}
+
+.qbd-quizzes-search-input::placeholder {
+	color: var(--text-faint);
+}
+
+/* ── Filters ── */
+.qbd-quizzes-filters {
+	display: flex;
+	gap: 5px;
+	flex-wrap: wrap;
+}
+
+.qbd-filter-pill {
+	padding: 4px 10px;
+	border-radius: 20px;
+	font-size: 10px;
+	font-weight: 500;
+	cursor: pointer;
+	background: transparent;
+	border: 1px solid var(--background-modifier-border);
+	color: var(--text-muted);
+	font-family: var(--font-interface, inherit);
+	transition: all 0.14s ease;
+}
+
+.qbd-filter-pill:hover {
+	border-color: var(--background-modifier-border-hover);
+	background: var(--background-modifier-hover);
+}
+
+.qbd-filter-pill--active {
+	background: var(--interactive-accent);
+	border-color: var(--interactive-accent);
+	color: var(--text-on-accent);
+}

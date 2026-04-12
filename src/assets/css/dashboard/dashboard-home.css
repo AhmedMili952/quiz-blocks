@@ -1,0 +1,69 @@
+/* ═════════════════════════════════════════════════════════
+   DASHBOARD HOME VIEW
+   ═════════════════════════════════════════════════════════ */
+
+.qbd-home-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+}
+
+.qbd-home-header-left {
+	min-width: 0;
+}
+
+.qbd-home-title {
+	font-size: 16px;
+	font-weight: 700;
+	color: var(--text-normal);
+	margin: 0 0 2px;
+}
+
+.qbd-home-subtitle {
+	font-size: 11px;
+	color: var(--text-muted);
+	margin: 0;
+}
+
+.qbd-home-subtitle code {
+	font-size: 10px;
+	font-family: var(--font-monospace, monospace);
+	background: var(--background-secondary);
+	padding: 1px 4px;
+	border-radius: 3px;
+}
+
+/* ── Stats grid ── */
+.qbd-home-stats {
+	display: grid;
+	grid-template-columns: repeat(3, 1fr);
+	gap: 8px;
+}
+
+/* ── Sections ── */
+.qbd-home-section {
+	margin-bottom: 4px;
+}
+
+.qbd-home-section-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	margin-bottom: 10px;
+}
+
+.qbd-home-section-title {
+	font-size: 11px;
+	font-weight: 600;
+	color: var(--text-muted);
+	text-transform: uppercase;
+	letter-spacing: 0.06em;
+	margin: 0;
+}
+
+/* ── Grid ── */
+.qbd-home-grid {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 10px;
+}

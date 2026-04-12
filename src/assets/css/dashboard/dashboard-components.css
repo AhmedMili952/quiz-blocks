@@ -1,0 +1,229 @@
+/* ═════════════════════════════════════════════════════════
+   DASHBOARD COMPONENTS — QuizCard, Ring, StatCard, Btn
+   ═════════════════════════════════════════════════════════ */
+
+/* ── Boutons ── */
+.qbd-btn {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+	padding: 6px 12px;
+	border-radius: var(--radius-m, 8px);
+	font-size: 12px;
+	font-weight: 500;
+	cursor: pointer;
+	border: none;
+	font-family: var(--font-interface, inherit);
+	transition: all 0.14s ease;
+	background: transparent;
+	color: var(--text-muted);
+}
+
+.qbd-btn--primary {
+	background: var(--interactive-accent);
+	color: var(--text-on-accent);
+	box-shadow: 0 2px 12px color-mix(in srgb, var(--interactive-accent) 35%, transparent);
+}
+
+.qbd-btn--primary:hover {
+	background: var(--interactive-accent-hover);
+}
+
+.qbd-btn--ghost {
+	background: transparent;
+	color: var(--text-muted);
+	border: 1px solid var(--background-modifier-border);
+}
+
+.qbd-btn--ghost:hover {
+	background: var(--background-modifier-hover, rgba(255,255,255,0.04));
+}
+
+.qbd-btn--subtle {
+	background: transparent;
+	color: var(--text-muted);
+}
+
+.qbd-btn--subtle:hover {
+	background: var(--background-modifier-hover, rgba(255,255,255,0.04));
+}
+
+.qbd-btn-icon {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 14px;
+	height: 14px;
+	flex-shrink: 0;
+}
+
+.qbd-btn-icon svg {
+	width: 14px;
+	height: 14px;
+}
+
+.qbd-btn-icon--sm svg {
+	width: 11px;
+	height: 11px;
+}
+
+/* ── Stat cards ── */
+.qbd-stat-card {
+	background: var(--background-secondary);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-m, 8px);
+	padding: 12px 14px;
+}
+
+.qbd-stat-value {
+	font-size: 18px;
+	font-weight: 700;
+	color: var(--text-normal);
+	font-family: var(--font-monospace, monospace);
+	margin: 0;
+}
+
+.qbd-stat-label {
+	font-size: 9px;
+	color: var(--text-faint);
+	text-transform: uppercase;
+	letter-spacing: 0.06em;
+	margin: 2px 0 0;
+}
+
+.qbd-stat-sub {
+	font-size: 9px;
+	color: var(--text-faint);
+	margin: 1px 0 0;
+	opacity: 0.6;
+}
+
+/* ── Quiz Card ── */
+.qbd-quiz-card {
+	background: var(--background-primary);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-l, 12px);
+	padding: 14px;
+	cursor: pointer;
+	transition: all 0.15s ease;
+	position: relative;
+	overflow: hidden;
+}
+
+.qbd-quiz-card:hover {
+	background: var(--background-secondary);
+	border-color: var(--background-modifier-border-hover);
+}
+
+.qbd-quiz-card-accent {
+	height: 2px;
+	background: var(--interactive-accent);
+	border-radius: 2px 2px 0 0;
+	margin: -14px -14px 12px;
+	opacity: 0.7;
+}
+
+.qbd-quiz-card-body {
+	display: flex;
+	flex-direction: column;
+	gap: 0;
+	min-width: 0;
+}
+
+.qbd-quiz-card-title {
+	font-size: 12px;
+	font-weight: 600;
+	color: var(--text-normal);
+	margin: 0 0 3px;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.qbd-quiz-card-path {
+	font-size: 9px;
+	color: var(--text-faint);
+	font-family: var(--font-monospace, monospace);
+	display: flex;
+	align-items: center;
+	gap: 3px;
+	margin: 0 0 8px;
+}
+
+.qbd-quiz-card-progress-wrap {
+	height: 2px;
+	background: var(--background-modifier-border);
+	border-radius: 1px;
+	overflow: hidden;
+	margin-bottom: 8px;
+}
+
+.qbd-quiz-card-progress-bg {
+	height: 100%;
+	position: relative;
+}
+
+.qbd-quiz-card-progress-fill {
+	height: 100%;
+	background: var(--interactive-accent);
+	border-radius: 1px;
+	transition: width 0.4s ease;
+}
+
+.qbd-quiz-card-meta {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.qbd-quiz-card-meta-item {
+	font-size: 8px;
+	color: var(--text-faint);
+	display: flex;
+	align-items: center;
+	gap: 3px;
+}
+
+.qbd-quiz-card-badge {
+	font-size: 8px;
+	font-weight: 600;
+	padding: 1px 5px;
+	border-radius: 3px;
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	background: color-mix(in srgb, var(--interactive-accent) 13%, transparent);
+	color: var(--interactive-accent);
+}
+
+.qbd-quiz-card-score-row {
+	margin-top: 10px;
+	padding-top: 8px;
+	border-top: 1px solid var(--background-modifier-border);
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+}
+
+.qbd-quiz-card-score-value {
+	font-size: 9px;
+	font-weight: 600;
+	display: flex;
+	align-items: center;
+	gap: 3px;
+}
+
+/* ── Empty states ── */
+.qbd-empty-state {
+	grid-column: 1 / -1;
+	text-align: center;
+	padding: 32px 0;
+	color: var(--text-faint);
+	font-size: 12px;
+}
+
+.qbd-empty-hint {
+	font-size: 10px;
+	color: var(--text-faint);
+	opacity: 0.7;
+	margin-top: 4px;
+}

@@ -212,6 +212,21 @@ module.exports = function createStateHandlers(ctx) {
 			ctx.updateExamTimerDisplay();
 		}
 
+		// Enregistrer les stats dans le dashboard
+		const statsStore = ctx.plugin?._statsStore;
+		if (statsStore && ctx.sourcePath) {
+			const { pct, correct, total } = computeScorePercent();
+			let questionsDone = 0;
+			for (let i = 0; i < ctx.quiz.length; i++) {
+				if (isComplete(i)) questionsDone++;
+			}
+			statsStore.updateRecord(ctx.sourcePath, {
+				bestScore: pct,
+				questionsDone,
+				totalQuestions: total
+			});
+		}
+
 		updateNavHighlight();
 		goToSlide(ctx.SLIDE_RESULTS_INDEX, { forceRender: false });
 	}

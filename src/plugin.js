@@ -3,13 +3,20 @@
 const obsidian = require("obsidian");
 const { parseQuizSource, renderInteractiveQuiz } = require("./engine");
 const { QuizBuilderView, VIEW_TYPE } = require("./editor");
+const { QuizDashboardView, VIEW_TYPE_DASHBOARD } = require("./dashboard");
+const createScanner = require("./dashboard/scanner");
+const createStatsStore = require("./dashboard/stats-store");
 
 const PLUGIN_ID = "quiz-blocks";
 const PLUGIN_NAME = "Quiz Blocks";
 const QUIZ_BLOCK_LANGUAGE = "quiz-blocks";
 
 const DEFAULT_SETTINGS = {
-	enableCodeHighlighting: true
+	enableCodeHighlighting: true,
+	quizStats: {},
+	aiProvider: "openai",
+	aiApiKey: "",
+	aiModel: ""
 };
 
 function createLogger() {
@@ -191,6 +198,48 @@ class QuizBlocksSettingTab extends obsidian.PluginSettingTab {
 		noteEl.textContent = "Cliquez sur le bouton ci-dessus pour personnaliser les raccourcis clavier dans les paramètres d'Obsidian.";
 		noteEl.style.cssText = "text-align: center; margin-top: 0.75em; font-style: italic;";
 
+		// ─── AI Settings ───
+		containerEl.createEl("h3", { text: "Génération IA" });
+
+		containerEl.createEl("p", {
+			text: "Configurez votre fournisseur IA pour générer des quiz automatiquement.",
+			cls: "setting-item-description"
+		});
+
+		new obsidian.Setting(containerEl)
+			.setName("Fournisseur IA")
+			.setDesc("Choisissez entre OpenAI ou Anthropic")
+			.addDropdown(dropdown => dropdown
+				.addOption("openai", "OpenAI")
+				.addOption("anthropic", "Anthropic")
+				.setValue(this.plugin.settings.aiProvider || "openai")
+				.onChange(async (value) => {
+					this.plugin.settings.aiProvider = value;
+					await this.plugin.saveSettings();
+				}));
+
+		new obsidian.Setting(containerEl)
+			.setName("Clé API")
+			.setDesc("Votre clé API pour le fournisseur sélectionné")
+			.addText(text => text
+				.setPlaceholder("sk-…")
+				.setValue(this.plugin.settings.aiApiKey || "")
+				.onChange(async (value) => {
+					this.plugin.settings.aiApiKey = value;
+					await this.plugin.saveSettings();
+				}));
+
+		new obsidian.Setting(containerEl)
+			.setName("Modèle")
+			.setDesc("Modèle à utiliser (laissez vide pour le modèle par défaut)")
+			.addText(text => text
+				.setPlaceholder("gpt-4o-mini / claude-3-5-haiku-20241022")
+				.setValue(this.plugin.settings.aiModel || "")
+				.onChange(async (value) => {
+					this.plugin.settings.aiModel = value;
+					await this.plugin.saveSettings();
+				}));
+
 	}
 }
 
@@ -200,6 +249,30 @@ module.exports = class InteractiveQuizPlugin extends obsidian.Plugin {
 		this.log = createLogger();
 
 		this.log.info("plugin chargé");
+
+		/* ─── Scanner & Stats Store ─── */
+		this._scanner = createScanner(this.app);
+		this._statsStore = createStatsStore(this);
+		this._statsStore.load();
+
+		/* ─── Quiz Dashboard View ─── */
+		this.registerView(VIEW_TYPE_DASHBOARD, (leaf) => new QuizDashboardView(leaf, this));
+
+		this.addCommand({
+			id: "open-quiz-dashboard",
+			name: "Ouvrir le Dashboard",
+			hotkeys: [{ modifiers: ["Ctrl", "Shift"], key: "d" }],
+			callback: async () => {
+				const existing = this.app.workspace.getLeavesOfType(VIEW_TYPE_DASHBOARD);
+				if (existing.length > 0) {
+					this.app.workspace.revealLeaf(existing[0]);
+					return;
+				}
+				const leaf = this.app.workspace.getLeaf("tab");
+				await leaf.setViewState({ type: VIEW_TYPE_DASHBOARD, active: true });
+				this.app.workspace.revealLeaf(leaf);
+			},
+		});
 
 		this.addSettingTab(new QuizBlocksSettingTab(this.app, this));
 
@@ -275,14 +348,14 @@ module.exports = class InteractiveQuizPlugin extends obsidian.Plugin {
 		});
 
 		/* ─── Ribbon Icon ─── */
-		this.addRibbonIcon("graduation-cap", "Ouvrir le Quiz Editor", async () => {
-			const existing = this.app.workspace.getLeavesOfType(VIEW_TYPE);
+		this.addRibbonIcon("graduation-cap", "Ouvrir le Dashboard", async () => {
+			const existing = this.app.workspace.getLeavesOfType(VIEW_TYPE_DASHBOARD);
 			if (existing.length > 0) {
 				this.app.workspace.revealLeaf(existing[0]);
 				return;
 			}
 			const leaf = this.app.workspace.getLeaf("tab");
-			await leaf.setViewState({ type: VIEW_TYPE, active: true });
+			await leaf.setViewState({ type: VIEW_TYPE_DASHBOARD, active: true });
 			this.app.workspace.revealLeaf(leaf);
 		});
 
@@ -313,9 +386,14 @@ module.exports = class InteractiveQuizPlugin extends obsidian.Plugin {
 				}
 			}
 		);
+
+		/* ─── Scanner init (async, non-blocking) ─── */
+		this._scanner.init().catch(err => this.log.warn("Scanner init error:", err));
 	}
 
 	onunload() {
+		this._scanner?.destroy();
+		this._statsStore?.destroy();
 		this.log?.info("plugin déchargé");
 	}
 
