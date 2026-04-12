@@ -79,6 +79,15 @@ Génère ${typeInstruction}. Réponds UNIQUEMENT avec le tableau JSON5, sans exp
 			});
 		} catch (err) {
 			const status = err?.status || err?.httpStatus;
+			// Try to extract Anthropic error details
+			let detail = "";
+			try {
+				const errBody = typeof err?.json === "object" ? err.json : (typeof err?.data === "object" ? err.data : null);
+				if (errBody?.error?.message) {
+					detail = errBody.error.message;
+				}
+			} catch (_) { /* ignore parse errors */ }
+
 			if (status === 401 || status === 403) {
 				throw new Error("Clé API Anthropic invalide. Vérifiez votre clé dans les paramètres.");
 			}
@@ -88,7 +97,10 @@ Génère ${typeInstruction}. Réponds UNIQUEMENT avec le tableau JSON5, sans exp
 			if (status === 404) {
 				throw new Error("Modèle " + model + " non trouvé. Vérifiez le nom du modèle dans les paramètres.");
 			}
-			throw new Error("Erreur Anthropic (" + (status || "réseau") + ") : " + (err.message || "Connexion impossible"));
+			if (status === 400) {
+				throw new Error("Requête invalide (400)" + (detail ? " : " + detail : "") + ". Vérifiez le modèle sélectionné.");
+			}
+			throw new Error("Erreur Anthropic (" + (status || "réseau") + ")" + (detail ? " : " + detail : "") + " — " + (err.message || "Connexion impossible"));
 		}
 
 		const data = response.json;
