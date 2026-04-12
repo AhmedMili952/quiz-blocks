@@ -7,14 +7,14 @@
 
 function createAiClient(plugin) {
 	const DEFAULT_MODELS = {
-		anthropic: "claude-sonnet-4-6",
+		anthropic: "claude-sonnet-4-20250514",
 		ollama: "qwen3:14b",
 	};
 
 	async function generate(prompt, options = {}) {
 		const { count = 5, type = "Mixte", source = "topic" } = options;
 		const provider = plugin.settings.aiProvider || "anthropic";
-		const apiKey = plugin.settings.aiApiKey || "";
+		const apiKey = (plugin.settings.aiApiKey || "").trim();
 		const model = plugin.settings.aiModel || DEFAULT_MODELS[provider];
 
 		if (provider === "anthropic" && !apiKey) {
@@ -55,8 +55,75 @@ Génère ${typeInstruction}. Réponds UNIQUEMENT avec le tableau JSON5, sans exp
 		}
 	}
 
+	function extractAnthropicError(err) {
+		// obsidian.requestUrl throws an error on non-2xx.
+		// The response body is accessible via different properties depending on the version.
+		let detail = "";
+		let status = 0;
+
+		// Try all possible ways to get the status code
+		status = err?.status || err?.httpStatus || err?.statusCode || 0;
+
+		// Try all possible ways to get the response body
+		const tryParse = (obj) => {
+			if (!obj) return null;
+			if (typeof obj === "object" && obj.error) return obj;
+			if (typeof obj === "string") {
+				try { return JSON.parse(obj); } catch (_) { return null; }
+			}
+			return null;
+		};
+
+		// Check various properties where the response body might be
+		const candidates = [
+			err?.json,
+			err?.data,
+			err?.response?.json,
+			err?.response?.data,
+			err?.body,
+			err?.responseText,
+		];
+
+		for (const candidate of candidates) {
+			const parsed = tryParse(candidate);
+			if (parsed?.error?.message) {
+				detail = parsed.error.message;
+				break;
+			}
+		}
+
+		// Last resort: try to parse from error message
+		if (!detail && err?.message) {
+			const jsonMatch = err.message.match(/\{[\s\S]*"error"[\s\S]*\}/);
+			if (jsonMatch) {
+				const parsed = tryParse(jsonMatch[0]);
+				if (parsed?.error?.message) {
+					detail = parsed.error.message;
+				}
+			}
+		}
+
+		return { status, detail };
+	}
+
 	async function callAnthropic(apiKey, model, systemPrompt, userPrompt) {
 		const { requestUrl } = require("obsidian");
+
+		const requestBody = {
+			model,
+			max_tokens: 4096,
+			system: systemPrompt,
+			messages: [
+				{ role: "user", content: userPrompt }
+			]
+		};
+
+		console.log("[quiz-blocks] Anthropic request:", {
+			url: "https://api.anthropic.com/v1/messages",
+			model,
+			apiKeyPrefix: apiKey.substring(0, 8) + "...",
+			messageLength: userPrompt.length
+		});
 
 		let response;
 		try {
@@ -68,25 +135,11 @@ Génère ${typeInstruction}. Réponds UNIQUEMENT avec le tableau JSON5, sans exp
 					"anthropic-version": "2023-06-01",
 					"x-api-key": apiKey
 				},
-				body: JSON.stringify({
-					model,
-					max_tokens: 4096,
-					system: systemPrompt,
-					messages: [
-						{ role: "user", content: userPrompt }
-					]
-				})
+				body: JSON.stringify(requestBody)
 			});
 		} catch (err) {
-			const status = err?.status || err?.httpStatus;
-			// Try to extract Anthropic error details
-			let detail = "";
-			try {
-				const errBody = typeof err?.json === "object" ? err.json : (typeof err?.data === "object" ? err.data : null);
-				if (errBody?.error?.message) {
-					detail = errBody.error.message;
-				}
-			} catch (_) { /* ignore parse errors */ }
+			const { status, detail } = extractAnthropicError(err);
+			console.error("[quiz-blocks] Anthropic error:", { status, detail, errMessage: err?.message, errKeys: Object.keys(err || {}) });
 
 			if (status === 401 || status === 403) {
 				throw new Error("Clé API Anthropic invalide. Vérifiez votre clé dans les paramètres.");
@@ -98,15 +151,16 @@ Génère ${typeInstruction}. Réponds UNIQUEMENT avec le tableau JSON5, sans exp
 				throw new Error("Modèle " + model + " non trouvé. Vérifiez le nom du modèle dans les paramètres.");
 			}
 			if (status === 400) {
-				throw new Error("Requête invalide (400)" + (detail ? " : " + detail : "") + ". Vérifiez le modèle sélectionné.");
+				throw new Error("Requête invalide (400)" + (detail ? " : " + detail : "") + ". Modèle utilisé : " + model);
 			}
 			throw new Error("Erreur Anthropic (" + (status || "réseau") + ")" + (detail ? " : " + detail : "") + " — " + (err.message || "Connexion impossible"));
 		}
 
 		const data = response.json;
+		console.log("[quiz-blocks] Anthropic response keys:", Object.keys(data || {}));
 
 		if (data.error) {
-			throw new Error("Erreur Anthropic : " + (data.error.message || data.error.type || "Erreur inconnue"));
+			throw new Error("Erreur Anthropic : " + (data.error.message || data.error.type || JSON.stringify(data.error)));
 		}
 
 		const content = data.content?.[0]?.text || "";
