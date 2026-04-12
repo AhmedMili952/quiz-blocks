@@ -209,47 +209,89 @@ class QuizBlocksSettingTab extends obsidian.PluginSettingTab {
 
 		// ─── Modèles par fournisseur ───
 		const ANTHROPIC_MODELS = [
-			{ value: "claude-sonnet-4-20250514", label: "Claude Sonnet 4 (recommandé)" },
-			{ value: "claude-3-5-sonnet-20241022", label: "Claude 3.5 Sonnet" },
-			{ value: "claude-3-5-haiku-20241022", label: "Claude 3.5 Haiku (rapide)" },
-			{ value: "claude-3-opus-20240229", label: "Claude 3 Opus (puissant)" }
+			{ value: "claude-sonnet-4-6", label: "Claude Sonnet 4.6 (recommandé)" },
+			{ value: "claude-opus-4-6", label: "Claude Opus 4.6 (le plus intelligent)" },
+			{ value: "claude-haiku-4-5-20251001", label: "Claude Haiku 4.5 (rapide)" },
+			{ value: "claude-sonnet-4-5-20250929", label: "Claude Sonnet 4.5" },
+			{ value: "claude-opus-4-5-20251101", label: "Claude Opus 4.5" },
+			{ value: "claude-sonnet-4-20250514", label: "Claude Sonnet 4" },
+			{ value: "claude-opus-4-20250514", label: "Claude Opus 4" }
 		];
 
 		const OLLAMA_MODELS = [
-			{ value: "llama3", label: "Llama 3" },
-			{ value: "llama3.1", label: "Llama 3.1" },
-			{ value: "mistral", label: "Mistral" },
-			{ value: "codellama", label: "Code Llama" },
-			{ value: "gemma2", label: "Gemma 2" },
-			{ value: "phi3", label: "Phi-3" },
-			{ value: "qwen2", label: "Qwen 2" },
-			{ value: "deepseek-coder", label: "DeepSeek Coder" },
+			{ value: "qwen3:14b", label: "Qwen 3 14B (recommandé)" },
+			{ value: "qwen3.5:9b", label: "Qwen 3.5 9B (léger)" },
+			{ value: "qwen3.5:27b", label: "Qwen 3.5 27B (performant)" },
+			{ value: "deepseek-r1:14b", label: "DeepSeek R1 14B (raisonnement)" },
+			{ value: "qwen3-coder:30b-a3b", label: "Qwen 3 Coder 30B (code)" },
+			{ value: "gemma3:12b", label: "Gemma 3 12B" },
+			{ value: "gemma3:27b", label: "Gemma 3 27B (qualité)" },
+			{ value: "llama3.3:70b", label: "Llama 3.3 70B (64 Go+ VRAM)" },
+			{ value: "llama4:scout", label: "Llama 4 Scout (contexte 512K)" },
+			{ value: "phi4:14b", label: "Phi-4 14B" },
+			{ value: "phi4-mini", label: "Phi-4 Mini (léger)" },
+			{ value: "mistral-nemo", label: "Mistral Nemo" },
 			{ value: "mixtral", label: "Mixtral" },
-			{ value: "mistral-nemo", label: "Mistral Nemo" }
+			{ value: "gemma3:4b", label: "Gemma 3 4B (ultra léger)" }
 		];
 
 		const TUTORIALS = {
 			anthropic: {
 				title: "Comment configurer Anthropic (Claude)",
-				steps: [
-					"1. Allez sur console.anthropic.com et créez un compte.",
-					"2. Accédez à la section « API Keys » dans votre tableau de bord.",
-					"3. Cliquez sur « Create Key » et copiez la clé.",
-					"4. Collez-la dans le champ « Clé API » ci-dessus.",
-					"5. Choisissez le modèle Claude que vous souhaitez utiliser.",
-					"⚠️ Votre clé API est stockée localement et n'est jamais partagée."
-				]
+				sections: [
+					{
+						heading: "1. Créer un compte",
+						text: "Allez sur console.anthropic.com et créez un compte gratuit.",
+						link: { label: "Ouvrir console.anthropic.com", url: "https://console.anthropic.com" }
+					},
+					{
+						heading: "2. Obtenir une clé API",
+						text: "Accédez à la section « API Keys » dans votre tableau de bord et cliquez sur « Create Key ».",
+						link: { label: "Voir les clés API", url: "https://console.anthropic.com/settings/keys" }
+					},
+					{
+						heading: "3. Configurer ici",
+						text: "Collez votre clé API ci-dessus et choisissez le modèle Claude souhaité",
+						link: null
+					},
+					{
+						heading: "4. Ajouter des crédits",
+						text: "Si vous n'avez pas de crédits, ajoutez-en dans « Plans & Billing ».",
+						link: { label: "Gérer le billing", url: "https://console.anthropic.com/settings/plans" }
+					}
+				],
+				warning: "Votre clé API est stockée localement dans Obsidian et n'est jamais partagée.",
+				docsLink: { label: "Documentation Anthropic", url: "https://docs.anthropic.com/en/docs/about-claude/models" }
 			},
 			ollama: {
 				title: "Comment configurer Ollama",
-				steps: [
-					"1. Téléchargez Ollama sur ollama.com et installez-le.",
-					"2. Ouvrez un terminal et lancez : ollama pull llama3",
-					"3. Attendez que le modèle soit téléchargé (premier téléchargement seulement).",
-					"4. Ollama démarre automatiquement sur http://localhost:11434",
-					"5. Choisissez le modèle dans la liste ci-dessus.",
-					"💡 Pour utiliser Ollama en cloud, changez l'URL pour celle de votre serveur distant.",
-					"💡 Vous pouvez installer d'autres modèles avec : ollama pull <nom-du-modele>"
+				sections: [
+					{
+						heading: "1. Installer Ollama",
+						text: "Téléchargez et installez Ollama pour votre système.",
+						link: { label: "Télécharger Ollama", url: "https://ollama.com/download" }
+					},
+					{
+						heading: "2. Télécharger un modèle",
+						text: "Ouvrez un terminal et lancez : ollama pull qwen3:14b",
+						link: { label: "Voir tous les modèles", url: "https://ollama.com/models" }
+					},
+					{
+						heading: "3. Démarrer Ollama",
+						text: "Ollama démarre automatiquement. Le serveur est sur http://localhost:11434",
+						link: null
+					},
+					{
+						heading: "4. Configurer ici",
+						text: "Choisissez le modèle téléchargé dans la liste ci-dessus. Pour Ollama en cloud, changez l'URL du serveur.",
+						link: null
+					}
+				],
+				warning: "Ollama fonctionne localement et ne nécessite pas de clé API. Votre données restent sur votre machine.",
+				docsLink: { label: "Documentation Ollama", url: "https://github.com/ollama/ollama" },
+				tips: [
+					"💡 Installez d'autres modèles avec : ollama pull <nom-du-modele>",
+					"💡 Pour Ollama en cloud, changez l'URL pour celle de votre serveur distant."
 				]
 			}
 		};
@@ -265,11 +307,16 @@ class QuizBlocksSettingTab extends obsidian.PluginSettingTab {
 				.onChange(async (value) => {
 					this.plugin.settings.aiProvider = value;
 					// Reset model to default when switching provider
-					const defaults = { anthropic: "claude-sonnet-4-20250514", ollama: "llama3" };
+					const defaults = { anthropic: "claude-sonnet-4-6", ollama: "qwen3:14b" };
 					this.plugin.settings.aiModel = defaults[value] || "";
 					await this.plugin.saveSettings();
-					// Re-render settings to update model dropdown and tutorial
+					// Re-render settings but preserve scroll position
+					const scrollTop = containerEl.closest(".modal-content")?.scrollTop ?? 0;
 					this.display();
+					requestAnimationFrame(() => {
+						const modal = containerEl.closest(".modal-content");
+						if (modal) modal.scrollTop = scrollTop;
+					});
 				}));
 
 		// API Key (Anthropic only)
@@ -303,7 +350,7 @@ class QuizBlocksSettingTab extends obsidian.PluginSettingTab {
 				}
 				// If current model is not in the list, add it as custom
 				if (!models.find(m => m.value === currentModel)) {
-					dropdown.addOption(currentModel, "✂️ " + currentModel + " (personnalisé)");
+					dropdown.addOption(currentModel, currentModel + " (personnalisé)");
 				}
 				dropdown.setValue(currentModel);
 				dropdown.onChange(async (value) => {
@@ -330,21 +377,73 @@ class QuizBlocksSettingTab extends obsidian.PluginSettingTab {
 		const tutorial = TUTORIALS[currentProvider];
 		if (tutorial) {
 			const tutorialEl = containerEl.createDiv({ cls: "qb-ai-tutorial" });
-			tutorialEl.createEl("h4", { text: tutorial.title });
+			tutorialEl.style.cssText = "margin-top: 1.5em; padding: 1.2em; background: var(--background-secondary); border-radius: 10px; border: 1px solid var(--background-modifier-border);";
 
-			const stepsList = tutorialEl.createEl("ul", { cls: "qb-ai-tutorial-steps" });
-			for (const step of tutorial.steps) {
-				const isWarning = step.startsWith("⚠️");
-				const isTip = step.startsWith("💡");
-				stepsList.createEl("li", {
-					text: step,
-					cls: isWarning ? "qb-ai-tutorial-warning" : isTip ? "qb-ai-tutorial-tip" : ""
-				});
+			const tutorialHeader = tutorialEl.createDiv({ cls: "qb-ai-tutorial-header" });
+			tutorialHeader.style.cssText = "display: flex; align-items: center; gap: 0.5em; margin-bottom: 0.8em;";
+			const headerIcon = tutorialHeader.createSpan({ cls: "qb-ai-tutorial-icon" });
+			obsidian.setIcon(headerIcon, currentProvider === "anthropic" ? "brain" : "cpu");
+			headerIcon.style.cssText = "display: flex; align-items: center; color: var(--interactive-accent);";
+			tutorialHeader.createEl("h4", {
+				text: tutorial.title,
+				cls: "qb-ai-tutorial-title"
+			}).style.cssText = "margin: 0; font-size: 1.05em; color: var(--text-normal);";
+
+			for (const section of tutorial.sections) {
+				const sectionEl = tutorialEl.createDiv({ cls: "qb-ai-tutorial-section" });
+				sectionEl.style.cssText = "margin-bottom: 0.7em;";
+
+				const headingEl = sectionEl.createEl("strong", { text: section.heading });
+				headingEl.style.cssText = "display: block; font-size: 0.92em; margin-bottom: 0.15em; color: var(--text-normal);";
+				sectionEl.createEl("span", {
+					text: section.text,
+					cls: "qb-ai-tutorial-desc"
+				}).style.cssText = "display: block; font-size: 0.88em; color: var(--text-muted); line-height: 1.4;";
+
+				if (section.link) {
+					const linkEl = sectionEl.createEl("a", {
+						text: section.link.label,
+						href: section.link.url,
+						cls: "qb-ai-tutorial-link"
+					});
+					linkEl.style.cssText = "display: inline-block; margin-top: 0.2em; font-size: 0.85em; color: var(--interactive-accent); text-decoration: underline;";
+					linkEl.target = "_blank";
+					linkEl.rel = "noopener noreferrer";
+				}
 			}
 
-			// Style the tutorial
-			tutorialEl.style.cssText = "margin-top: 1em; padding: 1em; background: var(--background-secondary); border-radius: 8px; border: 1px solid var(--background-modifier-border);";
-			stepsList.style.cssText = "padding-left: 1.2em; margin: 0.5em 0 0 0;";
+			if (tutorial.warning) {
+				const warnEl = tutorialEl.createDiv({ cls: "qb-ai-tutorial-warning" });
+				warnEl.style.cssText = "margin-top: 0.8em; padding: 0.6em 0.8em; background: var(--background-primary); border-radius: 6px; border-left: 3px solid var(--color-yellow); font-size: 0.88em; color: var(--text-muted);";
+				const warnIcon = warnEl.createSpan();
+				obsidian.setIcon(warnIcon, "alert-triangle");
+				warnIcon.style.cssText = "display: inline-flex; vertical-align: middle; margin-right: 0.4em; color: var(--color-yellow);";
+				warnEl.createSpan({ text: " " + tutorial.warning });
+			}
+
+			if (tutorial.tips) {
+				for (const tip of tutorial.tips) {
+					const tipEl = tutorialEl.createDiv({ cls: "qb-ai-tutorial-tip" });
+					tipEl.style.cssText = "margin-top: 0.3em; font-size: 0.88em; color: var(--text-muted); line-height: 1.4;";
+					tipEl.textContent = tip;
+				}
+			}
+
+			if (tutorial.docsLink) {
+				const docsEl = tutorialEl.createDiv({ cls: "qb-ai-tutorial-docs" });
+				docsEl.style.cssText = "margin-top: 0.8em; padding-top: 0.6em; border-top: 1px solid var(--background-modifier-border);";
+				const docsIcon = docsEl.createSpan();
+				obsidian.setIcon(docsIcon, "external-link");
+				docsIcon.style.cssText = "display: inline-flex; vertical-align: middle; margin-right: 0.4em; color: var(--text-muted);";
+				const docsLink = docsEl.createEl("a", {
+					text: tutorial.docsLink.label,
+					href: tutorial.docsLink.url,
+					cls: "qb-ai-tutorial-docs-link"
+				});
+				docsLink.style.cssText = "font-size: 0.88em; color: var(--interactive-accent); text-decoration: underline;";
+				docsLink.target = "_blank";
+				docsLink.rel = "noopener noreferrer";
+			}
 		}
 	}
 }

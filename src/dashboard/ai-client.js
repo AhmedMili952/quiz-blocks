@@ -7,8 +7,8 @@
 
 function createAiClient(plugin) {
 	const DEFAULT_MODELS = {
-		anthropic: "claude-sonnet-4-20250514",
-		ollama: "llama3",
+		anthropic: "claude-sonnet-4-6",
+		ollama: "qwen3:14b",
 	};
 
 	async function generate(prompt, options = {}) {
