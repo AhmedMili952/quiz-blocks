@@ -242,6 +242,37 @@
 	flex-wrap: wrap;
 }
 
+/* ── Ollama offline/no models warning ── */
+.qbd-ai-offline-warn {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+	font-size: 12px;
+	font-weight: 600;
+	color: var(--color-red, #f87171);
+	background: color-mix(in srgb, var(--color-red, #f87171) 10%, transparent);
+	border: 1px solid color-mix(in srgb, var(--color-red, #f87171) 25%, transparent);
+	border-radius: var(--radius-m, 8px);
+	padding: 6px 12px;
+}
+
+.qbd-ai-offline-warn-icon {
+	display: inline-flex;
+	align-items: center;
+}
+
+.qbd-ai-offline-warn-icon svg {
+	width: 14px;
+	height: 14px;
+}
+
+.qbd-ai-offline-hint {
+	font-size: 11px;
+	color: var(--text-muted);
+	margin-top: 4px;
+	font-family: var(--font-monospace, monospace);
+}
+
 .qbd-ai-provider-tag {
 	display: inline-flex;
 	align-items: center;

@@ -18,6 +18,7 @@ const DEFAULT_SETTINGS = {
 	aiApiKey: "",
 	aiModel: "",
 	aiOllamaUrl: "http://localhost:11434",
+	aiOllamaCloudKey: "",
 };
 
 function createLogger() {
@@ -235,6 +236,15 @@ class QuizBlocksSettingTab extends obsidian.PluginSettingTab {
 			{ value: "gemma3:4b", label: "Gemma 3 4B (ultra léger)" }
 		];
 
+		const OLLAMA_CLOUD_MODELS = [
+			{ value: "qwen3:14b", label: "Qwen 3 14B" },
+			{ value: "qwen3.5:27b", label: "Qwen 3.5 27B" },
+			{ value: "deepseek-r1:14b", label: "DeepSeek R1 14B" },
+			{ value: "llama4:scout", label: "Llama 4 Scout" },
+			{ value: "gemma3:27b", label: "Gemma 3 27B" },
+			{ value: "phi4:14b", label: "Phi-4 14B" }
+		];
+
 		const TUTORIALS = {
 			anthropic: {
 				title: "Comment configurer Anthropic (Claude)",
@@ -293,6 +303,32 @@ class QuizBlocksSettingTab extends obsidian.PluginSettingTab {
 					"💡 Installez d'autres modèles avec : ollama pull <nom-du-modele>",
 					"💡 Pour Ollama en cloud, changez l'URL pour celle de votre serveur distant."
 				]
+			},
+			"ollama-cloud": {
+				title: "Comment configurer Ollama Cloud",
+				sections: [
+					{
+						heading: "1. Créer un compte",
+						text: "Allez sur ollama.com et créez un compte gratuit.",
+						link: { label: "Ouvrir ollama.com", url: "https://ollama.com" }
+					},
+					{
+						heading: "2. Obtenir une clé API",
+						text: "Accédez à ollama.com/settings/keys et créez une clé API.",
+						link: { label: "Créer une clé", url: "https://ollama.com/settings/keys" }
+					},
+					{
+						heading: "3. Configurer ici",
+						text: "Collez votre clé API ci-dessus et choisissez un modèle.",
+						link: null
+					}
+				],
+				warning: "Ollama Cloud héberge les modèles sur des serveurs NVIDIA. Vos données ne sont jamais utilisées pour l'entraînement.",
+				docsLink: { label: "Documentation Ollama Cloud", url: "https://docs.ollama.com/cloud" },
+				tips: [
+					"Outil gratuit : 1 modèle à la fois. Pro (20$/mois) : 3 modèles simultanés.",
+					"Les modèles Cloud n’ont pas de limite de mémoire — même les grands modèles fonctionnent."
+				]
 			}
 		};
 
@@ -302,12 +338,13 @@ class QuizBlocksSettingTab extends obsidian.PluginSettingTab {
 			.setDesc("Choisissez le fournisseur pour la génération de quiz")
 			.addDropdown(dropdown => dropdown
 				.addOption("anthropic", "Anthropic (Claude)")
-				.addOption("ollama", "Ollama (local / cloud)")
+				.addOption("ollama", "Ollama (local)")
+					.addOption("ollama-cloud", "Ollama Cloud")
 				.setValue(this.plugin.settings.aiProvider || "anthropic")
 				.onChange(async (value) => {
 					this.plugin.settings.aiProvider = value;
 					// Reset model to default when switching provider
-					const defaults = { anthropic: "claude-sonnet-4-20250514", ollama: "qwen3:14b" };
+					const defaults = { anthropic: "claude-sonnet-4-20250514", ollama: "qwen3:14b", "ollama-cloud": "qwen3:14b" };
 					this.plugin.settings.aiModel = defaults[value] || "";
 					await this.plugin.saveSettings();
 					// Re-render settings but preserve scroll position
@@ -334,15 +371,32 @@ class QuizBlocksSettingTab extends obsidian.PluginSettingTab {
 				});
 		}
 
+		// API Key (Ollama Cloud only)
+		if (currentProvider === "ollama-cloud") {
+			new obsidian.Setting(containerEl)
+				.setName("Clé API Ollama Cloud")
+				.setDesc("Créez une clé sur ollama.com/settings/keys")
+				.addText(text => {
+					text.setPlaceholder("ollama-…")
+						.setValue(this.plugin.settings.aiOllamaCloudKey || "")
+						.onChange(async (value) => {
+							this.plugin.settings.aiOllamaCloudKey = value;
+							await this.plugin.saveSettings();
+						});
+				});
+		}
+
 		// Model dropdown (provider-specific)
 		const currentProvider = this.plugin.settings.aiProvider || "anthropic";
-		const models = currentProvider === "ollama" ? OLLAMA_MODELS : ANTHROPIC_MODELS;
+		const models = currentProvider === "ollama-cloud" ? OLLAMA_CLOUD_MODELS : currentProvider === "ollama" ? OLLAMA_MODELS : ANTHROPIC_MODELS;
 		const currentModel = this.plugin.settings.aiModel || models[0].value;
 
 		new obsidian.Setting(containerEl)
 			.setName("Modèle")
 			.setDesc(currentProvider === "ollama"
 				? "Modèle Ollama à utiliser. Assurez-vous de l'avoir téléchargé avec ollama pull."
+				: currentProvider === "ollama-cloud"
+				? "Modèle Ollama Cloud à utiliser pour la génération."
 				: "Modèle Claude à utiliser pour la génération.")
 			.addDropdown(dropdown => {
 				for (const m of models) {
@@ -359,11 +413,11 @@ class QuizBlocksSettingTab extends obsidian.PluginSettingTab {
 				});
 			});
 
-		// Ollama URL (Ollama only)
+		// Ollama URL (local only)
 		if (currentProvider === "ollama") {
 			new obsidian.Setting(containerEl)
 				.setName("URL du serveur Ollama")
-				.setDesc("Adresse du serveur Ollama (local ou cloud).")
+				.setDesc("Adresse du serveur Ollama local.")
 				.addText(text => text
 					.setPlaceholder("http://localhost:11434")
 					.setValue(this.plugin.settings.aiOllamaUrl || "http://localhost:11434")
@@ -382,7 +436,7 @@ class QuizBlocksSettingTab extends obsidian.PluginSettingTab {
 			const tutorialHeader = tutorialEl.createDiv({ cls: "qb-ai-tutorial-header" });
 			tutorialHeader.style.cssText = "display: flex; align-items: center; gap: 0.5em; margin-bottom: 0.8em;";
 			const headerIcon = tutorialHeader.createSpan({ cls: "qb-ai-tutorial-icon" });
-			obsidian.setIcon(headerIcon, currentProvider === "anthropic" ? "brain" : "cpu");
+			obsidian.setIcon(headerIcon, currentProvider === "anthropic" ? "brain" : currentProvider === "ollama-cloud" ? "cloud" : "cpu");
 			headerIcon.style.cssText = "display: flex; align-items: center; color: var(--interactive-accent);";
 			tutorialHeader.createEl("h4", {
 				text: tutorial.title,

@@ -16,6 +16,15 @@ const ANTHROPIC_MODELS = [
 	{ value: "claude-opus-4-20250514", label: "Claude Opus 4" }
 ];
 
+const OLLAMA_CLOUD_MODELS = [
+	{ value: "qwen3:14b", label: "Qwen 3 14B" },
+	{ value: "qwen3.5:27b", label: "Qwen 3.5 27B" },
+	{ value: "deepseek-r1:14b", label: "DeepSeek R1 14B" },
+	{ value: "llama4:scout", label: "Llama 4 Scout" },
+	{ value: "gemma3:27b", label: "Gemma 3 27B" },
+	{ value: "phi4:14b", label: "Phi-4 14B" }
+];
+
 const OLLAMA_MODELS = [
 	{ value: "qwen3:14b", label: "Qwen 3 14B" },
 	{ value: "qwen3.5:9b", label: "Qwen 3.5 9B" },
@@ -58,7 +67,7 @@ function createAiHandlers(ctx) {
 			(currentTab === "text" && textValue.trim());
 	}
 
-	function render(container) {
+	async function render(container) {
 		container.empty();
 
 		// ── Layout 2 colonnes ──
@@ -71,32 +80,94 @@ function createAiHandlers(ctx) {
 
 		// ── Provider & Model bar ──
 		const provider = ctx.plugin.settings.aiProvider || "anthropic";
-		const providerLabels = { anthropic: "Anthropic (Claude)", ollama: "Ollama" };
-		const models = provider === "ollama" ? OLLAMA_MODELS : ANTHROPIC_MODELS;
+		const providerLabels = { anthropic: "Anthropic (Claude)", ollama: "Ollama", "ollama-cloud": "Ollama Cloud" };
+		const models = provider === "ollama-cloud" ? OLLAMA_CLOUD_MODELS : provider === "ollama" ? OLLAMA_MODELS : ANTHROPIC_MODELS;
 		const currentModel = ctx.plugin.settings.aiModel || models[0].value;
 
 		const modelBar = formCol.createDiv({ cls: "qbd-ai-model-bar" });
 
 		const providerTag = modelBar.createDiv({ cls: "qbd-ai-provider-tag" });
 		const providerIcon = providerTag.createSpan({ cls: "qbd-ai-provider-icon" });
-		obsidian.setIcon(providerIcon, provider === "anthropic" ? "brain" : "cpu");
+		obsidian.setIcon(providerIcon, provider === "anthropic" ? "brain" : provider === "ollama-cloud" ? "cloud" : "cpu");
 		providerTag.createSpan({ text: providerLabels[provider] || provider });
 
-		const modelSelect = modelBar.createEl("select", { cls: "qbd-ai-model-select" });
-		for (const m of models) {
-			const opt = modelSelect.createEl("option", { text: m.label, value: m.value });
-			if (m.value === currentModel) opt.selected = true;
-		}
-		if (!models.find(m => m.value === currentModel)) {
-			const opt = modelSelect.createEl("option", { text: currentModel + " (personnalisé)", value: currentModel });
-			opt.selected = true;
-		}
-		modelSelect.addEventListener("change", async (e) => {
-			ctx.plugin.settings.aiModel = e.target.value;
-			await ctx.plugin.saveSettings();
-		});
+		if (provider === "ollama-cloud") {
+			// Ollama Cloud: static model list
+			const modelSelect = modelBar.createEl("select", { cls: "qbd-ai-model-select" });
+			for (const m of OLLAMA_CLOUD_MODELS) {
+				const opt = modelSelect.createEl("option", { text: m.label, value: m.value });
+				if (m.value === currentModel) opt.selected = true;
+			}
+			if (!modelSelect.querySelector('[value="' + currentModel + '"]')) {
+				const opt = modelSelect.createEl("option", { text: currentModel + " (personnalis\u00e9)", value: currentModel });
+				opt.selected = true;
+			}
+			modelSelect.addEventListener("change", async (e) => {
+				ctx.plugin.settings.aiModel = e.target.value;
+				await ctx.plugin.saveSettings();
+			});
+		} else if (provider === "ollama") {
+			// Local Ollama: detect installed models from the server
+			const ollamaUrl = (ctx.plugin.settings.aiOllamaUrl || "http://localhost:11434").replace(/\/+$/, "");
+			let ollamaModels = [];
+			let ollamaOffline = false;
+			try {
+				const { requestUrl } = require("obsidian");
+				const resp = await requestUrl({ url: ollamaUrl + "/api/tags", method: "GET" });
+				ollamaModels = (resp.json?.models || []).map(m => ({ name: m.name, size: m.size }));
+			} catch (e) {
+				ollamaOffline = true;
+			}
 
-		// Onglets source
+			if (ollamaOffline) {
+				const warn = modelBar.createDiv({ cls: "qbd-ai-offline-warn" });
+				const warnIcon = warn.createSpan({ cls: "qbd-ai-offline-warn-icon" });
+				obsidian.setIcon(warnIcon, "alert-circle");
+				warn.createSpan({ text: " Serveur Ollama non détecté" });
+				const hint = modelBar.createDiv({ cls: "qbd-ai-offline-hint" });
+				hint.setText("Lancez \"ollama serve\" dans un terminal, puis rechargez.");
+			} else if (ollamaModels.length === 0) {
+				const warn = modelBar.createDiv({ cls: "qbd-ai-offline-warn" });
+				const warnIcon = warn.createSpan({ cls: "qbd-ai-offline-warn-icon" });
+				obsidian.setIcon(warnIcon, "download");
+				warn.createSpan({ text: " Aucun modèle installé" });
+				const hint = modelBar.createDiv({ cls: "qbd-ai-offline-hint" });
+				hint.setText("Exécutez \"ollama pull qwen3:14b\" pour installer un modèle.");
+			} else {
+				const modelSelect = modelBar.createEl("select", { cls: "qbd-ai-model-select" });
+				const currentModelNorm = (ctx.plugin.settings.aiModel || "").replace(/:latest$/, "");
+				for (const m of ollamaModels) {
+					const displayName = m.name.replace(":latest", "");
+					const sizeGB = m.size ? (" (" + (m.size / 1e9).toFixed(1) + " Go)") : "";
+					const opt = modelSelect.createEl("option", { text: displayName + sizeGB, value: m.name });
+					if (m.name === ctx.plugin.settings.aiModel || m.name.replace(":latest", "") === currentModelNorm) opt.selected = true;
+				}
+				if (!modelSelect.querySelector('[value="' + (ctx.plugin.settings.aiModel || "qwen3:14b") + '"]')) {
+					const opt = modelSelect.createEl("option", { text: (ctx.plugin.settings.aiModel || "qwen3:14b") + " (non installé)", value: ctx.plugin.settings.aiModel || "qwen3:14b" });
+					opt.selected = true;
+				}
+				modelSelect.addEventListener("change", async (e) => {
+					ctx.plugin.settings.aiModel = e.target.value;
+					await ctx.plugin.saveSettings();
+				});
+			}
+		} else {
+			const modelSelect = modelBar.createEl("select", { cls: "qbd-ai-model-select" });
+			for (const m of models) {
+				const opt = modelSelect.createEl("option", { text: m.label, value: m.value });
+				if (m.value === currentModel) opt.selected = true;
+			}
+			if (!modelSelect.querySelector('[value="' + currentModel + '"]')) {
+				const opt = modelSelect.createEl("option", { text: currentModel + " (personnalisé)", value: currentModel });
+				opt.selected = true;
+			}
+			modelSelect.addEventListener("change", async (e) => {
+				ctx.plugin.settings.aiModel = e.target.value;
+				await ctx.plugin.saveSettings();
+			});
+		}
+
+			// Onglets source
 		const tabsCard = formCol.createDiv({ cls: "qbd-ai-tabs-card" });
 		const tabBar = tabsCard.createDiv({ cls: "qbd-ai-tab-bar" });
 		for (const tab of TABS) {
