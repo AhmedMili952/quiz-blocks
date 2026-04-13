@@ -247,6 +247,7 @@ module.exports = function createStateHandlers(ctx) {
 		ctx.quizState.prevCurrent = 0;
 		ctx.quizState.lastQuestionIndex = 0;
 		ctx.quizState.locked = false;
+		ctx.container?.classList?.remove("quiz-is-locked");
 		ctx.quizState.pendingResultsLock = false;
 		ctx.quizState.shuffleMap = ctx.buildShuffleMap();
 		ctx.quizState.orderingPick = ctx.initOrderingPicks();

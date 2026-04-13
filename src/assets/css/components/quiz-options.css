@@ -110,6 +110,60 @@
   box-shadow: inset 0 0 0 4px var(--quiz-danger);
 }
 
+.quiz-option.missed{
+  border: 2px dashed var(--quiz-success);
+  background: color-mix(in srgb, var(--quiz-success) 10%, var(--background-secondary));
+  color: var(--text-normal);
+  cursor: default;
+}
+
+.quiz-option.missed::before{
+  border-color: var(--quiz-success);
+  background: color-mix(in srgb, var(--quiz-success) 15%, var(--background-primary));
+  box-shadow: inset 0 0 0 4px var(--quiz-success);
+}
+
+.quiz-option.missed::after{
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 0;
+  height: 0;
+  border-top: 38px solid color-mix(in srgb, var(--quiz-success) 30%, transparent);
+  border-left: 38px solid transparent;
+  border-top-right-radius: var(--quiz-card-radius);
+}
+
+/* Options neutres (non correctes, non sélectionnées) quand quiz verrouillé */
+.quiz-is-locked .quiz-option:not(.correct):not(.wrong):not(.missed):not(.selected){
+  opacity: 0.5;
+  cursor: default;
+}
+
+.quiz-is-locked .quiz-option:not(.correct):not(.wrong):not(.missed):not(.selected):hover,
+.quiz-is-locked .quiz-option:not(.correct):not(.wrong):not(.missed):not(.selected):focus-visible{
+  outline: none;
+  transform: none;
+  box-shadow: none;
+  border-color: var(--background-modifier-border);
+  background: var(--background-secondary);
+}
+
+.quiz-is-locked .quiz-option.wrong:hover,
+.quiz-is-locked .quiz-option.wrong:focus-visible{
+  outline: none;
+  transform: translate3d(2px,0,0);
+  box-shadow:
+    0 0 0 1.5px var(--quiz-danger-ring-22),
+    0 0 22px var(--quiz-danger-glow-38);
+}
+
+.quiz-is-locked .quiz-option.missed:hover,
+.quiz-is-locked .quiz-option.missed:focus-visible{
+  transform: none;
+}
+
 .quiz-option.selected:hover,
 .quiz-option.selected:focus-visible{
   outline: none;
@@ -126,15 +180,6 @@
   box-shadow:
     0 0 0 1.5px var(--quiz-success-ring-22),
     0 0 22px var(--quiz-success-glow-38);
-}
-
-.quiz-option.wrong:hover,
-.quiz-option.wrong:focus-visible{
-  outline: none;
-  transform: translate3d(2px,0,0);
-  box-shadow:
-    0 0 0 1.5px var(--quiz-danger-ring-22),
-    0 0 22px var(--quiz-danger-glow-38);
 }
 
 

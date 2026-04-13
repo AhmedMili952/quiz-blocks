@@ -145,6 +145,7 @@ module.exports = function createExamHandlers(ctx) {
 
     // 2. Verrouiller le quiz
     ctx.quizState.locked = true;
+    ctx.container?.classList?.add("quiz-is-locked");
 
     // 3. Transition vers les résultats (même action que "voir le score")
     ctx.goToResults();

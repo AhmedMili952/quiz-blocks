@@ -145,7 +145,10 @@ module.exports = function createTrackHandlers(ctx) {
 			ctx.quizState.isSliding = false;
 			ctx.setSlidingClass(false);
 		}
-		if (shouldLockResultsNow) ctx.quizState.locked = true;
+		if (shouldLockResultsNow) {
+				ctx.quizState.locked = true;
+				ctx.container?.classList?.add("quiz-is-locked");
+			}
 		if (!ctx.isResultsSlideIndex(targetIndex)) ctx.quizState.pendingResultsLock = false;
 		ctx.updateNavHighlight();
 
