@@ -336,6 +336,36 @@ module.exports = function createInteractionHandlers(ctx) {
 	function bindStaticControls() {
 		bindSubmitSlideControls(ctx.container.querySelector('.quiz-track-item[data-slide-kind="submit"]'));
 		bindResultsSlideControls(ctx.container.querySelector('.quiz-track-item[data-slide-kind="results"]'));
+
+		// ── Flèches clavier : navigation entre questions ──
+		const onArrowKey = e => {
+			if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
+			if (ctx.__quizDestroyed) return;
+			const tag = document.activeElement?.tagName;
+			if (tag === "TEXTAREA" || tag === "INPUT" || tag === "SELECT") return;
+			if (document.activeElement?.isContentEditable) return;
+			if (ctx.quizState.isSliding) return;
+
+			const cur = ctx.quizState.current;
+			let navigated = false;
+			if (e.key === "ArrowRight") {
+				if (ctx.isQuestionSlideIndex(cur) && cur < ctx.quiz.length - 1) { ctx.goToQuestion(cur + 1); navigated = true; }
+				else if (ctx.isQuestionSlideIndex(cur) && cur === ctx.quiz.length - 1) {
+					if (ctx.quizState.locked) ctx.goToSlide(ctx.SLIDE_RESULTS_INDEX, { forceRender: false });
+					else ctx.goToSubmit();
+					navigated = true;
+				}
+				else if (ctx.isSubmitSlideIndex(cur)) { ctx.goToResults(); navigated = true; }
+			} else {
+				if (ctx.isResultsSlideIndex(cur)) { ctx.goToQuestion(ctx.quizState.lastQuestionIndex); navigated = true; }
+				else if (ctx.isSubmitSlideIndex(cur)) { ctx.goToQuestion(ctx.quizState.lastQuestionIndex); navigated = true; }
+				else if (ctx.isQuestionSlideIndex(cur) && cur > 0) { ctx.goToQuestion(cur - 1); navigated = true; }
+			}
+			if (navigated) e.preventDefault();
+		};
+		document.addEventListener("keydown", onArrowKey);
+		ctx.__quizGlobalCleanups.push(() => document.removeEventListener("keydown", onArrowKey));
+
 		const bindNavTab = (tab, navigateFn) => {
 			if (!tab) return;
 			tab.addEventListener("pointerdown", e => {
