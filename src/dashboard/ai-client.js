@@ -2,8 +2,8 @@
 
 /* ══════════════════════════════════════════════════════════
    AI CLIENT — Anthropic + Ollama
-   Anthropic: fetch() avec header anti-CORS.
-   Ollama: fetch() pour lire les corps d'erreur.
+   Anthropic: fetch() avec header anti-CORS. Vision API pour images.
+   Ollama: fetch() pour lire les corps d'erreur. Multimodal pour images.
 ══════════════════════════════════════════════════════════ */
 
 function createAiClient(plugin) {
@@ -14,7 +14,7 @@ function createAiClient(plugin) {
 	};
 
 	async function generate(prompt, options = {}) {
-		const { count = 5, type = "Mixte", source = "topic" } = options;
+		const { count = 5, type = "Mixte", source = "topic", images = [] } = options;
 		const provider = plugin.settings.aiProvider || "anthropic";
 		const apiKey = (plugin.settings.aiApiKey || "").trim();
 		const model = plugin.settings.aiModel || DEFAULT_MODELS[provider];
@@ -35,14 +35,14 @@ function createAiClient(plugin) {
 			: "des questions à réponse texte libre";
 
 		const systemPrompt = `Tu es un générateur de quiz. Génère exactement ${count} questions de quiz sous forme de tableau JSON5. Chaque question doit avoir :
-- title: titre court de la question
-- prompt: énoncé complet de la question
-- options: tableau des options (pour choix unique/multiple, 3-5 options)
-- correctIndex: index de la bonne réponse (pour choix unique)
-- correctIndexes: tableau des index des bonnes réponses (pour choix multiple)
-- multiSelect: true si choix multiple
-- type: "text" pour texte libre, absent sinon
-- answer: réponse attendue (pour texte libre)
+	- title: titre court de la question
+	- prompt: énoncé complet de la question
+	- options: tableau des options (pour choix unique/multiple, 3-5 options)
+	- correctIndex: index de la bonne réponse (pour choix unique)
+	- correctIndexes: tableau des index des bonnes réponses (pour choix multiple)
+	- multiSelect: true si choix multiple
+	- type: "text" pour texte libre, absent sinon
+	- answer: réponse attendue (pour texte libre)
 
 Génère ${typeInstruction}. Réponds UNIQUEMENT avec le tableau JSON5, sans explication ni formatage.`;
 
@@ -59,13 +59,13 @@ Génère ${typeInstruction}. Réponds UNIQUEMENT avec le tableau JSON5, sans exp
 			const authHeader = provider === "ollama-cloud"
 				? { "Authorization": "Bearer " + (plugin.settings.aiOllamaCloudKey || "").trim() }
 				: {};
-			return callOllama(model, systemPrompt, userPrompt, ollamaUrl, authHeader);
+			return callOllama(model, systemPrompt, userPrompt, ollamaUrl, authHeader, images);
 		} else {
-			return callAnthropic(apiKey, model, systemPrompt, userPrompt);
+			return callAnthropic(apiKey, model, systemPrompt, userPrompt, images);
 		}
 	}
 
-	async function callAnthropic(apiKey, model, systemPrompt, userPrompt) {
+	async function callAnthropic(apiKey, model, systemPrompt, userPrompt, images = []) {
 		// Use fetch() directly — Obsidian runs in Electron where fetch bypasses CORS
 		// This is the same approach used by obsidian-copilot and other working plugins
 		const headers = {
@@ -103,7 +103,22 @@ Génère ${typeInstruction}. Réponds UNIQUEMENT avec le tableau JSON5, sans exp
 			console.warn("[quiz-blocks] Model list request failed:", err.message);
 		}
 
-		// ── Step 2: Call Messages API ──
+		// ── Step 2: Build user content (text + images for Vision API) ──
+		const userContent = images.length > 0
+			? [
+				...images.map(img => ({
+					type: "image",
+					source: {
+						type: "base64",
+						media_type: img.mediaType,
+						data: img.base64
+					}
+				})),
+				{ type: "text", text: userPrompt }
+			]
+			: userPrompt;
+
+		// ── Step 3: Call Messages API ──
 		const attempts = [
 			{
 				label: "with system param",
@@ -111,7 +126,7 @@ Génère ${typeInstruction}. Réponds UNIQUEMENT avec le tableau JSON5, sans exp
 					model,
 					max_tokens: 4096,
 					system: systemPrompt,
-					messages: [{ role: "user", content: userPrompt }]
+					messages: [{ role: "user", content: userContent }]
 				}
 			},
 			{
@@ -119,7 +134,16 @@ Génère ${typeInstruction}. Réponds UNIQUEMENT avec le tableau JSON5, sans exp
 				body: {
 					model,
 					max_tokens: 4096,
-					messages: [{ role: "user", content: systemPrompt + "\n\n" + userPrompt }]
+					messages: [{ role: "user", content: images.length > 0
+						? [...images.map(img => ({
+							type: "image",
+							source: {
+								type: "base64",
+								media_type: img.mediaType,
+								data: img.base64
+							}
+						})), { type: "text", text: systemPrompt + "\n\n" + userPrompt }]
+						: systemPrompt + "\n\n" + userPrompt }]
 				}
 			}
 		];
@@ -186,7 +210,7 @@ Génère ${typeInstruction}. Réponds UNIQUEMENT avec le tableau JSON5, sans exp
 		}
 	}
 
-	async function callOllama(model, systemPrompt, userPrompt, ollamaUrl, authHeaders) {
+	async function callOllama(model, systemPrompt, userPrompt, ollamaUrl, authHeaders, images = []) {
 		if (!ollamaUrl) {
 			ollamaUrl = (plugin.settings.aiOllamaUrl || "http://localhost:11434").replace(/\/+$/, "");
 		}
@@ -229,6 +253,13 @@ Génère ${typeInstruction}. Réponds UNIQUEMENT avec le tableau JSON5, sans exp
 
 		// ── Step 2: Call /api/chat for better instruction following ──
 		// Use fetch() to read error response bodies (requestUrl hides them)
+		// Build user message with images for multimodal support
+		const userMessage = {
+			role: "user",
+			content: userPrompt,
+			...(images.length > 0 ? { images: images.map(img => img.base64) } : {})
+		};
+
 		let data;
 		try {
 			const resp = await fetch(`${ollamaUrl}/api/chat`, {
@@ -238,7 +269,7 @@ Génère ${typeInstruction}. Réponds UNIQUEMENT avec le tableau JSON5, sans exp
 					model,
 					messages: [
 						{ role: "system", content: systemPrompt },
-						{ role: "user", content: userPrompt }
+						userMessage
 					],
 					stream: false,
 					format: {

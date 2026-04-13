@@ -68,6 +68,7 @@ function createAiHandlers(ctx) {
 	}
 
 	async function render(container) {
+		containerRef = container;
 		container.empty();
 
 		// ── Layout 2 colonnes ──
@@ -263,6 +264,16 @@ function createAiHandlers(ctx) {
 		renderPreview(previewCol);
 	}
 
+	let containerRef = null;
+
+	function addImageFiles(files) {
+		for (const file of files) {
+			if (!file.type.startsWith("image/")) continue;
+			images.push({ file, url: URL.createObjectURL(file) });
+		}
+		render(containerRef);
+	}
+
 	function renderImageTab(container) {
 		const dropZone = container.createDiv({ cls: "qbd-ai-drop-zone" });
 		dropZone.createEl("p", { text: "Glissez des images ici" });
@@ -274,6 +285,9 @@ function createAiHandlers(ctx) {
 		});
 		fileInput.accept = "image/*";
 		fileInput.multiple = true;
+		fileInput.addEventListener("change", (e) => {
+			if (e.target.files?.length) addImageFiles(Array.from(e.target.files));
+		});
 
 		dropZone.addEventListener("click", () => fileInput.click());
 		dropZone.addEventListener("dragover", (e) => { e.preventDefault(); dropZone.classList.add("qbd-ai-drop-zone--hover"); });
@@ -281,6 +295,7 @@ function createAiHandlers(ctx) {
 		dropZone.addEventListener("drop", (e) => {
 			e.preventDefault();
 			dropZone.classList.remove("qbd-ai-drop-zone--hover");
+			if (e.dataTransfer?.files?.length) addImageFiles(Array.from(e.dataTransfer.files));
 		});
 
 		if (images.length > 0) {
@@ -292,8 +307,9 @@ function createAiHandlers(ctx) {
 				const removeBtn = thumb.createEl("button", { cls: "qbd-ai-image-remove", text: "✕" });
 				const idx = i;
 				removeBtn.addEventListener("click", () => {
+					URL.revokeObjectURL(images[idx].url);
 					images.splice(idx, 1);
-					render(container.parentElement.parentElement);
+					render(containerRef);
 				});
 			}
 		}
@@ -403,10 +419,26 @@ function createAiHandlers(ctx) {
 				: currentTab === "text" ? textValue
 				: "Analyse les images fournies";
 
+			// Convert image files to base64 for vision API
+			let imageData = [];
+			if (currentTab === "image" && images.length > 0) {
+				imageData = await Promise.all(images.map(async (img) => {
+					const buffer = await img.file.arrayBuffer();
+					const bytes = new Uint8Array(buffer);
+					let binary = "";
+					for (let i = 0; i < bytes.length; i++) {
+						binary += String.fromCharCode(bytes[i]);
+					}
+					const base64 = btoa(binary);
+					return { base64, mediaType: img.file.type || "image/png" };
+				}));
+			}
+
 			generatedQuestions = await client.generate(prompt, {
 				count: questionCount,
 				type: questionType,
-				source: currentTab
+				source: currentTab,
+				images: imageData
 			});
 		} catch (err) {
 			errorMessage = err.message || "Vérifiez vos paramètres IA dans les paramètres du plugin.";
