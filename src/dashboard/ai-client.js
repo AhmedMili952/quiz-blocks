@@ -43,6 +43,7 @@ function createAiClient(plugin) {
 	- multiSelect: true si choix multiple
 	- type: "text" pour texte libre, absent sinon
 	- answer: réponse attendue (pour texte libre)
+		- learn: un paragraphe de leçon explicative qui enseigne le concept avant la question (optionnel mais recommandé pour les quiz éducatifs)
 
 Génère ${typeInstruction}. Réponds UNIQUEMENT avec le tableau JSON5, sans explication ni formatage.`;
 
@@ -287,7 +288,8 @@ Génère ${typeInstruction}. Réponds UNIQUEMENT avec le tableau JSON5, sans exp
 										correctIndexes: { type: "array", items: { type: "number" } },
 										multiSelect: { type: "boolean" },
 										type: { type: "string" },
-										answer: { type: "string" }
+										answer: { type: "string" },
+									learn: { type: "string" }
 									},
 									required: ["title", "prompt"]
 								}

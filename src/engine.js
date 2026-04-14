@@ -34,7 +34,7 @@ async function renderInteractiveQuiz(context) {
 		return;
 	}
 
-	const { questions: quiz, examOptions } = extractExamOptions(rawQuiz);
+	const { questions: quiz, quizMode, examOptions, learnExamOptions } = extractExamOptions(rawQuiz);
 
 	if (!Array.isArray(quiz) || quiz.length === 0) {
 		renderParagraph(container, "⚠️ Aucune question fournie au moteur de quiz.");
@@ -80,9 +80,11 @@ async function renderInteractiveQuiz(context) {
 		sourcePath,
 		Notice,
 		quiz,
+		quizMode,
 		isExamMode,
 		examOptions,
 		examDurationMs,
+		learnExamOptions,
 		get examTimeRemaining() { return examTimeRemaining; },
 		set examTimeRemaining(v) { examTimeRemaining = v; },
 		get examStarted() { return examStarted; },
@@ -226,9 +228,24 @@ function initSelections() {
 const initOrderingPicks = () => quiz.map(() => null);
 const initMatchPicks = () => quiz.map(() => null);
 
-const SLIDE_SUBMIT_INDEX = quiz.length;
-const SLIDE_RESULTS_INDEX = quiz.length + 1;
-const TOTAL_SLIDES = quiz.length + 2;
+// ── Slide Map : index dynamique basé sur le mode ──
+function buildSlideMap() {
+	const map = [];
+	for (let i = 0; i < quiz.length; i++) {
+		if (quizMode === "learn" && (quiz[i].learn || quiz[i].learnHtml || quiz[i]._learnHtml)) {
+			map.push({ type: "learn", questionIndex: i });
+		}
+		map.push({ type: "question", questionIndex: i });
+	}
+	map.push({ type: "submit" });
+	map.push({ type: "results" });
+	return map;
+}
+
+let slideMap = buildSlideMap();
+const SLIDE_SUBMIT_INDEX = slideMap.length - 2;
+const SLIDE_RESULTS_INDEX = slideMap.length - 1;
+const TOTAL_SLIDES = slideMap.length;
 
 const quizState = {
 	selections: initSelections(),
@@ -246,6 +263,7 @@ const quizState = {
 
 // Ajouter quizState, les constantes et les fonctions utilitaires au contexte AVANT de créer les modules qui en dépendent
 ctx.quizState = quizState;
+ctx.slideMap = slideMap;
 ctx.SLIDE_SUBMIT_INDEX = SLIDE_SUBMIT_INDEX;
 ctx.SLIDE_RESULTS_INDEX = SLIDE_RESULTS_INDEX;
 ctx.TOTAL_SLIDES = TOTAL_SLIDES;
@@ -255,18 +273,36 @@ ctx.initOrderingPicks = initOrderingPicks;
 ctx.initMatchPicks = initMatchPicks;
 
 // Définir les fonctions utilitaires APRÈS les constantes SLIDE_* pour éviter TDZ
-const isQuestionSlideIndex = i => i >= 0 && i < quiz.length;
-const isSubmitSlideIndex = i => i === SLIDE_SUBMIT_INDEX;
-const isResultsSlideIndex = i => i === SLIDE_RESULTS_INDEX;
+const isQuestionSlideIndex = i => slideMap[i]?.type === "question";
+const isLearnSlideIndex = i => slideMap[i]?.type === "learn";
+const isSubmitSlideIndex = i => slideMap[i]?.type === "submit";
+const isResultsSlideIndex = i => slideMap[i]?.type === "results";
 const clampSlideIndex = i => Math.max(0, Math.min(TOTAL_SLIDES - 1, i));
 const getSlidingWindow = () => ({ from: Math.max(0, Math.min(quizState.prevCurrent, quizState.current)), to: Math.min(TOTAL_SLIDES - 1, Math.max(quizState.prevCurrent, quizState.current)) });
+const getSlideIndexForQuestion = qi => {
+	for (let si = 0; si < slideMap.length; si++) {
+		if (slideMap[si].type === "question" && slideMap[si].questionIndex === qi) return si;
+	}
+	return -1;
+};
+const getSlideIndexForLearn = qi => {
+	for (let si = 0; si < slideMap.length; si++) {
+		if (slideMap[si].type === "learn" && slideMap[si].questionIndex === qi) return si;
+	}
+	return -1;
+};
+const hasLearnSlide = qi => quizMode === "learn" && (quiz[qi]?.learn || quiz[qi]?.learnHtml || quiz[qi]?._learnHtml);
 
 // Exposer les fonctions utilitaires dans ctx
 ctx.isQuestionSlideIndex = isQuestionSlideIndex;
+ctx.isLearnSlideIndex = isLearnSlideIndex;
 ctx.isSubmitSlideIndex = isSubmitSlideIndex;
 ctx.isResultsSlideIndex = isResultsSlideIndex;
 ctx.clampSlideIndex = clampSlideIndex;
 ctx.getSlidingWindow = getSlidingWindow;
+ctx.getSlideIndexForQuestion = getSlideIndexForQuestion;
+ctx.getSlideIndexForLearn = getSlideIndexForLearn;
+ctx.hasLearnSlide = hasLearnSlide;
 
 if (typeof container.__quizDestroy === "function") {
 	try { container.__quizDestroy(); } catch (_) {}
@@ -592,8 +628,9 @@ function refreshQuestionSlide(qi, { syncHeight = true } = {}) {
 	}
 
 	const focusDescriptor = ctx.focus.getQuestionFocusDescriptor(oldItem);
+	const slideIdx = getSlideIndexForQuestion(qi);
 	ctx.viewport.unobserveTrackItemInAllSlidesResizeObserver(oldItem);
-	ctx.lifecycle.bumpSlideGeneration(qi);
+	if (slideIdx >= 0) ctx.lifecycle.bumpSlideGeneration(slideIdx);
 
 	const tmp = document.createElement("div");
 		tmp.innerHTML = ctx.cards.questionCardHtml(qi).trim();
@@ -617,13 +654,13 @@ function refreshQuestionSlide(qi, { syncHeight = true } = {}) {
 
 	ctx.focus.restoreQuestionFocus(newItem, focusDescriptor);
 
-	if (syncHeight && qi === quizState.current) {
+	if (syncHeight && slideIdx === quizState.current) {
 		requestAnimationFrame(() => {
 			if (__quizDestroyed) return;
-			__quizSlideHeightCache.delete(qi);
+			__quizSlideHeightCache.delete(slideIdx);
 			ctx.warming.bindCurrentSlideMediaHeightSync();
 			ctx.viewport.bindActiveSlideResizeObserver();
-			ctx.viewport.scheduleViewportHeightSync({ index: qi, animate: false, refresh: true });
+			ctx.viewport.scheduleViewportHeightSync({ index: slideIdx, animate: false, refresh: true });
 		});
 	}
 
@@ -632,7 +669,8 @@ function refreshQuestionSlide(qi, { syncHeight = true } = {}) {
 ctx.refreshQuestionSlide = refreshQuestionSlide;
 
 function commitQuestionInteraction(qi, { syncHeight = true } = {}) {
-	__quizSlideHeightCache.delete(qi);
+	const slideIdx = getSlideIndexForQuestion(qi);
+	if (slideIdx >= 0) __quizSlideHeightCache.delete(slideIdx);
 	refreshQuestionSlide(qi, { syncHeight });
 	refreshMetaSlides();
 }
@@ -660,7 +698,16 @@ function render() {
     ctx.viewport.destroyViewportResizeObserver();
     ctx.track.clearTrackTransitionFallback();
 
-    container.innerHTML = `${ctx.exam.examTimerHtml()}${ctx.cards.navHtml()}<div class="quiz-track-viewport" data-quiz-height-ready="0"><div class="quiz-track">${quiz.map((_, i) => ctx.cards.questionCardHtml(i)).join("")}${ctx.cards.submitSlideHtml()}${ctx.cards.resultsSlideHtml()}</div></div>`;
+    // Construire le HTML des slides à partir du slideMap
+    const slidesHtml = slideMap.map(entry => {
+        if (entry.type === "learn") return ctx.cards.learnSlideHtml(entry.questionIndex);
+        if (entry.type === "question") return ctx.cards.questionCardHtml(entry.questionIndex);
+        if (entry.type === "submit") return ctx.cards.submitSlideHtml();
+        if (entry.type === "results") return ctx.cards.resultsSlideHtml();
+        return "";
+    }).join("");
+
+    container.innerHTML = `${ctx.exam.examTimerHtml()}${ctx.cards.navHtml()}<div class="quiz-track-viewport" data-quiz-height-ready="0"><div class="quiz-track">${slidesHtml}</div></div>`;
     __quizSubmitSlideSignature = ctx.state.getSubmitSlideSignature();
     __quizResultsSlideSignature = ctx.state.getResultsSlideSignature();
 
@@ -691,6 +738,7 @@ function render() {
     ctx.warming.bindAllTrackImages();
     ctx.resources.bindQuizResourceButtons(container);
     container.querySelectorAll('.quiz-track-item[data-slide-kind="question"]').forEach(ctx.interactions.bindQuestionTrackItem);
+    container.querySelectorAll('.quiz-track-item[data-slide-kind="learn"]').forEach(ctx.interactions.bindLearnSlideControls);
     ctx.interactions.bindStaticControls();
 
     if (isExamMode && !examStarted) {
@@ -714,6 +762,42 @@ function render() {
 
 // Assign render function to ctx AFTER it's defined to avoid TDZ
 ctx.render = render;
+
+// ── Mode Apprentissage → Examen : transition ──
+function switchToExamMode() {
+	if (quizMode !== "learn" || !learnExamOptions) return;
+
+	// Changer les flags de mode
+	ctx.quizMode = "exam";
+	ctx.isExamMode = true;
+	ctx.examOptions = learnExamOptions;
+	ctx.examDurationMs = learnExamOptions.durationMinutes * 60 * 1000;
+	ctx.examTimeRemaining = ctx.examDurationMs;
+
+	// Reconstruire le slideMap sans les learn slides
+	slideMap.length = 0;
+	for (let i = 0; i < quiz.length; i++) {
+		slideMap.push({ type: "question", questionIndex: i });
+	}
+	slideMap.push({ type: "submit" });
+	slideMap.push({ type: "results" });
+
+	// Mettre à jour les constantes de slide
+	ctx.SLIDE_SUBMIT_INDEX = slideMap.length - 2;
+	ctx.SLIDE_RESULTS_INDEX = slideMap.length - 1;
+	ctx.TOTAL_SLIDES = slideMap.length;
+
+	// Redimensionner le tableau des générations de slides
+	__quizSlideGeneration.length = slideMap.length;
+	for (let i = 0; i < slideMap.length; i++) {
+		if (__quizSlideGeneration[i] === undefined) __quizSlideGeneration[i] = 0;
+	}
+
+	// Reset complet du quiz en mode examen
+	ctx.state.resetQuiz();
+}
+
+ctx.switchToExamMode = switchToExamMode;
 
 // Assign remaining local functions to ctx
 // Navigation functions use ctx.state.*

@@ -9,7 +9,8 @@ module.exports = function createInteractionHandlers(ctx) {
 	let __quizZoomFixHandler = null;
 
 	function commitQuestionInteraction(qi, { syncHeight = true } = {}) {
-		ctx.__quizSlideHeightCache?.delete(qi);
+		const slideIdx = ctx.getSlideIndexForQuestion(qi);
+		if (slideIdx >= 0) ctx.__quizSlideHeightCache?.delete(slideIdx);
 		ctx.refreshQuestionSlide(qi, { syncHeight });
 		ctx.refreshMetaSlides();
 	}
@@ -324,6 +325,22 @@ module.exports = function createInteractionHandlers(ctx) {
 			e.preventDefault();
 			ctx.zoom.restartQuizWithZoomBlurTransition();
 		});
+		const examBtn = rootEl.querySelector(".quiz-exam-btn");
+		if (examBtn) examBtn.addEventListener("click", e => {
+			e.preventDefault();
+			ctx.switchToExamMode();
+		});
+	}
+
+	function bindLearnSlideControls(trackItem) {
+		if (!trackItem) return;
+		const qi = Number(trackItem.dataset.qi);
+		if (!Number.isFinite(qi) || qi < 0 || qi >= ctx.quiz.length) return;
+
+		const nextBtn = trackItem.querySelector(".quiz-learn-next-btn");
+		if (nextBtn) nextBtn.addEventListener("click", () => {
+			ctx.goToQuestion(qi);
+		});
 	}
 
 	function bindExamStartButton() {
@@ -349,17 +366,29 @@ module.exports = function createInteractionHandlers(ctx) {
 			const cur = ctx.quizState.current;
 			let navigated = false;
 			if (e.key === "ArrowRight") {
-				if (ctx.isQuestionSlideIndex(cur) && cur < ctx.quiz.length - 1) { ctx.goToQuestion(cur + 1); navigated = true; }
-				else if (ctx.isQuestionSlideIndex(cur) && cur === ctx.quiz.length - 1) {
-					if (ctx.quizState.locked) ctx.goToSlide(ctx.SLIDE_RESULTS_INDEX, { forceRender: false });
-					else ctx.goToSubmit();
+				if (ctx.isLearnSlideIndex(cur)) {
+					const qi = ctx.slideMap[cur].questionIndex;
+					ctx.goToQuestion(qi);
 					navigated = true;
+				} else if (ctx.isQuestionSlideIndex(cur)) {
+					const qi = ctx.slideMap[cur].questionIndex;
+					if (qi < ctx.quiz.length - 1) {
+						ctx.goToSlide(cur + 1, { forceRender: false });
+						navigated = true;
+					} else {
+						if (ctx.quizState.locked) ctx.goToSlide(ctx.SLIDE_RESULTS_INDEX, { forceRender: false });
+						else ctx.goToSubmit();
+						navigated = true;
+					}
 				}
 				else if (ctx.isSubmitSlideIndex(cur)) { ctx.goToResults(); navigated = true; }
 			} else {
 				if (ctx.isResultsSlideIndex(cur)) { ctx.goToQuestion(ctx.quizState.lastQuestionIndex); navigated = true; }
 				else if (ctx.isSubmitSlideIndex(cur)) { ctx.goToQuestion(ctx.quizState.lastQuestionIndex); navigated = true; }
-				else if (ctx.isQuestionSlideIndex(cur) && cur > 0) { ctx.goToQuestion(cur - 1); navigated = true; }
+				else if (cur > 0) {
+					ctx.goToSlide(cur - 1, { forceRender: false });
+					navigated = true;
+				}
 			}
 			if (navigated) e.preventDefault();
 		};
@@ -494,6 +523,7 @@ module.exports = function createInteractionHandlers(ctx) {
 		bindQuestionTrackItem,
 		bindSubmitSlideControls,
 		bindResultsSlideControls,
+		bindLearnSlideControls,
 		bindExamStartButton,
 		bindStaticControls,
 		bindZoomFixHandlers,

@@ -1,0 +1,106 @@
+/* =========================================================
+   Learn Mode — Lecon slides + Passer l'examen button
+   ========================================================= */
+
+.quiz-learn-card{
+  margin: 10px 0 18px;
+  padding: 28px 24px 22px;
+  border-radius: 20px;
+  border: 1px solid color-mix(in srgb, var(--background-modifier-border) 80%, var(--quiz-primary) 20%);
+  background:
+    linear-gradient(180deg,
+      color-mix(in srgb, var(--background-primary) 92%, var(--quiz-primary) 8%) 0%,
+      color-mix(in srgb, var(--background-primary) 97%, var(--quiz-primary) 3%) 100%
+    );
+  box-shadow:
+    0 12px 32px rgba(0,0,0,0.08),
+    0 0 0 1px color-mix(in srgb, var(--quiz-primary) 5%, transparent) inset;
+}
+
+.quiz-learn-card h2{
+  margin: 0 0 14px;
+  font-size: 1.6em;
+  font-weight: 800;
+  color: var(--quiz-primary);
+}
+
+.quiz-learn-content{
+  margin: 0 0 20px;
+  font-size: 0.935em;
+  line-height: 1.65;
+  color: var(--text-normal);
+}
+
+.quiz-learn-content p{
+  margin: 0 0 12px;
+}
+
+.quiz-learn-content p:last-child{
+  margin-bottom: 0;
+}
+
+.quiz-learn-content pre{
+  background: var(--code-background);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  padding: 12px 14px;
+  margin: 10px 0;
+  overflow-x: auto;
+  font-family: var(--font-monospace);
+  font-size: 0.85em;
+  line-height: 1.5;
+}
+
+.quiz-learn-content code{
+  background: var(--code-background);
+  border-radius: 4px;
+  padding: 2px 5px;
+  font-family: var(--font-monospace);
+  font-size: 0.9em;
+}
+
+.quiz-learn-content pre code{
+  background: transparent;
+  border-radius: 0;
+  padding: 0;
+  font-size: inherit;
+}
+
+.quiz-learn-card .quiz-actions{
+  margin-top: 8px;
+}
+
+.quiz-learn-card .quiz-action-btn{
+  min-width: 176px;
+}
+
+/* ── "Passer l'examen" button on results page ── */
+
+.quiz-exam-btn{
+  background: color-mix(in srgb, var(--quiz-primary) 14%, var(--background-secondary)) !important;
+  color: var(--quiz-primary) !important;
+  border: 1px solid color-mix(in srgb, var(--quiz-primary) 30%, var(--background-modifier-border)) !important;
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.06),
+    0 0 0 1px color-mix(in srgb, var(--quiz-primary) 6%, transparent) inset !important;
+}
+
+.quiz-exam-btn:hover,
+.quiz-exam-btn:focus-visible{
+  background: color-mix(in srgb, var(--quiz-primary) 22%, var(--background-secondary)) !important;
+  border-color: color-mix(in srgb, var(--quiz-primary) 50%, var(--background-modifier-border)) !important;
+  box-shadow:
+    0 0 0 1.5px color-mix(in srgb, var(--quiz-primary) 16%, transparent),
+    0 0 16px color-mix(in srgb, var(--quiz-primary) 12%, transparent) !important;
+  transform: translate3d(0,-2px,0);
+}
+
+/* ── Light theme adjustments ── */
+
+.theme-light .quiz-learn-card{
+  box-shadow: none !important;
+}
+
+.theme-light .quiz-exam-btn{
+  box-shadow: none !important;
+}

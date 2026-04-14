@@ -32,21 +32,45 @@ function parseQuizSource(source) {
 }
 
 function extractExamOptions(quizArray) {
-	if (!Array.isArray(quizArray) || quizArray.length === 0) return { questions: quizArray, examOptions: null };
+	if (!Array.isArray(quizArray) || quizArray.length === 0) return { questions: quizArray, quizMode: "quiz", examOptions: null, learnExamOptions: null };
 
 	const lastItem = quizArray[quizArray.length - 1];
-	if (lastItem && typeof lastItem === "object" && lastItem.examMode === true) {
-		return {
-			questions: quizArray.slice(0, -1),
-			examOptions: {
+	const isConfigObject = lastItem && typeof lastItem === "object" && !lastItem.prompt && (lastItem.examMode === true || typeof lastItem.mode === "string");
+
+	if (isConfigObject) {
+		// Déterminer le mode : "learn" | "exam" | "quiz"
+		const mode = typeof lastItem.mode === "string" ? lastItem.mode : (lastItem.examMode === true ? "exam" : "quiz");
+		const quizMode = (mode === "learn" || mode === "exam" || mode === "quiz") ? mode : "quiz";
+
+		// Options d'examen (mode exam actif)
+		let examOptions = null;
+		if (quizMode === "exam") {
+			examOptions = {
 				durationMinutes: Math.max(1, Math.min(180, Number(lastItem.examDurationMinutes) || 10)),
 				autoSubmit: lastItem.examAutoSubmit !== false,
 				showTimer: lastItem.examShowTimer !== false
-			}
+			};
+		}
+
+		// Options d'examen pour le mode learn (utilisé par "Passer l'examen")
+		let learnExamOptions = null;
+		if (quizMode === "learn" && (lastItem.examDurationMinutes || lastItem.examMode)) {
+			learnExamOptions = {
+				durationMinutes: Math.max(1, Math.min(180, Number(lastItem.examDurationMinutes) || 10)),
+				autoSubmit: lastItem.examAutoSubmit !== false,
+				showTimer: lastItem.examShowTimer !== false
+			};
+		}
+
+		return {
+			questions: quizArray.slice(0, -1),
+			quizMode,
+			examOptions,
+			learnExamOptions
 		};
 	}
 
-	return { questions: quizArray, examOptions: null };
+	return { questions: quizArray, quizMode: "quiz", examOptions: null, learnExamOptions: null };
 }
 
 function renderParagraph(container, text) {

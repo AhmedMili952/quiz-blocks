@@ -142,3 +142,54 @@ Copy the block below into any Obsidian note to try all question types at once.
 ]
 ```
 ````
+
+---
+
+## Learn Mode
+
+````md
+```quiz-blocks
+[
+  {
+    title: "Système d'information",
+    prompt: "Un SI est composé de quelles ressources principales ?",
+    options: [
+      "Uniquement de logiciels",
+      "Matériel, logiciels, données, procédures et personnes",
+      "Seulement du matériel informatique",
+      "Des données et des réseaux uniquement",
+    ],
+    correctIndex: 1,
+    learn: "Un système d'information (SI) est un ensemble organisé de ressources : matériel, logiciels, données, procédures et personnes. Le SI permet de collecter, stocker, traiter et distribuer l'information nécessaire au fonctionnement d'une organisation. Les 5 composantes sont interdépendantes et doivent être cohérentes entre elles.",
+  },
+  {
+    title: "Sécurité — CIA",
+    prompt: "Quels sont les trois piliers de la sécurité de l'information ?",
+    options: [
+      "Confidentialité, Intégrité, Disponibilité",
+      "Contrôle, Inspection, Audit",
+      "Cryptage, Isolation, Anonymat",
+      "Certification, Investigation, Autorisation",
+    ],
+    correctIndex: 0,
+    learn: "Le triade CIA (Confidentialité, Intégrité, Disponibilité) est le modèle fondamental de la sécurité de l'information. La **confidentialité** garantit que seules les personnes autorisées accèdent aux données. L'**intégrité** assure que les données ne sont pas altérées. La **disponibilité** garantit que les ressources sont accessibles quand nécessaire.",
+  },
+  {
+    title: "Réseau — TCP/IP",
+    prompt: "Quel protocole assure une livraison fiable des données sur un réseau ?",
+    options: [
+      "UDP",
+      "ICMP",
+      "TCP",
+      "ARP",
+    ],
+    correctIndex: 2,
+    learn: "TCP (Transmission Control Protocol) est un protocole de transport fiable qui établit une connexion, découpe les données en segments, les numérote, et confirme leur réception. Contrairement à UDP qui envoie sans vérification, TCP garantit que toutes les données arrivent dans l'ordre et sans erreur.",
+  },
+  {
+    mode: "learn",
+    examDurationMinutes: 10,
+  },
+]
+```
+````

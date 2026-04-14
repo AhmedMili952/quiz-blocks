@@ -136,7 +136,7 @@ module.exports = function createStateHandlers(ctx) {
 		const token = ctx.quizState.slideToken;
 		ctx.quizState.prevCurrent = ctx.quizState.current;
 		ctx.quizState.current = next;
-		if (ctx.isQuestionSlideIndex(next)) ctx.quizState.lastQuestionIndex = next;
+		if (ctx.isQuestionSlideIndex(next)) ctx.quizState.lastQuestionIndex = ctx.slideMap[next].questionIndex;
 		updateNavHighlight();
 		ctx.quizState.isSliding = true;
 		ctx.setSlidingClass(true);
@@ -165,7 +165,7 @@ module.exports = function createStateHandlers(ctx) {
 		const token = ctx.quizState.slideToken;
 		ctx.quizState.prevCurrent = ctx.quizState.current;
 		ctx.quizState.current = targetIndex;
-		if (ctx.isQuestionSlideIndex(targetIndex)) ctx.quizState.lastQuestionIndex = targetIndex;
+		if (ctx.isQuestionSlideIndex(targetIndex)) ctx.quizState.lastQuestionIndex = ctx.slideMap[targetIndex].questionIndex;
 		updateNavHighlight();
 		ctx.quizState.isSliding = true;
 		ctx.setSlidingClass(true);
@@ -193,17 +193,18 @@ module.exports = function createStateHandlers(ctx) {
 
 	const goToQuestion = index => {
 		ctx.quizState.pendingResultsLock = false;
-		goToSlide(ctx.clamp(index, 0, ctx.quiz.length - 1), { forceRender: false });
+		const slideIdx = ctx.getSlideIndexForQuestion(index);
+		if (slideIdx >= 0) goToSlide(slideIdx, { forceRender: false });
 	};
 
 	function goToSubmit() {
-		if (ctx.isQuestionSlideIndex(ctx.quizState.current)) ctx.quizState.lastQuestionIndex = ctx.quizState.current;
+		if (ctx.isQuestionSlideIndex(ctx.quizState.current)) ctx.quizState.lastQuestionIndex = ctx.slideMap[ctx.quizState.current].questionIndex;
 		ctx.quizState.pendingResultsLock = false;
 		goToSlide(ctx.SLIDE_SUBMIT_INDEX, { forceRender: false });
 	}
 
 	function goToResults() {
-		if (ctx.isQuestionSlideIndex(ctx.quizState.current)) ctx.quizState.lastQuestionIndex = ctx.quizState.current;
+		if (ctx.isQuestionSlideIndex(ctx.quizState.current)) ctx.quizState.lastQuestionIndex = ctx.slideMap[ctx.quizState.current].questionIndex;
 		ctx.quizState.pendingResultsLock = true;
 
 		if (ctx.isExamMode && ctx.examStarted && !ctx.examEnded) {

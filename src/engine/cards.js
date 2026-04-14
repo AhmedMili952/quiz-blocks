@@ -6,7 +6,9 @@ module.exports = function createCardRenderers(ctx) {
 	let __quizResultsSlideSignature = "";
 
 	function tabClass(i) {
-		const active = (ctx.isQuestionSlideIndex(ctx.quizState.current) && i === ctx.quizState.current) ? "active" : "";
+		const cur = ctx.quizState.current;
+		const isActive = ctx.isQuestionSlideIndex(cur) && ctx.slideMap[cur]?.questionIndex === i;
+		const active = isActive ? "active" : "";
 		if (!ctx.hasAnyAnswer(i)) return active;
 		if (!ctx.quizState.locked) return `${active} answered`.trim();
 		return `${active} ${ctx.isCorrect(i) ? "correct" : "wrong"}`.trim();
@@ -156,7 +158,28 @@ module.exports = function createCardRenderers(ctx) {
 
 	function resultsSlideHtml() {
 		const { pct, correct, total } = ctx.computeScorePercent();
-		return `<div class="quiz-track-item" data-slide-kind="results"><section class="quiz-result"><h2 class="quiz-result-title" style="font-weight:900;">Résultats</h2><p style="font-size:48px;font-weight:900;margin:18px 0 6px;">${pct}%</p><p>Bonnes réponses : <strong>${correct}/${total}</strong></p><div class="quiz-actions"><button class="quiz-action-btn success quiz-retry-btn" type="button">Recommencer</button></div></section></div>`;
+		const examBtn = (ctx.quizMode === "learn" && ctx.learnExamOptions)
+			? `<button class="quiz-action-btn quiz-exam-btn" type="button">Passer l'examen</button>`
+			: "";
+		return `<div class="quiz-track-item" data-slide-kind="results"><section class="quiz-result"><h2 class="quiz-result-title" style="font-weight:900;">Résultats</h2><p style="font-size:48px;font-weight:900;margin:18px 0 6px;">${pct}%</p><p>Bonnes réponses : <strong>${correct}/${total}</strong></p><div class="quiz-actions"><button class="quiz-action-btn success quiz-retry-btn" type="button">Recommencer</button>${examBtn}</div></section></div>`;
+	}
+
+	function learnSlideHtml(qi) {
+		const q = ctx.quiz[qi];
+		if (!q) return "";
+		const learnHtml = q.learnHtml || q._learnHtml;
+		const learnContent = learnHtml
+			? ctx.sanitize.replaceObsidianEmbedsInHtml(learnHtml)
+			: ctx.sanitize.renderTextWithEmbeds(q.learn || "");
+		return `<div class="quiz-track-item" data-slide-kind="learn" data-qi="${qi}">
+			<section class="quiz-card quiz-learn-card">
+				<h2>Leçon — ${ctx.escapeHtmlText(q.title)}</h2>
+				<div class="quiz-learn-content">${learnContent}</div>
+				<div class="quiz-actions">
+					<button class="quiz-action-btn success quiz-learn-next-btn" type="button">J'ai compris, passer à la question</button>
+				</div>
+			</section>
+		</div>`;
 	}
 
 	function refreshMetaSlides({ force = false } = {}) {
@@ -284,6 +307,7 @@ module.exports = function createCardRenderers(ctx) {
 		matchingCardHtml,
 		submitSlideHtml,
 		resultsSlideHtml,
+		learnSlideHtml,
 		refreshMetaSlides,
 		questionCardHtml
 	};
