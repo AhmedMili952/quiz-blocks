@@ -1,38 +1,36 @@
 /* =========================================================
-   Learn Mode — Lecon slides + Passer l'examen button
+   Learn Mode — Inline learn section + Passer l'examen button
    ========================================================= */
 
-.quiz-learn-card{
-  margin: 10px 0 18px;
-  padding: 28px 24px 22px;
-  border-radius: 20px;
+.quiz-learn-section{
+  margin: 16px 0 0;
+  padding: 16px 18px 14px;
+  border-radius: 12px;
   border: 1px solid color-mix(in srgb, var(--background-modifier-border) 80%, var(--quiz-primary) 20%);
   background:
     linear-gradient(180deg,
       color-mix(in srgb, var(--background-primary) 92%, var(--quiz-primary) 8%) 0%,
       color-mix(in srgb, var(--background-primary) 97%, var(--quiz-primary) 3%) 100%
     );
-  box-shadow:
-    0 12px 32px rgba(0,0,0,0.08),
-    0 0 0 1px color-mix(in srgb, var(--quiz-primary) 5%, transparent) inset;
 }
 
-.quiz-learn-card h2{
-  margin: 0 0 14px;
-  font-size: 1.6em;
-  font-weight: 800;
+.quiz-learn-label{
+  margin: 0 0 8px;
+  font-size: 0.8em;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
   color: var(--quiz-primary);
 }
 
 .quiz-learn-content{
-  margin: 0 0 20px;
   font-size: 0.935em;
   line-height: 1.65;
   color: var(--text-normal);
 }
 
 .quiz-learn-content p{
-  margin: 0 0 12px;
+  margin: 0 0 10px;
 }
 
 .quiz-learn-content p:last-child{
@@ -66,14 +64,6 @@
   font-size: inherit;
 }
 
-.quiz-learn-card .quiz-actions{
-  margin-top: 8px;
-}
-
-.quiz-learn-card .quiz-action-btn{
-  min-width: 176px;
-}
-
 /* ── "Passer l'examen" button on results page ── */
 
 .quiz-exam-btn{
@@ -97,7 +87,7 @@
 
 /* ── Light theme adjustments ── */
 
-.theme-light .quiz-learn-card{
+.theme-light .quiz-learn-section{
   box-shadow: none !important;
 }
 

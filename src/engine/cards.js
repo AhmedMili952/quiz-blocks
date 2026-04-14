@@ -164,23 +164,6 @@ module.exports = function createCardRenderers(ctx) {
 		return `<div class="quiz-track-item" data-slide-kind="results"><section class="quiz-result"><h2 class="quiz-result-title" style="font-weight:900;">Résultats</h2><p style="font-size:48px;font-weight:900;margin:18px 0 6px;">${pct}%</p><p>Bonnes réponses : <strong>${correct}/${total}</strong></p><div class="quiz-actions"><button class="quiz-action-btn success quiz-retry-btn" type="button">Recommencer</button>${examBtn}</div></section></div>`;
 	}
 
-	function learnSlideHtml(qi) {
-		const q = ctx.quiz[qi];
-		if (!q) return "";
-		const learnHtml = q.learnHtml || q._learnHtml;
-		const learnContent = learnHtml
-			? ctx.sanitize.replaceObsidianEmbedsInHtml(learnHtml)
-			: ctx.sanitize.renderTextWithEmbeds(q.learn || "");
-		return `<div class="quiz-track-item" data-slide-kind="learn" data-qi="${qi}">
-			<section class="quiz-card quiz-learn-card">
-				<h2>Leçon — ${ctx.escapeHtmlText(q.title)}</h2>
-				<div class="quiz-learn-content">${learnContent}</div>
-				<div class="quiz-actions">
-					<button class="quiz-action-btn success quiz-learn-next-btn" type="button">J'ai compris, passer à la question</button>
-				</div>
-			</section>
-		</div>`;
-	}
 
 	function refreshMetaSlides({ force = false } = {}) {
 		const nextSubmitSignature = ctx.getSubmitSlideSignature();
@@ -281,6 +264,15 @@ module.exports = function createCardRenderers(ctx) {
 		}
 
 		const hintBtn = (q.hint && String(q.hint).trim()) ? `<button class="quiz-hint-btn" type="button">Indice</button>` : "";
+		const learnSection = (ctx.quizMode === "learn" && (q.learn || q.learnHtml || q._learnHtml) && !ctx.quizState.locked)
+			? (() => {
+				const learnHtml = q.learnHtml || q._learnHtml;
+				const learnContent = learnHtml
+					? ctx.sanitize.replaceObsidianEmbedsInHtml(learnHtml)
+					: ctx.sanitize.renderTextWithEmbeds(q.learn || "");
+				return `<div class="quiz-learn-section"><div class="quiz-learn-label">Leçon</div><div class="quiz-learn-content">${learnContent}</div></div>`;
+			})()
+			: "";
 		const sectionIdAttr = (typeof q?.id === "string" && q.id.trim().length > 0)
 			? ` id="${ctx.escapeHtmlAttr(q.id)}"`
 			: "";
@@ -291,6 +283,7 @@ module.exports = function createCardRenderers(ctx) {
 				${ctx.sanitize.resourceButtonHtml(q)}
 				<div class="quiz-question">${renderQuizPromptHtml(q)}</div>
 				${body}
+				${learnSection}
 				${hintBtn}
 				${ctx.quizState.locked ? explanationHtml(qi) : ""}
 			</section>
@@ -307,7 +300,6 @@ module.exports = function createCardRenderers(ctx) {
 		matchingCardHtml,
 		submitSlideHtml,
 		resultsSlideHtml,
-		learnSlideHtml,
 		refreshMetaSlides,
 		questionCardHtml
 	};

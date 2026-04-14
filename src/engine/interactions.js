@@ -332,17 +332,6 @@ module.exports = function createInteractionHandlers(ctx) {
 		});
 	}
 
-	function bindLearnSlideControls(trackItem) {
-		if (!trackItem) return;
-		const qi = Number(trackItem.dataset.qi);
-		if (!Number.isFinite(qi) || qi < 0 || qi >= ctx.quiz.length) return;
-
-		const nextBtn = trackItem.querySelector(".quiz-learn-next-btn");
-		if (nextBtn) nextBtn.addEventListener("click", () => {
-			ctx.goToQuestion(qi);
-		});
-	}
-
 	function bindExamStartButton() {
 		const startBtn = ctx.container.querySelector('.quiz-exam-start-btn');
 		if (startBtn) {
@@ -366,11 +355,7 @@ module.exports = function createInteractionHandlers(ctx) {
 			const cur = ctx.quizState.current;
 			let navigated = false;
 			if (e.key === "ArrowRight") {
-				if (ctx.isLearnSlideIndex(cur)) {
-					const qi = ctx.slideMap[cur].questionIndex;
-					ctx.goToQuestion(qi);
-					navigated = true;
-				} else if (ctx.isQuestionSlideIndex(cur)) {
+				if (ctx.isQuestionSlideIndex(cur)) {
 					const qi = ctx.slideMap[cur].questionIndex;
 					if (qi < ctx.quiz.length - 1) {
 						ctx.goToSlide(cur + 1, { forceRender: false });
@@ -523,7 +508,6 @@ module.exports = function createInteractionHandlers(ctx) {
 		bindQuestionTrackItem,
 		bindSubmitSlideControls,
 		bindResultsSlideControls,
-		bindLearnSlideControls,
 		bindExamStartButton,
 		bindStaticControls,
 		bindZoomFixHandlers,
