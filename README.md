@@ -1,4 +1,4 @@
-# Quiz Blocks [![plugin](https://img.shields.io/github/v/release/AhmedMili952/quiz-blocks?label=plugin&display_name=tag&logo=obsidian&color=purple&logoColor=violet)](https://github.com/AhmedMili952/quiz-blocks/releases)
+# Quiz Blocks [![plugin](https://img.shields.io/github/v/release/ahmed-mili/obsidian-quiz-blocks?label=plugin&display_name=tag&logo=obsidian&color=purple&logoColor=violet)](https://github.com/ahmed-mili/obsidian-quiz-blocks/releases)
 
 Render ` ```quiz-blocks ` code blocks into fully interactive quizzes directly inside Obsidian notes.
 
@@ -72,7 +72,7 @@ The recommended way to install **Quiz Blocks** is via **BRAT** (Beta Reviewers A
 2. Open BRAT settings and click **Add Beta Plugin**.
 3. Paste the repository URL:
    ```
-   https://github.com/AhmedMili952/quiz-blocks
+   https://github.com/ahmed-mili/obsidian-quiz-blocks
    ```
 4. Click **Add Plugin** — BRAT will install it automatically.
 5. Go to **Settings → Community plugins** and enable **Quiz Blocks**.
@@ -94,7 +94,7 @@ BRAT will notify you whenever a new version is available and update with one cli
 
 ## Notes & limitations
 
-This plugin is in active beta development — bugs are possible. Feel free to [open an issue](https://github.com/AhmedMili952/quiz-blocks/issues/new) and share feedback.
+This plugin is in active beta development — bugs are possible. Feel free to [open an issue](https://github.com/ahmed-mili/obsidian-quiz-blocks/issues/new) and share feedback.
 
 - Answers are not persisted between sessions
 - The visual editor requires the note to be in edit mode
@@ -106,7 +106,7 @@ This plugin is in active beta development — bugs are possible. Feel free to [o
 
 Want to test all question types at once in your vault?
 
-👉 **[Copy the full demo template](https://github.com/AhmedMili952/quiz-blocks/blob/main/demo-template.md)** — open the file, click the **Copy** button, paste it into a new Obsidian note, and the quiz is ready to run.
+👉 **[Copy the full demo template](https://github.com/ahmed-mili/obsidian-quiz-blocks/blob/main/demo-template.md)** — open the file, click the **Copy** button, paste it into a new Obsidian note, and the quiz is ready to run.
 
 ---
 
